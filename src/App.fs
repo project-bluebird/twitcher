@@ -1,21 +1,18 @@
-module App
-
-(**
- The famous Increment/Decrement ported from Elm.
- You can find more info about Emish architecture and samples at https://elmish.github.io/
-*)
+module App.View
 
 open Elmish
-open Elmish.React
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
+open Fulma
+open Fulma.FontAwesome
+
+open Elmish.React
 
 open Fable.Import
 open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
-
 
 [<Literal>]
 let UrlPosition = "http://localhost:5001/api/v1/pos"
@@ -52,7 +49,7 @@ type Msg =
 | StopAnimation
 
 
-let getSimulationState () = 
+let getSimulationState () =
   promise {
       let url = UrlPosition
       let body = Encode.Auto.toString(0, { acid = "ALL" })
@@ -67,18 +64,18 @@ let getSimulationState () =
       return Decode.Auto.unsafeFromString<PositionInfo[]> txt
   }
 
-let getSimulationStateCmd () =  
+let getSimulationStateCmd () =
   Cmd.ofPromise getSimulationState () FetchedPosition FetchError
 
-let delayMsg _ = 
+let delayMsg _ =
   promise {
     do! Promise.sleep 1000
     return ()
   }
 
 
-let init() = 
-  { State = "Start"
+let init() =
+  { State = "Position"
     Animate = false },
   Cmd.none
 
@@ -89,44 +86,89 @@ let update (msg:Msg) (model:Model) =
     | GetPosition ->
          model,
          getSimulationStateCmd()
-    | FetchedPosition positionInfo -> 
+    | FetchedPosition positionInfo ->
         { model with State = string positionInfo.[0].lat } ,
         Cmd.none
-    | FetchError exn | ErrorMessage exn -> 
+    | FetchError exn | ErrorMessage exn ->
         Browser.console.error(exn)
         model,
         Cmd.none
     | Step _ ->
-        if model.Animate then 
+        if model.Animate then
           model,
           Cmd.batch [
-           getSimulationStateCmd()            
+           getSimulationStateCmd()
            Cmd.ofPromise delayMsg () Step ErrorMessage
           ]
         else
-          model, 
+          model,
           Cmd.none
     | StartAnimation ->
         { model with Animate = true }, Cmd.ofMsg (Step())
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
 
+let basicNavbar () =
+    Navbar.navbar [ ]
+        [ Navbar.Brand.div [ ]
+            [ Navbar.Item.a [ Navbar.Item.Props [ Href "#" ] ]
+                [ Icon.faIcon [ ] [
+                  Fa.icon Fa.I.Binoculars ]
+                  Heading.p [ Heading.Is5 ] [ str "Twitcher" ]  ]]
+          Navbar.Item.div [ Navbar.Item.HasDropdown
+                            Navbar.Item.IsHoverable ]
+            [ Navbar.Link.a [ ]
+                [ str "Docs" ]
+              Navbar.Dropdown.div [ ]
+                [ Navbar.Item.a [ ]
+                    [ str "Overwiew" ]
+                  Navbar.Item.a [ ]
+                    [ str "Something" ]
+                  Navbar.divider [ ] [ ]
+                  Navbar.Item.a [ ]
+                    [ str "Something else" ] ] ]
+          Navbar.End.div [ ]
+            [ Navbar.Item.div [ ]
+                [ str "The Alan Turing Institute" ] ] ]
 
-// VIEW (rendered with React)
+let private view model dispatch =
+    Hero.hero [ Hero.IsFullHeight ]
+      [
+        basicNavbar ()
 
-let view (model:Model) dispatch =
+        Hero.body [ ]
+          [ Container.container [ ]
+              [ Columns.columns [ Columns.CustomClass "has-text-centered" ]
+                  [
+                    div []
+                      [
+                        Container.container [] [
+                          Heading.p [ Heading.Is3 ] [ str model.State ] ]
 
-  div []
-      [ 
-        button [ OnClick (fun _ -> dispatch GetPosition ) ] [ str "Update position" ]
-        div [] [ str model.State ]
-        button [ OnClick (fun _ -> dispatch StartAnimation) ] [ str "Start"]
-        button [ OnClick (fun _ -> dispatch StopAnimation) ] [ str "Stop"]
-      ]
+                        Button.button [
+                          Button.OnClick (fun _ -> dispatch GetPosition )
+                          Button.Color IsInfo ]
+                          [ str "Fetch position" ]
 
-// App
+                        Container.container [] [
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch StartAnimation)
+                            ] [ str "Start"]
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch StopAnimation)
+                            ] [ str "Stop"]
+                        ]
+                      ]
+                   ] ] ] ]
+
+open Elmish.Debug
+open Elmish.HMR  // hot module reloading
+
 Program.mkProgram init update view
-//|> Program.withSubscription timer
-|> Program.withReact "elmish-app"
+#if DEBUG
+|> Program.withHMR
+#endif
+|> Program.withReactUnoptimized "elmish-app"
 |> Program.withConsoleTrace
 |> Program.run

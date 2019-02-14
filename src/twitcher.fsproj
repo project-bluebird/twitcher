@@ -5,8 +5,5 @@
   <ItemGroup>
     <Compile Include="App.fs" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Fable.Core" Version="2.0.2" />
-    <PackageReference Include="Fable.Elmish.React" Version="2.1.0" />
-  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
