@@ -79,13 +79,23 @@ let update (msg:Msg) (model:Model) =
     | GetPosition ->
          model,
          getSimulationStateCmd()
+
     | FetchedPosition positionInfo ->
-        { model with State = positionInfo |> Array.map positionToMercator } ,
+        let coordinates = 
+          positionInfo
+          |> Array.map (fun pos -> 
+              let (x,y) = 
+                lonlatToMercator pos.lon pos.lat
+                |> rescaleTest 
+              { X = x; Y = y; Altitude = pos.alt })
+        { model with State = coordinates } ,
         Cmd.none
+
     | FetchError exn | ErrorMessage exn ->
         Browser.console.error(exn)
         model,
         Cmd.none
+
     | Step _ ->
         if model.Animate then
           model,
@@ -96,8 +106,10 @@ let update (msg:Msg) (model:Model) =
         else
           model,
           Cmd.none
+
     | StartAnimation ->
         { model with Animate = true }, Cmd.ofMsg (Step())
+        
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
 
