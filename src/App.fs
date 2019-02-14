@@ -80,7 +80,7 @@ let update (msg:Msg) (model:Model) =
          model,
          getSimulationStateCmd()
     | FetchedPosition positionInfo ->
-        { model with State = positionInfo |> Array.map positionToCoordinates } ,
+        { model with State = positionInfo |> Array.map positionToMercator } ,
         Cmd.none
     | FetchError exn | ErrorMessage exn ->
         Browser.console.error(exn)
@@ -140,14 +140,14 @@ let private view model dispatch =
                                 [ tr [ ]
                                     [ th [ ] [ str "x" ]
                                       th [ ] [ str "y" ]
-                                      th [ ] [ str "z" ] ] ]
+                                      th [ ] [ str "Altitude" ] ] ]
                               tbody [ ]
                                 (model.State 
                                 |> List.ofArray
                                 |> List.map (fun coord -> 
                                     tr [] [ td [] [str (sprintf "%.1f" coord.X)] 
                                             td [] [str (sprintf "%.1f" coord.Y)] 
-                                            td [] [str (sprintf "%.1f" coord.Z)] ]
+                                            td [] [str (string coord.Altitude)] ]
                                 ))
                              ]
 

@@ -12,5 +12,5 @@ type PositionInfo = {
 type Coordinates = {
   X : float
   Y : float
-  Z : float
+  Altitude : int
 }
