@@ -1,5 +1,7 @@
-module App.View
+module Twitcher.View
 
+open Twitcher.Domain
+open Twitcher.CoordinateSystem
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -23,20 +25,11 @@ type PositionRequest = {
   acid : string
 }
 
-type PositionInfo = {
-    _validTo: string
-    alt: int
-    gs: float
-    lat: float
-    lon: float
-    vs: float
-}
-
 // MODEL
 
 type Model = {
   Animate : bool
-  State : string
+  State : Coordinates list
 }
 
 type Msg =
@@ -75,7 +68,7 @@ let delayMsg _ =
 
 
 let init() =
-  { State = "Position"
+  { State = []
     Animate = false },
   Cmd.none
 
@@ -86,13 +79,24 @@ let update (msg:Msg) (model:Model) =
     | GetPosition ->
          model,
          getSimulationStateCmd()
+
     | FetchedPosition positionInfo ->
-        { model with State = string positionInfo.[0].lat } ,
+        let coordinates = 
+          positionInfo
+          |> Array.map (fun pos -> 
+              let (x,y) = 
+                lonlatToMercator pos.lon pos.lat
+                |> rescaleTest 
+              { X = x; Y = y; Altitude = pos.alt })
+          |> List.ofArray
+        { model with State = coordinates } ,
         Cmd.none
+
     | FetchError exn | ErrorMessage exn ->
         Browser.console.error(exn)
         model,
         Cmd.none
+
     | Step _ ->
         if model.Animate then
           model,
@@ -103,12 +107,14 @@ let update (msg:Msg) (model:Model) =
         else
           model,
           Cmd.none
+
     | StartAnimation ->
         { model with Animate = true }, Cmd.ofMsg (Step())
+
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
 
-let basicNavbar () =
+let private basicNavbar () =
     Navbar.navbar [ ]
         [ Navbar.Brand.div [ ]
             [ Navbar.Item.a [ Navbar.Item.Props [ Href "#" ] ]
@@ -132,35 +138,73 @@ let basicNavbar () =
                 [ str "The Alan Turing Institute" ] ] ]
 
 let private view model dispatch =
-    Hero.hero [ Hero.IsFullHeight ]
+    Hero.hero [  ]
       [
         basicNavbar ()
 
         Hero.body [ ]
           [ Container.container [ ]
-              [ Columns.columns [ Columns.CustomClass "has-text-centered" ]
-                  [
-                    div []
-                      [
-                        Container.container [] [
-                          Heading.p [ Heading.Is3 ] [ str model.State ] ]
+              [ 
+                Columns.columns [ Columns.IsCentered ] [
+                      svg [
+                        Props.Height "540"
+                        Props.Width "1080"
+                        Style [ BackgroundColor "#f9f9f9" ]
+                      ] 
+                        (model.State
+                         |> List.map (fun coord ->
+                            circle [ 
+                              Cx (string coord.X)
+                              Cy (string coord.Y)
+                              R "3"
+                              Style 
+                                [ Stroke "black"
+                                  StrokeWidth "1"
+                                  Fill "grey" ]
+                            ] []))
+                    ]
 
+                Columns.columns [ 
+                  Columns.IsCentered  ]
+                  [
+                    Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                        Table.table [ Table.IsHoverable; Table.IsFullWidth ]
+                            [ thead [ ]
+                                [ tr [ ]
+                                    [ th [ ] [ str "x" ]
+                                      th [ ] [ str "y" ]
+                                      th [ ] [ str "Altitude" ] ] ]
+                              tbody [ ]
+                                (model.State 
+                                |> List.map (fun coord -> 
+                                    tr [] [ td [] [str (sprintf "%.1f" coord.X)] 
+                                            td [] [str (sprintf "%.1f" coord.Y)] 
+                                            td [] [str (string coord.Altitude)] ]
+                                ))
+                             ]
+                    ]
+
+                    Column.column [ Column.Width(Screen.All, Column.IsNarrow)] [
                         Button.button [
                           Button.OnClick (fun _ -> dispatch GetPosition )
-                          Button.Color IsInfo ]
+                          Button.Color IsInfo
+                          Button.IsFullWidth ]
                           [ str "Fetch position" ]
+                    ]
+                        
+                    Column.column [ 
+                      Column.Width(Screen.All, Column.IsNarrow) ] [
+                        Button.button [
+                          Button.OnClick (fun _ -> dispatch StartAnimation)
+                          ] [ str "Start"]
 
-                        Container.container [] [
-
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch StartAnimation)
-                            ] [ str "Start"]
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch StopAnimation)
-                            ] [ str "Stop"]
-                        ]
-                      ]
-                   ] ] ] ]
+                        Button.button [
+                          Button.OnClick (fun _ -> dispatch StopAnimation)
+                          ] [ str "Stop"]
+                      
+                    ]
+                  ]
+                   ] ] ] 
 
 open Elmish.Debug
 open Elmish.HMR  // hot module reloading
