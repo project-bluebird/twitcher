@@ -1,5 +1,7 @@
-module App.View
+module Twitcher.View
 
+open Twitcher.Domain
+open Twitcher.CoordinateSystem
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -23,20 +25,11 @@ type PositionRequest = {
   acid : string
 }
 
-type PositionInfo = {
-    _validTo: string
-    alt: int
-    gs: float
-    lat: float
-    lon: float
-    vs: float
-}
-
 // MODEL
 
 type Model = {
   Animate : bool
-  State : string
+  State : Coordinates []
 }
 
 type Msg =
@@ -75,7 +68,7 @@ let delayMsg _ =
 
 
 let init() =
-  { State = "Position"
+  { State = [||]
     Animate = false },
   Cmd.none
 
@@ -87,7 +80,7 @@ let update (msg:Msg) (model:Model) =
          model,
          getSimulationStateCmd()
     | FetchedPosition positionInfo ->
-        { model with State = string positionInfo.[0].lat } ,
+        { model with State = positionInfo |> Array.map positionToCoordinates } ,
         Cmd.none
     | FetchError exn | ErrorMessage exn ->
         Browser.console.error(exn)
@@ -108,7 +101,7 @@ let update (msg:Msg) (model:Model) =
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
 
-let basicNavbar () =
+let private basicNavbar () =
     Navbar.navbar [ ]
         [ Navbar.Brand.div [ ]
             [ Navbar.Item.a [ Navbar.Item.Props [ Href "#" ] ]
@@ -138,12 +131,25 @@ let private view model dispatch =
 
         Hero.body [ ]
           [ Container.container [ ]
-              [ Columns.columns [ Columns.CustomClass "has-text-centered" ]
+              [ Columns.columns [  ]
                   [
                     div []
                       [
-                        Container.container [] [
-                          Heading.p [ Heading.Is3 ] [ str model.State ] ]
+                        Table.table [ Table.IsHoverable ]
+                            [ thead [ ]
+                                [ tr [ ]
+                                    [ th [ ] [ str "x" ]
+                                      th [ ] [ str "y" ]
+                                      th [ ] [ str "z" ] ] ]
+                              tbody [ ]
+                                (model.State 
+                                |> List.ofArray
+                                |> List.map (fun coord -> 
+                                    tr [] [ td [] [str (sprintf "%.1f" coord.X)] 
+                                            td [] [str (sprintf "%.1f" coord.Y)] 
+                                            td [] [str (sprintf "%.1f" coord.Z)] ]
+                                ))
+                             ]
 
                         Button.button [
                           Button.OnClick (fun _ -> dispatch GetPosition )
