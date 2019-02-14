@@ -42,8 +42,8 @@ let sectorXMin, sectorYMin = lonlatToMercator -3.974833333 49.0675
 let sectorXMax, sectorYMax = lonlatToMercator 5.090666667 53.80883333
 
 // Around Equator for testing purposes
-let testXMin, testYMin = lonlatToMercator -10.0 -10.0
-let testXMax, testYMax = lonlatToMercator 10.0 10.0
+let testXMin, testYMin = lonlatToMercator -2.0 -1.0
+let testXMax, testYMax = lonlatToMercator 2.0 1.0
 
 /// Linear rescaling
 let scale rMin rMax tMin tMax value =

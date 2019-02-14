@@ -29,7 +29,7 @@ type PositionRequest = {
 
 type Model = {
   Animate : bool
-  State : Coordinates []
+  State : Coordinates list
 }
 
 type Msg =
@@ -68,7 +68,7 @@ let delayMsg _ =
 
 
 let init() =
-  { State = [||]
+  { State = []
     Animate = false },
   Cmd.none
 
@@ -88,6 +88,7 @@ let update (msg:Msg) (model:Model) =
                 lonlatToMercator pos.lon pos.lat
                 |> rescaleTest 
               { X = x; Y = y; Altitude = pos.alt })
+          |> List.ofArray
         { model with State = coordinates } ,
         Cmd.none
 
@@ -109,7 +110,7 @@ let update (msg:Msg) (model:Model) =
 
     | StartAnimation ->
         { model with Animate = true }, Cmd.ofMsg (Step())
-        
+
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
 
@@ -137,17 +138,37 @@ let private basicNavbar () =
                 [ str "The Alan Turing Institute" ] ] ]
 
 let private view model dispatch =
-    Hero.hero [ Hero.IsFullHeight ]
+    Hero.hero [  ]
       [
         basicNavbar ()
 
         Hero.body [ ]
           [ Container.container [ ]
-              [ Columns.columns [  ]
+              [ 
+                Columns.columns [ Columns.IsCentered ] [
+                      svg [
+                        Props.Height "540"
+                        Props.Width "1080"
+                        Style [ BackgroundColor "#f9f9f9" ]
+                      ] 
+                        (model.State
+                         |> List.map (fun coord ->
+                            circle [ 
+                              Cx (string coord.X)
+                              Cy (string coord.Y)
+                              R "3"
+                              Style 
+                                [ Stroke "black"
+                                  StrokeWidth "1"
+                                  Fill "grey" ]
+                            ] []))
+                    ]
+
+                Columns.columns [ 
+                  Columns.IsCentered  ]
                   [
-                    div []
-                      [
-                        Table.table [ Table.IsHoverable ]
+                    Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                        Table.table [ Table.IsHoverable; Table.IsFullWidth ]
                             [ thead [ ]
                                 [ tr [ ]
                                     [ th [ ] [ str "x" ]
@@ -155,30 +176,35 @@ let private view model dispatch =
                                       th [ ] [ str "Altitude" ] ] ]
                               tbody [ ]
                                 (model.State 
-                                |> List.ofArray
                                 |> List.map (fun coord -> 
                                     tr [] [ td [] [str (sprintf "%.1f" coord.X)] 
                                             td [] [str (sprintf "%.1f" coord.Y)] 
                                             td [] [str (string coord.Altitude)] ]
                                 ))
                              ]
+                    ]
 
+                    Column.column [ Column.Width(Screen.All, Column.IsNarrow)] [
                         Button.button [
                           Button.OnClick (fun _ -> dispatch GetPosition )
-                          Button.Color IsInfo ]
+                          Button.Color IsInfo
+                          Button.IsFullWidth ]
                           [ str "Fetch position" ]
+                    ]
+                        
+                    Column.column [ 
+                      Column.Width(Screen.All, Column.IsNarrow) ] [
+                        Button.button [
+                          Button.OnClick (fun _ -> dispatch StartAnimation)
+                          ] [ str "Start"]
 
-                        Container.container [] [
-
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch StartAnimation)
-                            ] [ str "Start"]
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch StopAnimation)
-                            ] [ str "Stop"]
-                        ]
-                      ]
-                   ] ] ] ]
+                        Button.button [
+                          Button.OnClick (fun _ -> dispatch StopAnimation)
+                          ] [ str "Stop"]
+                      
+                    ]
+                  ]
+                   ] ] ] 
 
 open Elmish.Debug
 open Elmish.HMR  // hot module reloading
