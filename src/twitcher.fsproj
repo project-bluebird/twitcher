@@ -6,6 +6,8 @@
     <Compile Include="Domain.fs" />
     <Compile Include="Coordinates.fs" />
     <Compile Include="Commands.fs" />
+    <Compile Include="View.fs" />
+    <Compile Include="Update.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

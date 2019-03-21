@@ -1,13 +1,14 @@
 module Twitcher.Domain
 
 
-type PositionInfo = {
-    _validTo: string
-    alt: float
-    gs: float
-    lat: float
-    lon: float
-    vs: float
+type AircraftInfo = {
+    AircraftID : string
+    Time: System.DateTime
+    Altitude: float
+    GroundSpeed: float
+    Latitude: float
+    Longitude: float
+    VerticalSpeed: float
 }
 
 type Coordinates = {
@@ -45,3 +46,21 @@ type Configuration = {
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
 }
+
+type Model = {
+  Animate : bool
+  State : Coordinates list
+  Config : Configuration option
+}
+
+type Msg =
+  | Config of Configuration
+  | GetPosition of string
+  | GetAllPositions
+  | FetchedPosition of AircraftInfo option
+  | FetchedAllPositions of AircraftInfo[]
+  | FetchError of exn
+  | MakeStep of unit
+  | ErrorMessage of exn
+  | StartAnimation
+  | StopAnimation

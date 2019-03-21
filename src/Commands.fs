@@ -15,6 +15,7 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 open System.Net.Http
+open System
 
 
 // TODO: Change this to OpenAPI type provider when implemented
@@ -69,20 +70,54 @@ let getConfig () =
     return decodeConfig txt
   }
 
+let getConfigCmd () = 
+  Cmd.ofPromise getConfig () Config FetchError
+
+
 let urlBase config = 
   ["http://" + config.Host + ":" + config.Port; 
    config.Api_path
    config.Api_version ] |> String.concat "/"
+
+// =============================================================== 
+// Aircraft position  
 
 let urlAircraftPosition (config: Configuration) =
   [urlBase config
    config.Endpoint_aircraft_position ]
   |> String.concat "/"
 
+type JsonPositionInfo = {
+    _validTo: string
+    alt: float
+    gs: float
+    lat: float
+    lon: float
+    vs: float
+}
 
-let getSimulationState config =
+let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
+
+let parseAircraftInfo id info =
+    {
+      AircraftID = id
+      Time = DateTime.Parse(info._validTo)
+      Altitude = info.alt
+      GroundSpeed = info.gs
+      Latitude = info.lat
+      Longitude = info.lon
+      VerticalSpeed = info.vs
+    }
+
+let parseAllPositions (data: Map<string, JsonPositionInfo>) =
+  data
+  |> Map.toArray
+  |> Array.map (fun (id, info) -> parseAircraftInfo id info)
+
+let getAllPositions config =
   promise {
-      let url = urlAircraftPosition config + "?acid=all"
+      let url = 
+        urlAircraftPosition config + "?acid=all"
       let props =
           [ RequestProperties.Method HttpMethod.GET
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
@@ -90,6 +125,38 @@ let getSimulationState config =
 
       let! res = Fetch.fetch url props
       let! txt = res.text()
-      return Decode.Auto.unsafeFromString<PositionInfo[]> txt
+      let result =
+        Decode.fromString (Decode.dict positionDecoder) txt
+      match result with
+      | Ok values ->
+          return parseAllPositions values
+      | Error err -> 
+          Browser.console.log("Error getting aircraft positions: " + err)
+          return [||]
   }
 
+let getAllPositionsCmd config  =
+  Cmd.ofPromise getAllPositions config FetchedAllPositions FetchError
+
+// =============================================================== 
+// Get single aircraft's position
+
+
+let getAircraftPosition (config, aircraftID) =
+  promise {
+      let url = 
+        urlAircraftPosition config + "?acid=" + aircraftID
+      let props =
+          [ RequestProperties.Method HttpMethod.GET
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            ]
+
+      let! res = Fetch.fetch url props
+      let! txt = res.text()
+      match Decode.fromString positionDecoder txt with
+      | Ok value -> return Some(parseAircraftInfo aircraftID value)
+      | Error err -> return None
+  }
+
+let getAircraftPositionCmd config aircraftID =
+  Cmd.ofPromise getAircraftPosition (config, aircraftID) FetchedPosition FetchError
