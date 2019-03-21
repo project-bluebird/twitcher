@@ -71,7 +71,7 @@ let getConfig () =
   }
 
 let getConfigCmd () = 
-  Cmd.ofPromise getConfig () Config FetchError
+  Cmd.ofPromise getConfig () Config ConnectionError
 
 
 let urlBase config = 
@@ -136,7 +136,7 @@ let getAllPositions config =
   }
 
 let getAllPositionsCmd config  =
-  Cmd.ofPromise getAllPositions config FetchedAllPositions FetchError
+  Cmd.ofPromise getAllPositions config FetchedAllPositions ConnectionError
 
 // =============================================================== 
 // Get single aircraft's position
@@ -159,4 +159,33 @@ let getAircraftPosition (config, aircraftID) =
   }
 
 let getAircraftPositionCmd config aircraftID =
-  Cmd.ofPromise getAircraftPosition (config, aircraftID) FetchedPosition FetchError
+  Cmd.ofPromise getAircraftPosition (config, aircraftID) FetchedPosition ConnectionError
+
+// =============================================================== 
+// Get single aircraft's position
+
+let urlLoadScenario (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_load_scenario ]
+  |> String.concat "/"
+
+let loadScenario (config, path) =
+  promise {
+      let url = urlLoadScenario config
+      let body = Encode.toString 0 (Encode.object [ "filename", Encode.string path ])
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return "Scenario loaded"
+      | 400 -> return "Invalid filename"
+      | 500 -> return "Scenario not found"
+      | _ -> return response.StatusText
+  }
+
+let loadScenarioCmd config path =
+  Cmd.ofPromise loadScenario (config, path) LoadedScenario ConnectionError

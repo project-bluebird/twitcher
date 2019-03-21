@@ -65,11 +65,44 @@ let update (msg:Msg) (model:Model) =
           Browser.console.log(position)
         | None ->
           Browser.console.log("Aircraft not found")
-          
+
         model,
         Cmd.none
 
-    | FetchError exn | ErrorMessage exn ->
+    | LoadScenario path -> 
+        model, 
+        loadScenarioCmd model.Config.Value path
+        
+    | LoadedScenario response -> 
+        Browser.console.log(response)
+        model, Cmd.none
+
+    | ResetSimulation -> model, Cmd.none
+    | ResetedSimulation  -> model, Cmd.none
+
+    | PauseSimulation -> model, Cmd.none
+    | PausedSimulation -> model, Cmd.none
+
+    | ResumeSimulation -> model, Cmd.none
+    | ResumedSimulation -> model, Cmd.none
+
+    | SetSimulationRateMultiplier rm -> model, Cmd.none
+    | ChangedSimulationRateMultiplier -> model, Cmd.none
+
+    | CreateAircraft aircraftInfo -> model, Cmd.none
+    | CreatedAircraft -> model, Cmd.none
+
+    | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) -> model, Cmd.none
+    | ChangedAltitude -> model, Cmd.none
+
+    | ChangeHeading (aircraftID, requestedHeading) -> model, Cmd.none
+    | ChangedHeading -> model, Cmd.none
+
+    | ChangeVerticalSpeed (aircraftID, verticalSpeed) -> model, Cmd.none
+    | ChangedVerticalSpeed  -> model, Cmd.none
+
+
+    | ConnectionError exn | ErrorMessage exn ->
         Browser.console.error(exn)
         model,
         Cmd.none

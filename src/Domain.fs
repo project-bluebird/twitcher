@@ -1,8 +1,13 @@
 module Twitcher.Domain
 
+type AircraftID = string
+
+type FlightAltitude =
+  | FlightLevel of int
+  | Altitude of float   // altitude in feet
 
 type AircraftInfo = {
-    AircraftID : string
+    AircraftID : AircraftID
     Time: System.DateTime
     Altitude: float
     GroundSpeed: float
@@ -55,11 +60,40 @@ type Model = {
 
 type Msg =
   | Config of Configuration
-  | GetPosition of string
+  | ConnectionError of exn
+  
+  | GetPosition of AircraftID
   | GetAllPositions
   | FetchedPosition of AircraftInfo option
   | FetchedAllPositions of AircraftInfo[]
-  | FetchError of exn
+
+  | LoadScenario of string
+  | LoadedScenario of string
+
+  | ResetSimulation
+  | ResetedSimulation
+
+  | PauseSimulation
+  | PausedSimulation
+
+  | ResumeSimulation
+  | ResumedSimulation
+
+  | SetSimulationRateMultiplier of float
+  | ChangedSimulationRateMultiplier
+
+  | CreateAircraft of AircraftInfo
+  | CreatedAircraft
+
+  | ChangeAltitude of AircraftID * FlightAltitude * float option
+  | ChangedAltitude
+
+  | ChangeHeading of AircraftID * float
+  | ChangedHeading
+
+  | ChangeVerticalSpeed of AircraftID * float
+  | ChangedVerticalSpeed
+  
   | MakeStep of unit
   | ErrorMessage of exn
   | StartAnimation

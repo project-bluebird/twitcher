@@ -109,7 +109,7 @@ let view model dispatch =
                     ]
 
                     Button.button [
-                          Button.OnClick (fun _ -> dispatch (GetPosition "RRR215"))
+                          Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
                           ] [ str "Test"]
                   ]
                   
