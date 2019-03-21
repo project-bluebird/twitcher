@@ -185,7 +185,7 @@ let getAircraftPositionCmd config aircraftID =
   Cmd.ofPromise getAircraftPosition (config, aircraftID) FetchedPosition ConnectionError
 
 // =============================================================== 
-// Get single aircraft's position
+// Load scenario
 
 let urlLoadScenario (config: Configuration) =
   [ urlBase config
@@ -212,3 +212,5 @@ let loadScenario (config, path) =
 
 let loadScenarioCmd config path =
   Cmd.ofPromise loadScenario (config, path) LoadedScenario ConnectionError
+
+// =============================================================== 
