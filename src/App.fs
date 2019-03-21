@@ -2,11 +2,13 @@ module Twitcher.View
 
 open Twitcher.Domain
 open Twitcher.CoordinateSystem
+
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Fulma
 open Fulma.FontAwesome
+
 
 open Elmish.React
 
@@ -16,23 +18,18 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
-[<Literal>]
-let UrlPosition = "http://localhost:5001/api/v1/pos"
-[<Literal>]
-let UrlReset = "http://localhost:5001/api/v1/ic"
 
-type PositionRequest = {
-  acid : string
-}
 
 // MODEL
 
 type Model = {
   Animate : bool
   State : Coordinates list
+  Config : Configuration option
 }
 
 type Msg =
+| Config of Configuration
 | GetPosition
 | FetchedPosition of PositionInfo[]
 | FetchError of exn
@@ -41,24 +38,13 @@ type Msg =
 | StartAnimation
 | StopAnimation
 
+let getSimulationStateCmd config =
+  Cmd.ofPromise Commands.getSimulationState (config) FetchedPosition FetchError
 
-let getSimulationState () =
-  promise {
-      let url = UrlPosition
-      let body = Encode.Auto.toString(0, { acid = "ALL" })
-      Browser.console.log(body)
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            RequestProperties.Body !^body ]
 
-      let! res = Fetch.fetch url props
-      let! txt = res.text()
-      return Decode.Auto.unsafeFromString<PositionInfo[]> txt
-  }
 
-let getSimulationStateCmd () =
-  Cmd.ofPromise getSimulationState () FetchedPosition FetchError
+let getConfigCmd () = 
+  Cmd.ofPromise Commands.getConfig () Config FetchError
 
 let delayMsg _ =
   promise {
@@ -69,16 +55,25 @@ let delayMsg _ =
 
 let init() =
   { State = []
-    Animate = false },
-  Cmd.none
+    Animate = false 
+    Config = None },
+  getConfigCmd()
 
 // UPDATE
 
 let update (msg:Msg) (model:Model) =
     match msg with
+    | Config config ->
+       { model with Config = Some config }, Cmd.none
+       
     | GetPosition ->
-         model,
-         getSimulationStateCmd()
+        match model.Config with
+        | None ->
+            Browser.console.log("No configuration found")
+            model, Cmd.none
+        | Some config ->
+            model,
+            getSimulationStateCmd config
 
     | FetchedPosition positionInfo ->
         let coordinates = 
@@ -101,7 +96,7 @@ let update (msg:Msg) (model:Model) =
         if model.Animate then
           model,
           Cmd.batch [
-           getSimulationStateCmd()
+           getSimulationStateCmd model.Config.Value
            Cmd.ofPromise delayMsg () Step ErrorMessage
           ]
         else
