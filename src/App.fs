@@ -29,6 +29,7 @@ let init() =
     State = NotConnected
    },
   Cmd.none
+// TODO save state into cookie to stay through refresh?
 
 open Elmish.Debug
 open Elmish.HMR  // hot module reloading
