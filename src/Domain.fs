@@ -52,14 +52,24 @@ type Configuration = {
     Flight_level_lower_limit: int
 }
 
+type SimulationState = 
+  | NotConnected
+  | ConnectionEstablished   // after loading config and pinging the Bluebird server
+  | ConnectionFailed
+  | ActiveSimulation        // when loaded scenario
+  | ReplaySimulation        // replay simulation from log file without server communication
+
 type Model = {
   Animate : bool
-  State : Coordinates list
+  Positions : Coordinates list
   Config : Configuration option
+  State: SimulationState
 }
 
 type Msg =
+  | Init
   | Config of Configuration
+  | ConnectionActive of bool
   | ConnectionError of exn
   
   | GetPosition of AircraftID

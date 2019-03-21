@@ -79,13 +79,36 @@ let urlBase config =
    config.Api_path
    config.Api_version ] |> String.concat "/"
 
-// =============================================================== 
-// Aircraft position  
-
 let urlAircraftPosition (config: Configuration) =
   [urlBase config
    config.Endpoint_aircraft_position ]
-  |> String.concat "/"
+  |> String.concat "/"   
+
+let pingBluebird config = 
+  promise {
+      let url = 
+        urlAircraftPosition config + "?acid=all"
+      let props =
+          [ RequestProperties.Method HttpMethod.GET
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            ]
+
+      try
+        let! res = Fetch.fetch url props
+        match res.Status with
+        | 200 -> return true
+        | _ -> return false
+      with e ->
+        return false
+  }
+
+let pingBluebirdCmd config = 
+  Cmd.ofPromise pingBluebird config ConnectionActive ConnectionError   
+
+// =============================================================== 
+// Aircraft position  
+
+
 
 type JsonPositionInfo = {
     _validTo: string

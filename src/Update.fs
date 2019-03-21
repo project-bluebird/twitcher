@@ -26,8 +26,19 @@ let delayMsg _ =
 
 let update (msg:Msg) (model:Model) =
     match msg with
+    | Init ->
+        model, 
+        getConfigCmd()
+    
+    | ConnectionActive result ->
+        if result then 
+          { model with State = ConnectionEstablished }, Cmd.none
+        else 
+          { model with State = ConnectionFailed}, Cmd.none
+
     | Config config ->
-       { model with Config = Some config }, Cmd.none
+       { model with Config = Some config }, 
+       pingBluebirdCmd config
        
     | GetAllPositions ->
         match model.Config with
@@ -56,7 +67,7 @@ let update (msg:Msg) (model:Model) =
                 |> rescaleTest 
               { X = x; Y = y; Altitude = pos.Altitude })
           |> List.ofArray
-        { model with State = coordinates } ,
+        { model with Positions = coordinates } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->

@@ -22,14 +22,13 @@ open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
 
-
 let init() =
-  { State = []
+  { Positions = []
     Animate = false 
-    Config = None },
-  getConfigCmd()
-
-
+    Config = None
+    State = NotConnected
+   },
+  Cmd.none
 
 open Elmish.Debug
 open Elmish.HMR  // hot module reloading
