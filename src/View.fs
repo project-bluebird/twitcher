@@ -98,12 +98,47 @@ let view model dispatch =
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.IsNarrow)] [
-                            Button.button [
-                              Button.OnClick (fun _ -> dispatch GetAllPositions )
-                              Button.Color IsInfo
-                              Button.IsFullWidth ]
-                              [ str "Fetch position" ]
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch GetAllPositions )
+                            Button.Color IsInfo
+                            Button.IsFullWidth ]
+                            [ str "Fetch position" ]
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
+                            ] [ str "Load test scenario"]  
+                          
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch ResetSimulator)
+                            ] [ 
+                              Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
+                              Text.span [] [ str "Reset simulator"]  
+                            ]
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch ResumeSimulation)
+                            Button.Disabled (
+                                match model.State with
+                                 | ActiveSimulation Paused -> false
+                                 | _ -> true)
+                            ] [ 
+                              Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
+                              Text.span [] [ str "Play/Resume"]  
+                            ]    
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch PauseSimulation)
+                            Button.Disabled (
+                                match model.State with
+                                 | ActiveSimulation Playing -> false
+                                 | _ -> true)
+                            ] [ 
+                              Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
+                              Text.span [] [ str "Pause"]  
+                            ]  
                         ]
+
+
                             
                         Column.column [ 
                           Column.Width(Screen.All, Column.IsNarrow) ] [
@@ -117,9 +152,7 @@ let view model dispatch =
                           
                         ]
 
-                        Button.button [
-                              Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
-                              ] [ str "Test"]
+
                       ]
                   
                    ] )] ] 

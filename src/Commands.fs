@@ -214,14 +214,14 @@ let loadScenarioCmd config path =
   Cmd.ofPromise loadScenario (config, path) LoadedScenario ConnectionError
 
 // =============================================================== 
-// Reset simulation
+// Reset simulator
 
 let urlReset config =
   [ urlBase config
     config.Endpoint_reset_simulation ]
   |> String.concat "/"
 
-let resetSimulation config = 
+let resetSimulator config = 
   promise {
       let url = urlReset config
       let props =
@@ -235,5 +235,50 @@ let resetSimulation config =
       | _ -> return false 
   }
 
-let resetSimulationCmd config =
-  Cmd.ofPromise resetSimulation config ResetedSimulation ConnectionError
+let resetSimulatorCmd config =
+  Cmd.ofPromise resetSimulator config ResetedSimulator ConnectionError
+
+// =============================================================== 
+// Pause simulation
+
+let urlPause config = [ urlBase config; config.Endpoint_pause_simulation ] |> String.concat "/"
+
+let pauseSimulation config = 
+  promise {
+      let url = urlPause config
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return true
+      | _ -> return false 
+  }
+
+let pauseSimulationCmd config =
+  Cmd.ofPromise pauseSimulation config PausedSimulation ConnectionError  
+
+
+// =============================================================== 
+// Resume simulation
+
+let urlResume config = [ urlBase config; config.Endpoint_resume_simulation ] |> String.concat "/"
+
+let resumeSimulation config = 
+  promise {
+      let url = urlResume config
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return true
+      | _ -> return false 
+  }
+
+let resumeSimulationCmd config =
+  Cmd.ofPromise resumeSimulation config ResumedSimulation ConnectionError    

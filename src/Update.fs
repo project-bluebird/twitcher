@@ -32,7 +32,7 @@ let update (msg:Msg) (model:Model) =
     
     | ConnectionActive result ->
         if result then 
-          { model with State = ConnectionEstablished }, Cmd.none
+          { model with State = Connected }, Cmd.none
         else 
           { model with State = ConnectionFailed}, Cmd.none
 
@@ -81,26 +81,45 @@ let update (msg:Msg) (model:Model) =
         Cmd.none
 
     | LoadScenario path -> 
-        model, 
+        model,
         loadScenarioCmd model.Config.Value path
         
     | LoadedScenario response -> 
-        Browser.console.log(response)
-        model, Cmd.none
+        // pause the scenario
+        { model with
+            State = ActiveSimulation Playing }, 
+        pauseSimulationCmd model.Config.Value
 
-    | ResetSimulation -> 
+    | ResetSimulator -> 
         model, 
-        resetSimulationCmd model.Config.Value
+        resetSimulatorCmd model.Config.Value
 
-    | ResetedSimulation result -> 
-        model, 
-        Cmd.none
+    | ResetedSimulator result -> 
+        if not result then 
+          Browser.console.log("Failed to reset the simulator")
+          model, Cmd.none
+        else
+          { model with State = Connected }, Cmd.none
 
-    | PauseSimulation -> model, Cmd.none
-    | PausedSimulation -> model, Cmd.none
+    | PauseSimulation -> 
+        model, pauseSimulationCmd model.Config.Value
 
-    | ResumeSimulation -> model, Cmd.none
-    | ResumedSimulation -> model, Cmd.none
+    | PausedSimulation result -> 
+        if not result then 
+          Browser.console.log("Failed to pause the simulation")
+          model, Cmd.none
+        else 
+          { model with State = ActiveSimulation Paused }, Cmd.none
+
+    | ResumeSimulation -> 
+        model, resumeSimulationCmd model.Config.Value
+
+    | ResumedSimulation result ->         
+        if not result then 
+          Browser.console.log("Failed to resume the simulation")
+          model, Cmd.none
+        else 
+          { model with State = ActiveSimulation Playing }, Cmd.none
 
     | SetSimulationRateMultiplier rm -> model, Cmd.none
     | ChangedSimulationRateMultiplier -> model, Cmd.none

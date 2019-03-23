@@ -52,18 +52,22 @@ type Configuration = {
     Flight_level_lower_limit: int
 }
 
-type SimulationState = 
+type SimulatorState = 
+  | Playing
+  | Paused
+
+type TwitcherState = 
   | NotConnected
-  | ConnectionEstablished   // after loading config and pinging the Bluebird server
+  | Connected   // after loading config and pinging the Bluebird server
   | ConnectionFailed
-  | ActiveSimulation        // when loaded scenario
+  | ActiveSimulation of SimulatorState       // when loaded scenario
   | ReplaySimulation        // replay simulation from log file without server communication
 
 type Model = {
   Animate : bool
   Positions : Coordinates list
   Config : Configuration option
-  State: SimulationState
+  State: TwitcherState
 }
 
 type Msg =
@@ -80,14 +84,14 @@ type Msg =
   | LoadScenario of string
   | LoadedScenario of string
 
-  | ResetSimulation 
-  | ResetedSimulation of bool
+  | ResetSimulator 
+  | ResetedSimulator of bool
 
   | PauseSimulation
-  | PausedSimulation
+  | PausedSimulation of bool
 
   | ResumeSimulation
-  | ResumedSimulation
+  | ResumedSimulation of bool
 
   | SetSimulationRateMultiplier of float
   | ChangedSimulationRateMultiplier
