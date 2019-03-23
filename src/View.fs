@@ -147,17 +147,6 @@ let view model dispatch =
                               Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
                               Text.span [] [ str "Pause"]  
                             ]  
-
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
-                            Button.Disabled (
-                                match model.State with
-                                 | ActiveSimulation _ -> false
-                                 | _ -> true)
-                            ] [ 
-                              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
-                              Text.span [] [ str "Create aircraft"]  
-                            ]    
                         ]
                             
                         Column.column [ 
@@ -174,6 +163,18 @@ let view model dispatch =
 
 
                       ]
+
+                    Button.button [
+                      Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
+                      Button.Disabled (
+                          match model.State with
+                           | ActiveSimulation _ -> false
+                           | _ -> true)
+                      ] [ 
+                        Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+                        Text.span [] [ str "Create aircraft"]  
+                      ]      
+                        
                     createAircraftForm model dispatch
                   
                    ] )] ] 
