@@ -6,20 +6,34 @@ type FlightAltitude =
   | FlightLevel of int
   | Altitude of float   // altitude in feet
 
+type ObservedSpeed = {
+  Vertical : float
+  Ground : float
+}
+
+type CalibratedAirSpeed =
+  | Knots of float
+  | Mach of float
+
+type Speed =
+  | Observed of ObservedSpeed
+  | CalibratedAirSpeed of CalibratedAirSpeed
+
 type AircraftInfo = {
     AircraftID : AircraftID
-    Time: System.DateTime
-    Altitude: float
-    GroundSpeed: float
+    Type : string option 
+    Time: System.DateTime option
+    Heading : float option
+    Altitude: FlightAltitude
     Latitude: float
     Longitude: float
-    VerticalSpeed: float
+    Speed : Speed
 }
 
 type Coordinates = {
   X : float
   Y : float
-  Altitude : float
+  Altitude : FlightAltitude
 }
 
 type Configuration = {
@@ -62,53 +76,3 @@ type TwitcherState =
   | ConnectionFailed
   | ActiveSimulation of SimulatorState       // when loaded scenario
   | ReplaySimulation        // replay simulation from log file without server communication
-
-type Model = {
-  Animate : bool
-  Positions : Coordinates list
-  Config : Configuration option
-  State: TwitcherState
-}
-
-type Msg =
-  | Init
-  | Config of Configuration
-  | ConnectionActive of bool
-  | ConnectionError of exn
-  
-  | GetPosition of AircraftID
-  | GetAllPositions
-  | FetchedPosition of AircraftInfo option
-  | FetchedAllPositions of AircraftInfo[]
-
-  | LoadScenario of string
-  | LoadedScenario of string
-
-  | ResetSimulator 
-  | ResetedSimulator of bool
-
-  | PauseSimulation
-  | PausedSimulation of bool
-
-  | ResumeSimulation
-  | ResumedSimulation of bool
-
-  | SetSimulationRateMultiplier of float
-  | ChangedSimulationRateMultiplier
-
-  | CreateAircraft of AircraftInfo
-  | CreatedAircraft
-
-  | ChangeAltitude of AircraftID * FlightAltitude * float option
-  | ChangedAltitude
-
-  | ChangeHeading of AircraftID * float
-  | ChangedHeading
-
-  | ChangeVerticalSpeed of AircraftID * float
-  | ChangedVerticalSpeed
-  
-  | MakeStep of unit
-  | ErrorMessage of exn
-  | StartAnimation
-  | StopAnimation

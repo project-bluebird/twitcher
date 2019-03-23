@@ -1,6 +1,8 @@
 module Twitcher.Commands
 
 open Twitcher.Domain
+open Twitcher.Model
+
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -124,12 +126,13 @@ let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
 let parseAircraftInfo id info =
     {
       AircraftID = id
-      Time = DateTime.Parse(info._validTo)
-      Altitude = info.alt
-      GroundSpeed = info.gs
+      Time = DateTime.Parse(info._validTo) |> Some
+      Type = None
+      Altitude = Altitude info.alt
+      Speed = Observed { Ground = info.gs; Vertical = info.vs }
       Latitude = info.lat
       Longitude = info.lon
-      VerticalSpeed = info.vs
+      Heading = None
     }
 
 let parseAllPositions (data: Map<string, JsonPositionInfo>) =
@@ -282,3 +285,56 @@ let resumeSimulation config =
 
 let resumeSimulationCmd config =
   Cmd.ofPromise resumeSimulation config ResumedSimulation ConnectionError    
+
+// =============================================================== 
+// Create aircraft
+
+let urlCreateAircraft (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_create_aircraft ]
+  |> String.concat "/"
+
+
+let encodeAircraftInfo a =
+  let aircraft = 
+    Encode.object 
+      [ "acid", Encode.string a.AircraftID
+        "type", Encode.string a.Type.Value
+        "alt", match a.Altitude with 
+               | FlightLevel fl -> Encode.string ("FL" + string fl)
+               | Altitude alt -> Encode.float alt
+        "lat", Encode.float a.Latitude
+        "lon", Encode.float a.Longitude
+        "hdg", Encode.float a.Heading.Value
+        "spd", match a.Speed with
+                | CalibratedAirSpeed cas -> 
+                    match cas with 
+                    | Knots s -> Encode.float s
+                    | Mach s -> Encode.float s
+                | Observed x ->
+                    failwith "Cannot create aircraft"
+      ]
+  Encode.toString 0 aircraft
+
+let createAircraft (config, aircraftData: AircraftInfo) =
+  promise {
+      let url = urlLoadScenario config
+      let body = encodeAircraftInfo aircraftData
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return "Aircraft created"
+      | 400 -> return "Aircraft already exists"
+      | 500 -> return "Aircraft could not be created: " + response.StatusText
+      | _ -> return response.StatusText
+  }
+
+let createAircraftCmd config aircraftData =
+  Cmd.ofPromise createAircraft (config, aircraftData) CreatedAircraft ConnectionError
+

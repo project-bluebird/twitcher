@@ -1,6 +1,7 @@
 module Twitcher.App
 
 open Twitcher.Domain
+open Twitcher.Model
 open Twitcher.CoordinateSystem
 open Twitcher.Update
 open Twitcher.View
@@ -27,6 +28,7 @@ let init() =
     Animate = false 
     Config = None
     State = NotConnected
+    FormModel = None
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?

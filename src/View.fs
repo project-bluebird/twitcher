@@ -1,6 +1,7 @@
 module Twitcher.View
 
 open Twitcher.Domain
+open Twitcher.Model
 
 open Elmish
 open Fable.Helpers.React
@@ -16,6 +17,8 @@ open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
+
+
 
 let basicNavbar model dispatch =
     Navbar.navbar [ ]
@@ -58,6 +61,14 @@ let viewSimulation model dispatch =
               Fill "grey" ]
         ] []))
 
+let createAircraftForm model dispatch =
+  Container.container []
+   (match model.FormModel with
+    | Some(CreateAircraftForm f) ->
+      [ AircraftForm.view f (CreateAircraftMsg >> dispatch) ]
+    | _ ->
+      [])
+   
                 
 let view model dispatch =
     Hero.hero [  ]
@@ -136,9 +147,18 @@ let view model dispatch =
                               Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
                               Text.span [] [ str "Pause"]  
                             ]  
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
+                            Button.Disabled (
+                                match model.State with
+                                 | ActiveSimulation _ -> false
+                                 | _ -> true)
+                            ] [ 
+                              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+                              Text.span [] [ str "Create aircraft"]  
+                            ]    
                         ]
-
-
                             
                         Column.column [ 
                           Column.Width(Screen.All, Column.IsNarrow) ] [
@@ -154,5 +174,6 @@ let view model dispatch =
 
 
                       ]
+                    createAircraftForm model dispatch
                   
                    ] )] ] 

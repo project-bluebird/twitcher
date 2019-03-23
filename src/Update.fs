@@ -11,7 +11,9 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
+open Twitcher
 open Twitcher.Domain
+open Twitcher.Model
 open Twitcher.CoordinateSystem
 open Twitcher.Commands
 
@@ -24,7 +26,7 @@ let delayMsg _ =
   } 
 
 
-let update (msg:Msg) (model:Model) =
+let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
     | Init ->
         model, 
@@ -125,13 +127,18 @@ let update (msg:Msg) (model:Model) =
     | ChangedSimulationRateMultiplier -> model, Cmd.none
 
     | CreateAircraft aircraftInfo -> model, Cmd.none
-    | CreatedAircraft -> model, Cmd.none
+    | CreatedAircraft result -> 
+        Browser.console.log(result)
+        model, Cmd.none
 
     | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) -> model, Cmd.none
     | ChangedAltitude -> model, Cmd.none
 
     | ChangeHeading (aircraftID, requestedHeading) -> model, Cmd.none
     | ChangedHeading -> model, Cmd.none
+
+    | ChangeSpeed (aircraftID, speed) -> model, Cmd.none
+    | ChangedSpeed -> model, Cmd.none
 
     | ChangeVerticalSpeed (aircraftID, verticalSpeed) -> model, Cmd.none
     | ChangedVerticalSpeed  -> model, Cmd.none
@@ -158,5 +165,34 @@ let update (msg:Msg) (model:Model) =
 
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
+
+    | ShowCreateAircraftForm ->
+        let f, cmd = AircraftForm.init()
+        { model with FormModel = Some (CreateAircraftForm(f)) }, 
+            Cmd.batch [
+              Cmd.map CreateAircraftMsg cmd
+            ]          
+
+    | CreateAircraftMsg m ->
+      match model.FormModel with
+      | Some(CreateAircraftForm f) ->
+          let f', cmd, externalMsg = AircraftForm.update m f
+          match externalMsg with
+          | AircraftForm.ExternalMsg.Submit info ->
+              { model with FormModel = Some (CreateAircraftForm(f')) }, 
+              Cmd.batch [
+                Cmd.map CreateAircraftMsg cmd
+                Cmd.ofMsg (CreateAircraft info)
+              ]
+          | AircraftForm.ExternalMsg.NoOp ->
+              { model with FormModel = Some (CreateAircraftForm(f')) }, 
+              Cmd.map CreateAircraftMsg cmd
+      | None | Some _ ->
+          let f, cmd = AircraftForm.init()
+          { model with FormModel = Some (CreateAircraftForm(f)) }, 
+              Cmd.batch [
+                Cmd.map CreateAircraftMsg cmd
+                Cmd.ofMsg (CreateAircraftMsg m) // initialized, resend
+              ]          
 
 
