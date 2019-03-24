@@ -318,8 +318,9 @@ let encodeAircraftInfo a =
 
 let createAircraft (config, aircraftData: AircraftInfo) =
   promise {
-      let url = urlLoadScenario config
+      let url = urlCreateAircraft config
       let body = encodeAircraftInfo aircraftData
+      Browser.console.log(body)
 
       let props =
           [ RequestProperties.Method HttpMethod.POST

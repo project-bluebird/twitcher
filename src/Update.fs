@@ -126,7 +126,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | SetSimulationRateMultiplier rm -> model, Cmd.none
     | ChangedSimulationRateMultiplier -> model, Cmd.none
 
-    | CreateAircraft aircraftInfo -> model, Cmd.none
+    | CreateAircraft aircraftInfo -> 
+        model, createAircraftCmd model.Config.Value aircraftInfo
+
     | CreatedAircraft result -> 
         Browser.console.log(result)
         model, Cmd.none
@@ -175,18 +177,25 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | CreateAircraftMsg m ->
       match model.FormModel with
+
       | Some(CreateAircraftForm f) ->
           let f', cmd, externalMsg = AircraftForm.update m f
+
           match externalMsg with
           | AircraftForm.ExternalMsg.Submit info ->
-              { model with FormModel = Some (CreateAircraftForm(f')) }, 
+              { model with FormModel = None }, 
               Cmd.batch [
-                Cmd.map CreateAircraftMsg cmd
                 Cmd.ofMsg (CreateAircraft info)
               ]
+
           | AircraftForm.ExternalMsg.NoOp ->
               { model with FormModel = Some (CreateAircraftForm(f')) }, 
               Cmd.map CreateAircraftMsg cmd
+
+          | AircraftForm.ExternalMsg.Cancel ->
+              { model with FormModel = None },
+              Cmd.none
+              
       | None | Some _ ->
           let f, cmd = AircraftForm.init()
           { model with FormModel = Some (CreateAircraftForm(f)) }, 

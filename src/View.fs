@@ -68,7 +68,7 @@ let createAircraftForm model dispatch =
       [ AircraftForm.view f (CreateAircraftMsg >> dispatch) ]
     | _ ->
       [])
-   
+ 
                 
 let view model dispatch =
     Hero.hero [  ]
@@ -174,7 +174,8 @@ let view model dispatch =
                         Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
                         Text.span [] [ str "Create aircraft"]  
                       ]      
+
                         
                     createAircraftForm model dispatch
-                  
+  
                    ] )] ] 
