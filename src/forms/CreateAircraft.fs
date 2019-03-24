@@ -11,13 +11,8 @@ open Fulma.FontAwesome
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
-open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 
-type SpeedUnit = Knots | Mach | Kmh
-type AltitudeUnit = FlightLevels | Feet | Meters
 
 type FormModel = 
   { AircraftID : string
@@ -33,6 +28,7 @@ type FormModel =
 
 type Msg = 
   | ChangeAircraftID of string
+  | ChangeAircraftType of string
   | ChangeLatitude of string
   | ChangeLongitude of string
   | ChangeHeading of string
@@ -44,7 +40,6 @@ type Msg =
   | Cancel
   | Error
   | CheckFields
-  
 
 type ExternalMsg =
     | NoOp
@@ -52,19 +47,23 @@ type ExternalMsg =
     | Cancel
 
 let init() =
-  { AircraftID = ""
-    Latitude = "" 
-    Longitude = ""
-    Heading = ""
-    Speed = ""
-    SpeedUnit = Knots
-    Altitude = ""
+  { AircraftID = "AB1"
+    Latitude = "55" 
+    Longitude = "0"
+    Heading = "0"
+    Speed = "200"
+    SpeedUnit = SpeedUnit.Knots
+    Altitude = "25000"
     Type = "B744"
     AltitudeUnit = Feet
     CheckFields = false },
   Cmd.none    
 
 let checkAircraftID (x: string) =
+  (x.Length >= 3) 
+  && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
+
+let checkAircraftType (x: string) =
   (x.Length >= 3) 
   && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
 
@@ -77,6 +76,12 @@ let update msg model =
   | ChangeAircraftID x ->
     { model with 
         FormModel.AircraftID = x },
+    Cmd.none,
+    NoOp
+
+  | ChangeAircraftType x ->
+    { model with
+       Type = x },
     Cmd.none,
     NoOp
 
@@ -95,10 +100,10 @@ let update msg model =
   | SetSpeedUnit su ->
       let speedUnit =
         match su with
-        | "Knots" -> Knots
-        | "Km/h" -> Kmh
-        | "Mach" -> Mach
-        | _ -> Knots
+        | "Knots" -> SpeedUnit.Knots
+        | "Km/h" -> SpeedUnit.Kmh
+        | "Mach" -> SpeedUnit.Mach
+        | _ -> SpeedUnit.Knots
       { model with SpeedUnit = speedUnit }, Cmd.none, NoOp
 
   | ChangeAltitude x ->
@@ -126,6 +131,7 @@ let update msg model =
 
   | CheckFields ->
       if (model.AircraftID |> checkAircraftID) &&
+        (model.Type |> checkAircraftType) &&
         (model.Latitude |> checkFloat) &&
         (model.Longitude |> checkFloat) &&
         (model.Heading |> checkFloat) &&
@@ -140,9 +146,9 @@ let update msg model =
             Longitude = float model.Longitude
             Speed = 
               match model.SpeedUnit with
-              | Knots -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed))
-              | Mach -> CalibratedAirSpeed(CalibratedAirSpeed.Mach(float model.Speed))
-              | Kmh -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed/1.852))
+              | SpeedUnit.Knots -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed))
+              | SpeedUnit.Mach -> CalibratedAirSpeed(CalibratedAirSpeed.Mach(float model.Speed))
+              | SpeedUnit.Kmh -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed/1.852))
             Altitude = 
               match model.AltitudeUnit with
               | FlightLevels -> FlightLevel(int (model.Altitude |> float |> round |> int))
@@ -152,28 +158,30 @@ let update msg model =
       else
         model, Cmd.none, NoOp
 
-let formItem label textPlaceholder value message checkValid isValid warning other (dispatch: Msg -> unit) =
-  Field.div [ ]
+let formItem label value message checkValid isValid warning other (dispatch: Msg -> unit) =
+  Field.div [  ]
     [ yield!
         [ Label.label [ ] [ str label ] ]
       yield!
         [Input.text [ 
-          Input.Placeholder textPlaceholder
+          Input.Placeholder value
           Input.Value value    
           Input.Props 
             [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch ) ] ] ]
       
       yield!
-        [Help.help 
-          [ (if checkValid && not (isValid value) then Help.Color IsDanger else Help.Color IsGrey) ]
-          [ str warning ]]
+        (if checkValid && not (isValid value) then        
+          [Help.help 
+            [  Help.Color IsDanger  ]
+            [ str warning ]]
+         else [])
       yield! 
         (match other with 
          | Some(elem) -> [elem]
          | None -> [] )]        
 
 
-let formItemOptions label (options: string list) optionMessage textPlaceholder value message checkValid isValid warning (dispatch: Msg -> unit) = 
+let formItemOptions label (options: string list) optionMessage value message checkValid isValid warning (dispatch: Msg -> unit) = 
   Field.div [] [
     Label.label [ ] [ str label ]
   
@@ -186,7 +194,7 @@ let formItemOptions label (options: string list) optionMessage textPlaceholder v
                   option [ Value value ][ str value] ))
           ] 
         Input.text [ 
-          Input.Placeholder textPlaceholder
+          Input.Placeholder value
           Input.Value value    
           Input.Props 
             [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
@@ -207,23 +215,21 @@ let view model (dispatch: Msg -> unit) =
               form [ ]
                 [ formItem 
                     "Aircraft identifier"
-                    "ABC123"
                     model.AircraftID    
                     ChangeAircraftID 
                     model.CheckFields
                     checkAircraftID 
-                    "Aircraft ID must have at least 3 letters/numbers." 
+                    "Aircraft ID must be alphanumericc and have at least 3 characters." 
                     None
                     dispatch 
 
                   formItem 
                     "Aircraft type (ICAO identifier)"
-                    "B744"
-                    model.AircraftID    
-                    ChangeAircraftID 
+                    model.Type    
+                    ChangeAircraftType 
                     model.CheckFields
-                    checkAircraftID 
-                    "Aircraft type, for example B744 is Boeing 747-400." 
+                    checkAircraftType 
+                    "Aircraft type is an alphanumeric identifier, for example B744 is Boeing 747-400." 
                     (Some( 
                       Text.span 
                         [ Modifiers [Modifier.TextSize (Screen.All, TextSize.Is7) ]] 
@@ -235,7 +241,6 @@ let view model (dispatch: Msg -> unit) =
 
                   formItem 
                     "Latitude [decimal degrees]" 
-                    "55" 
                     model.Latitude
                     ChangeLatitude
                     model.CheckFields
@@ -246,7 +251,6 @@ let view model (dispatch: Msg -> unit) =
 
                   formItem 
                     "Longitude [decimal degrees]" 
-                    "0" 
                     model.Longitude
                     ChangeLongitude 
                     model.CheckFields
@@ -257,7 +261,6 @@ let view model (dispatch: Msg -> unit) =
 
                   formItem 
                     "Heading [degrees]" 
-                    "0" 
                     model.Heading
                     ChangeHeading 
                     model.CheckFields
@@ -270,7 +273,6 @@ let view model (dispatch: Msg -> unit) =
                     "Altitude" 
                     [ "Feet"; "Flight levels"; "Meters" ]
                     SetAltitudeUnit
-                    "0" 
                     model.Altitude
                     ChangeAltitude 
                     model.CheckFields
@@ -281,7 +283,6 @@ let view model (dispatch: Msg -> unit) =
                     "Calibrated air speed"
                     ["Knots"; "Mach"; "Km/h" ]
                     SetSpeedUnit
-                    "0" 
                     model.Speed
                     ChangeSpeed 
                     model.CheckFields

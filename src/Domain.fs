@@ -2,6 +2,10 @@ module Twitcher.Domain
 
 type AircraftID = string
 
+type SpeedUnit = Knots | Mach | Kmh
+type AltitudeUnit = FlightLevels | Feet | Meters
+
+
 type FlightAltitude =
   | FlightLevel of int
   | Altitude of float   // altitude in feet
