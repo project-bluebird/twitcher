@@ -20,6 +20,7 @@ open Fable.PowerPack.Fetch.Fetch_types
 
 
 
+
 let basicNavbar model dispatch =
     Navbar.navbar [ ]
         [ Navbar.Brand.div [ ]
@@ -43,31 +44,45 @@ let basicNavbar model dispatch =
             [ Navbar.Item.div [ ]
                 [ str "The Alan Turing Institute" ] ] ]
 
-let viewSimulation model dispatch =
-  svg [
-    Props.Height "540"
-    Props.Width "1080"
-    Style [ BackgroundColor "#f9f9f9" ]
-  ] 
-    (model.Positions
-     |> List.map (fun coord ->
-        circle [ 
-          Cx (string coord.X)
-          Cy (string coord.Y)
-          R "3"
-          Style 
-            [ Stroke "black"
-              StrokeWidth "1"
-              Fill "grey" ]
-        ] []))
+let simulationViewSize() = 
+  Browser.document.getElementById("simulation-viewer").clientHeight,
+  Browser.document.getElementById("simulation-veiwer").clientWidth
 
-let createAircraftForm model dispatch =
+let viewSimulation model dispatch =
+  Columns.columns [ Columns.IsCentered  ]
+    [
+      Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
+        div [ ClassName "svg-box" ] [
+          svg [
+            ClassName "svg-box-content"
+            Style [ BackgroundColor "#f9f9f9" ]
+            Id "simulation-viewer"
+          ] 
+            (model.Positions  // TODO: recompute the coordinates here, model should store the actual raw coordinates
+             |> List.map (fun coord ->
+                circle [ 
+                  Cx (string coord.Latitude)
+                  Cy (string coord.Longitude)
+                  R "3"
+                  Style 
+                    [ Stroke "black"
+                      StrokeWidth "1"
+                      Fill "grey" ]
+                ] []))
+        ]
+      ]
+    ]
+
+  
+let commandForm model dispatch =
   Container.container []
    (match model.FormModel with
     | Some(CreateAircraftForm f) ->
       [ AircraftForm.view f (CreateAircraftMsg >> dispatch) ]
+    | Some(ChangeAltitudeForm f) ->
+      [ AltitudeForm.view f (ChangeAltitudeMsg >> dispatch) ]
     | _ ->
-      [])
+      [])         
  
                 
 let view model dispatch =
@@ -75,8 +90,7 @@ let view model dispatch =
       [
         basicNavbar model dispatch
 
-        Hero.body [ ]
-          [ Container.container [ ]
+        Container.container [ ]
              (match model.State with 
                | NotConnected ->
                    [ Button.button [ Button.OnClick (fun _ -> dispatch Init); Button.IsFullWidth ] [ str "Start" ] ]
@@ -84,26 +98,26 @@ let view model dispatch =
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
                   [ 
-                    // Columns.columns [ Columns.IsCentered ] [
-                    //       viewSimulation model dispatch 
-                    //     ]
-
+                    viewSimulation model dispatch 
+                    
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                        Column.column [ Column.Width(Screen.All, Column.IsTwoThirds) ] [
                             Table.table [ Table.IsHoverable;  ]
                                 [ thead [ ]
                                     [ tr [ ]
-                                        [ th [ ] [ str "x" ]
-                                          th [ ] [ str "y" ]
+                                        [ th [ ] [ str "Aircraft ID" ]
+                                          th [ ] [ str "Latitude" ]
+                                          th [ ] [ str "Longitude" ]
                                           th [ ] [ str "Altitude" ] ] ]
                                   tbody [ ]
                                     (model.Positions 
-                                    |> List.map (fun coord -> 
-                                        tr [] [ td [] [str (sprintf "%.1f" coord.X)] 
-                                                td [] [str (sprintf "%.1f" coord.Y)] 
-                                                td [] [str (string coord.Altitude)] ]
+                                    |> List.map (fun pos -> 
+                                        tr [] [ td [] [str pos.AircraftID]
+                                                td [] [str (sprintf "%.3f" pos.Latitude)] 
+                                                td [] [str (sprintf "%.3f" pos.Longitude)] 
+                                                td [] [str (string pos.Altitude)] ]
                                     ))
                                  ]
                         ]
@@ -144,20 +158,7 @@ let view model dispatch =
                               Text.span [] [ str "Pause"]  
                             ]  
                         ]
-                            
-                        // Column.column [ 
-                        //   Column.Width(Screen.All, Column.IsNarrow) ] [
-                        //     Button.button [
-                        //       Button.OnClick (fun _ -> dispatch StartAnimation)
-                        //       ] [ str "Start"]
-
-                        //     Button.button [
-                        //       Button.OnClick (fun _ -> dispatch StopAnimation)
-                        //       ] [ str "Stop"]
                           
-                        // ]
-
-
                       ]
 
                     Button.button [
@@ -170,8 +171,7 @@ let view model dispatch =
                         Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
                         Text.span [] [ str "Create aircraft"]  
                       ]      
-
                         
-                    createAircraftForm model dispatch
+                    commandForm model dispatch
   
-                   ] )] ] 
+                   ] )] 

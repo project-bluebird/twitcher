@@ -146,9 +146,9 @@ let update msg model =
             Longitude = float model.Longitude
             Speed = 
               match model.SpeedUnit with
-              | SpeedUnit.Knots -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed))
-              | SpeedUnit.Mach -> CalibratedAirSpeed(CalibratedAirSpeed.Mach(float model.Speed))
-              | SpeedUnit.Kmh -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed/1.852))
+              | SpeedUnit.Knots -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed)) |> Some
+              | SpeedUnit.Mach -> CalibratedAirSpeed(CalibratedAirSpeed.Mach(float model.Speed)) |> Some
+              | SpeedUnit.Kmh -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed/1.852)) |> Some
             Altitude = 
               match model.AltitudeUnit with
               | FlightLevels -> FlightLevel(int (model.Altitude |> float |> round |> int))

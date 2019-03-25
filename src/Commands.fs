@@ -129,7 +129,7 @@ let parseAircraftInfo id info =
       Time = DateTime.Parse(info._validTo) |> Some
       Type = None
       Altitude = Altitude info.alt
-      Speed = Observed { Ground = info.gs; Vertical = info.vs }
+      Speed = Observed { Ground = info.gs; Vertical = info.vs } |> Some
       Latitude = info.lat
       Longitude = info.lon
       Heading = None
@@ -307,11 +307,11 @@ let encodeAircraftInfo a =
         "lon", Encode.float a.Longitude
         "hdg", Encode.float a.Heading.Value
         "spd", match a.Speed with
-                | CalibratedAirSpeed cas -> 
+                | Some(CalibratedAirSpeed cas) -> 
                     match cas with 
                     | Knots s -> Encode.float s
                     | Mach s -> Encode.float s
-                | Observed x ->
+                | None | Some(Observed _)  ->
                     failwith "Cannot create aircraft"
       ]
   Encode.toString 0 aircraft

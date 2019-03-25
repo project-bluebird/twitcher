@@ -61,15 +61,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions positionInfo ->
-        let coordinates = 
-          positionInfo
-          |> Array.map (fun pos -> 
-              let (x,y) = 
-                lonlatToMercator pos.Longitude pos.Latitude
-                |> rescaleTest 
-              { X = x; Y = y; Altitude = pos.Altitude })
-          |> List.ofArray
-        { model with Positions = coordinates } ,
+        { model with Positions = positionInfo |> List.ofArray } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->
@@ -173,7 +165,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         { model with FormModel = Some (CreateAircraftForm(f)) }, 
             Cmd.batch [
               Cmd.map CreateAircraftMsg cmd
-            ]          
+            ]       
+
+    | ShowChangeAltitudeForm aircraft ->
+        let f, cmd = AltitudeForm.init(aircraft.AircraftID, aircraft.Altitude)
+        { model with FormModel = Some (ChangeAltitudeForm(f)) }, 
+            Cmd.batch [
+              Cmd.map CreateAircraftMsg cmd
+            ]              
 
     | CreateAircraftMsg m ->
       match model.FormModel with
@@ -204,4 +203,27 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
                 Cmd.ofMsg (CreateAircraftMsg m) // initialized, resend
               ]          
 
+    | ChangeAltitudeMsg m ->
+      match model.FormModel with
 
+      | Some(ChangeAltitudeForm f) ->
+          let f', cmd, externalMsg = AltitudeForm.update m f
+
+          match externalMsg with
+          | AltitudeForm.ExternalMsg.Submit(acid,alt,vs) ->
+              { model with FormModel = None }, 
+              Cmd.batch [
+                Cmd.ofMsg (ChangeAltitude (acid,alt,vs))
+              ]
+
+          | AltitudeForm.ExternalMsg.NoOp ->
+              { model with FormModel = Some (ChangeAltitudeForm(f')) }, 
+              Cmd.map ChangeAltitudeMsg cmd
+
+          | AltitudeForm.ExternalMsg.Cancel ->
+              { model with FormModel = None },
+              Cmd.none
+              
+      | None | Some _ ->
+          Browser.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none     

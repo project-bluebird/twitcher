@@ -4,10 +4,12 @@ open Twitcher.Domain
 
 type CommandForm = 
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
+  | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
+  
 
 type Model = {
   Animate : bool
-  Positions : Coordinates list
+  Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
@@ -43,6 +45,7 @@ type Msg =
   | CreateAircraft of AircraftInfo
   | CreatedAircraft of string
 
+  | ShowChangeAltitudeForm of AircraftInfo
   | ChangeAltitude of AircraftID * FlightAltitude * float option
   | ChangedAltitude
 
@@ -61,3 +64,4 @@ type Msg =
   | StopAnimation
 
   | CreateAircraftMsg of AircraftForm.Msg
+  | ChangeAltitudeMsg of AltitudeForm.Msg

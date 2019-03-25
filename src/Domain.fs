@@ -31,12 +31,12 @@ type AircraftInfo = {
     Altitude: FlightAltitude
     Latitude: float
     Longitude: float
-    Speed : Speed
+    Speed : Speed option
 }
 
 type Coordinates = {
-  X : float
-  Y : float
+  Latitude : float
+  Longitude : float
   Altitude : FlightAltitude
 }
 
