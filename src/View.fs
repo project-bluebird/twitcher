@@ -84,15 +84,15 @@ let view model dispatch =
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
                   [ 
-                    Columns.columns [ Columns.IsCentered ] [
-                          viewSimulation model dispatch 
-                        ]
+                    // Columns.columns [ Columns.IsCentered ] [
+                    //       viewSimulation model dispatch 
+                    //     ]
 
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
                         Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
-                            Table.table [ Table.IsHoverable; Table.IsFullWidth ]
+                            Table.table [ Table.IsHoverable;  ]
                                 [ thead [ ]
                                     [ tr [ ]
                                         [ th [ ] [ str "x" ]
@@ -108,12 +108,8 @@ let view model dispatch =
                                  ]
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.IsNarrow)] [
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch GetAllPositions )
-                            Button.Color IsInfo
-                            Button.IsFullWidth ]
-                            [ str "Fetch position" ]
+                        Column.column [ Column.Width(Screen.All, Column.Is2)] [
+
 
                           Button.button [
                             Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
@@ -149,17 +145,17 @@ let view model dispatch =
                             ]  
                         ]
                             
-                        Column.column [ 
-                          Column.Width(Screen.All, Column.IsNarrow) ] [
-                            Button.button [
-                              Button.OnClick (fun _ -> dispatch StartAnimation)
-                              ] [ str "Start"]
+                        // Column.column [ 
+                        //   Column.Width(Screen.All, Column.IsNarrow) ] [
+                        //     Button.button [
+                        //       Button.OnClick (fun _ -> dispatch StartAnimation)
+                        //       ] [ str "Start"]
 
-                            Button.button [
-                              Button.OnClick (fun _ -> dispatch StopAnimation)
-                              ] [ str "Stop"]
+                        //     Button.button [
+                        //       Button.OnClick (fun _ -> dispatch StopAnimation)
+                        //       ] [ str "Stop"]
                           
-                        ]
+                        // ]
 
 
                       ]

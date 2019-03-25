@@ -111,7 +111,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Browser.console.log("Failed to pause the simulation")
           model, Cmd.none
         else 
-          { model with State = ActiveSimulation Paused }, Cmd.none
+          { model with State = ActiveSimulation Paused }, Cmd.ofMsg StopAnimation
 
     | ResumeSimulation -> 
         model, resumeSimulationCmd model.Config.Value
@@ -121,7 +121,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Browser.console.log("Failed to resume the simulation")
           model, Cmd.none
         else 
-          { model with State = ActiveSimulation Playing }, Cmd.none
+          { model with State = ActiveSimulation Playing }, Cmd.ofMsg StartAnimation
 
     | SetSimulationRateMultiplier rm -> model, Cmd.none
     | ChangedSimulationRateMultiplier -> model, Cmd.none

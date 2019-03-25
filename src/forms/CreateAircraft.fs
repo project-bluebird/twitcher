@@ -186,23 +186,30 @@ let formItemOptions label (options: string list) optionMessage value message che
     Label.label [ ] [ str label ]
   
     Field.div [ Field.HasAddons ]
-      [ Select.select [ ]
-          [ select [ DefaultValue (options.Head)
-                     OnChange (fun ev -> !!ev.target?value |> optionMessage |> dispatch ) ]
-              (options
-               |> List.map (fun value ->
-                  option [ Value value ][ str value] ))
-          ] 
-        Input.text [ 
-          Input.Placeholder value
-          Input.Value value    
-          Input.Props 
-            [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
-               ] ] 
-      ]      
-    Help.help 
-        [ (if checkValid && not (isValid value) then Help.Color IsDanger else Help.Color IsGrey) ]
-        [ str warning ] ]
+      [ yield! 
+         [ Select.select [ ]
+            [ select [ DefaultValue (options.Head)
+                       OnChange (fun ev -> !!ev.target?value |> optionMessage |> dispatch ) ]
+                (options
+                 |> List.map (fun value ->
+                    option [ Value value ][ str value] ))
+              ] ]
+        yield!
+         [Input.text [ 
+            Input.Placeholder value
+            Input.Value value    
+            Input.Props 
+              [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
+                 ] ] ]
+           
+        yield!
+          (if checkValid && not (isValid value) then        
+            [Help.help 
+              [  Help.Color IsDanger  ]
+              [ str warning ]]
+           else [])
+      ]
+  ]
 
 
 
