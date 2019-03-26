@@ -29,9 +29,6 @@ let lonlatToMercator longitude latitude =
 
   (lonToX longitude, latToY latitude)
 
-// Visualization size
-let viewXMin, viewXMax = 0.0, 1080.0
-let viewYMin, viewYMax = 0.0, 540.0
 
 // Entire Earth area
 let rangeXMin, rangeYMin = lonlatToMercator -180.0 -89.5
@@ -50,16 +47,17 @@ let scale rMin rMax tMin tMax value =
   (value - rMin)/(rMax - rMin) * (tMax - tMin) + tMin
 
 /// Mercator coordinates to visualization coordinates, whole Earth
-let rescaleEarth (x, y) =
-  scale rangeXMin rangeXMax viewXMin viewXMax x,
-  scale rangeYMin rangeYMax viewYMin viewYMax y
+let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
+  scale rangeXMin rangeXMax 0. xWidth longitude,
+  scale rangeYMin rangeYMax 0. yWidth latitude
 
 /// Mercator coordinates to visualization coordinates, college airspace
-let rescaleCollege (x, y) =
-  scale sectorXMin sectorXMax viewXMin viewXMax x,
-  scale sectorYMin sectorYMax viewYMin viewYMax y
+let rescaleCollege (longitude, latitude) (xWidth, yWidth) =
+  let x,y = lonlatToMercator longitude latitude
+  scale sectorXMin sectorXMax 0.0 xWidth x,
+  sectorYMax - (scale sectorYMin sectorYMax 0.0 yWidth y)
 
 /// Mercator coordinates to visualization coordinates, area around Equator
-let rescaleTest (x, y) =
-  scale testXMin testXMax viewXMin viewXMax x,
-  scale testYMin testYMax viewYMin viewYMax y
+let rescaleTest (longitude, latitude) (xWidth, yWidth) =
+  scale testXMin testXMax 0. xWidth longitude,
+  scale testYMin testYMax 0. yWidth latitude

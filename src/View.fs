@@ -44,10 +44,6 @@ let basicNavbar model dispatch =
             [ Navbar.Item.div [ ]
                 [ str "The Alan Turing Institute" ] ] ]
 
-let simulationViewSize() = 
-  Browser.document.getElementById("simulation-viewer").clientHeight,
-  Browser.document.getElementById("simulation-veiwer").clientWidth
-
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
     [
@@ -57,17 +53,20 @@ let viewSimulation model dispatch =
             ClassName "svg-box-content"
             Style [ BackgroundColor "#f9f9f9" ]
             Id "simulation-viewer"
-          ] 
-            (model.Positions  // TODO: recompute the coordinates here, model should store the actual raw coordinates
+            ] 
+            (
+             model.Positions  
              |> List.map (fun coord ->
+                let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
                 circle [ 
-                  Cx (string coord.Latitude)
-                  Cy (string coord.Longitude)
+                  Cx (string x)
+                  Cy (string y)
                   R "3"
                   Style 
                     [ Stroke "black"
                       StrokeWidth "1"
                       Fill "grey" ]
+                  OnClick (fun _ -> Browser.console.log(coord.AircraftID))
                 ] []))
         ]
       ]

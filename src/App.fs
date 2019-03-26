@@ -29,6 +29,7 @@ let init() =
     Config = None
     State = NotConnected
     FormModel = None
+    SimulationViewSize = 0.,0.
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?

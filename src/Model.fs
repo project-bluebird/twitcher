@@ -5,7 +5,7 @@ open Twitcher.Domain
 type CommandForm = 
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
-  
+
 
 type Model = {
   Animate : bool
@@ -13,6 +13,7 @@ type Model = {
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
+  SimulationViewSize : float * float // width, height
 }
 
 type Msg =
@@ -20,6 +21,7 @@ type Msg =
   | Config of Configuration
   | ConnectionActive of bool
   | ConnectionError of exn
+  | GetSimulationViewSize
   
   | GetPosition of AircraftID
   | GetAllPositions

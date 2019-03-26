@@ -26,6 +26,11 @@ let delayMsg _ =
   } 
 
 
+let simulationViewSize() = 
+  Browser.document.getElementById("simulation-viewer").clientWidth,
+  Browser.document.getElementById("simulation-viewer").clientHeight  
+
+
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
     | Init ->
@@ -42,6 +47,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        { model with Config = Some config }, 
        pingBluebirdCmd config
        
+    | GetSimulationViewSize ->
+        { model with SimulationViewSize = simulationViewSize()},
+        Cmd.none
+
     | GetAllPositions ->
         match model.Config with
         | None ->
@@ -149,6 +158,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.batch [
            getAllPositionsCmd model.Config.Value
            Cmd.ofPromise delayMsg () MakeStep ErrorMessage
+           Cmd.ofMsg GetSimulationViewSize
           ]
         else
           model,
