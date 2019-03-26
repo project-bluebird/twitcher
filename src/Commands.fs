@@ -339,3 +339,49 @@ let createAircraft (config, aircraftData: AircraftInfo) =
 let createAircraftCmd config aircraftData =
   Cmd.ofPromise createAircraft (config, aircraftData) CreatedAircraft ConnectionError
 
+// =============================================================== 
+// Change altitude
+
+let urlChangeAltitude (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_change_altitude ]
+  |> String.concat "/"
+
+let encodeChangeAltitude aircraftID altitude verticalSpeed =
+  let aircraft = 
+    Encode.object 
+      [ yield! ["acid", Encode.string aircraftID]
+        yield! ["alt", 
+          match altitude with 
+                | FlightLevel fl -> Encode.string ("FL" + string fl)
+                | Altitude alt -> Encode.float alt] 
+        yield! [
+           match verticalSpeed with 
+           | Some vs -> yield "vspd", Encode.float vs
+           | None -> () ]
+      ]
+  Encode.toString 0 aircraft  
+
+let changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed) =
+  promise {
+      let url = urlChangeAltitude config
+      let body = encodeChangeAltitude aircraftID requestedAltitude verticalSpeed
+      Browser.console.log(body)
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return "Command accepted, altitude changed"
+      | 400 -> return "Aircraft ID was invalid"
+      | 500 -> return "Aircraft not found " + response.StatusText
+      | _ -> return response.StatusText    
+  }
+
+let changeAltitudeCmd config aircraftID requestedAltitude verticalSpeed =
+  Cmd.ofPromise changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed)
+    ChangedAltitude ConnectionError

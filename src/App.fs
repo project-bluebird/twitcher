@@ -21,16 +21,22 @@ open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
+open System.Collections.Generic
 
 
 let init() =
   { Positions = []
     Animate = false 
     Config = None
-    Sector = NATS.sectorOutline |> Some
+    Sector = 
+      NATS.sectorOutline 
+      |> List.map (fun (lat,lon) -> {Latitude = lat; Longitude = lon}) 
+      |> Some  // TODO: load sector in a more principled way!
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
+    ViewDetails = None
+    PositionHistory = Dictionary<AircraftID, Positions list>()
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?

@@ -60,8 +60,8 @@ let viewSimulation model dispatch =
                 | Some(points) -> 
                   let coordinates = 
                     points 
-                    |> List.map (fun (lat,lon) -> 
-                      let x,y = CoordinateSystem.rescaleCollege (lon, lat) model.SimulationViewSize
+                    |> List.map (fun coord -> 
+                      let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
                       string x + "," + string y )
                     |> String.concat " "
 
@@ -75,8 +75,8 @@ let viewSimulation model dispatch =
 
               yield! 
                 model.Positions  
-                |> List.map (fun coord ->
-                    let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
+                |> List.map (fun aircraft ->
+                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Longitude, aircraft.Latitude) model.SimulationViewSize
                     circle [ 
                       Cx (string x)
                       Cy (string y)
@@ -85,7 +85,7 @@ let viewSimulation model dispatch =
                         [ Stroke "black"
                           StrokeWidth "1"
                           Fill "grey" ]
-                      OnClick (fun _ -> Browser.console.log(coord.AircraftID))
+                      OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
                     ] [])
             ]
         ]
@@ -103,6 +103,89 @@ let commandForm model dispatch =
     | _ ->
       [])         
  
+
+let viewAircraftDetails model dispatch =
+  div [] [
+    match model.ViewDetails with
+    | Some(aircraft) ->
+      let info = model.Positions |> List.find (fun ac -> ac.AircraftID = aircraft)
+
+      yield! [
+        Message.message [ Message.Color IsPrimary ] [
+          Message.header [] [
+            Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+            str info.AircraftID
+            Delete.delete [ Delete.OnClick (fun _ -> dispatch CloseAircraftDetails) ] []
+          ]
+          Message.body [] [
+
+            Table.table [ Table.Props [ClassName "table-no-border"] ] 
+              [
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Longitude"] ]
+                    td [] 
+                      [ str (sprintf "%.3f" info.Longitude) ]
+                    td [] []]    
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Latitude"] ]
+                    td [] 
+                      [ str (sprintf "%.3f" info.Latitude) ]
+                    td [] []]                                      
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Heading"] ]
+                    td [] 
+                      [ str (
+                          match info.Heading with 
+                          | Some(x) -> sprintf "%.1f" x + "°"
+                          | None -> "unknown") ]
+                    td [] [ 
+                      Button.button 
+                        [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
+                          Button.Color IsPrimary ] 
+                        [ str "Change heading" ]]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Altitude"] ]
+                    td [] 
+                      [ str (
+                          match info.Altitude with 
+                          | Altitude(x) -> sprintf "%.1f" x + " feet"
+                          | FlightLevel(x) -> "FL" + string x) ]
+                    td [] [ 
+                      Button.button 
+                        [ Button.OnClick (fun _ -> dispatch (ShowChangeAltitudeForm info))
+                          Button.Color IsPrimary ] 
+                        [ str "Change altitude" ]]
+                  ]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Ground speed"] ]
+                    td [] 
+                      [ str (
+                          match info.Speed with 
+                          | Some(Observed s) -> sprintf "%.1f" s.Ground + " knots"
+                          | _ -> "unknown" ) ]
+                    td [] [
+                      Button.button 
+                          [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info)) 
+                            Button.Color IsPrimary ] 
+                          [ str "Change speed" ]]                      
+                    ]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Vertical speed"] ]
+                    td [] 
+                      [ str (
+                          match info.Speed with 
+                          | Some(Observed s) -> sprintf "%.1f" s.Vertical + " knots"
+                          | _ -> "unknown") ]
+                    td [] []]                    
+              ]
+
+            
+          ]
+        ]
+      ]
+    | None ->
+      yield! []
+  ]
                 
 let view model dispatch =
     Hero.hero [  ]
@@ -118,11 +201,14 @@ let view model dispatch =
                | _ ->
                   [ 
                     viewSimulation model dispatch 
+
                     
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.IsTwoThirds) ] [
+                        Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                            viewAircraftDetails model dispatch
+
                             Table.table [ Table.IsHoverable;  ]
                                 [ thead [ ]
                                     [ tr [ ]
@@ -175,21 +261,23 @@ let view model dispatch =
                             ] [ 
                               Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
                               Text.span [] [ str "Pause"]  
-                            ]  
+                            ]
+
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
+                            Button.Disabled (
+                                match model.State with
+                                 | ActiveSimulation _ -> false
+                                 | _ -> true)
+                            ] [ 
+                              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+                              Text.span [] [ str "Create aircraft"]  
+                            ]      
                         ]
                           
                       ]
 
-                    Button.button [
-                      Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
-                      Button.Disabled (
-                          match model.State with
-                           | ActiveSimulation _ -> false
-                           | _ -> true)
-                      ] [ 
-                        Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
-                        Text.span [] [ str "Create aircraft"]  
-                      ]      
+    
                         
                     commandForm model dispatch
   

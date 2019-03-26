@@ -1,6 +1,7 @@
 module Twitcher.Model
 
 open Twitcher.Domain
+open System.Collections.Generic
 
 type CommandForm = 
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
@@ -9,12 +10,14 @@ type CommandForm =
 
 type Model = {
   Animate : bool
-  Sector : ((float * float) list) option
+  Sector : (Coordinates list) option
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
+  PositionHistory : Dictionary<AircraftID, Positions list>
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
   SimulationViewSize : float * float // width, height
+  ViewDetails : AircraftID option
 }
 
 type Msg =
@@ -23,6 +26,9 @@ type Msg =
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
+
+  | ViewAircraftDetails of AircraftID
+  | CloseAircraftDetails
   
   | GetPosition of AircraftID
   | GetAllPositions
@@ -50,11 +56,13 @@ type Msg =
 
   | ShowChangeAltitudeForm of AircraftInfo
   | ChangeAltitude of AircraftID * FlightAltitude * float option
-  | ChangedAltitude
+  | ChangedAltitude of string
 
+  | ShowChangeHeadingForm of AircraftInfo
   | ChangeHeading of AircraftID * float
   | ChangedHeading
 
+  | ShowChangeSpeedForm of AircraftInfo
   | ChangeSpeed of AircraftID * CalibratedAirSpeed
   | ChangedSpeed
 

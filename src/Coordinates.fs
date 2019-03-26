@@ -35,8 +35,8 @@ let rangeXMin, rangeYMin = lonlatToMercator -180.0 -89.5
 let rangeXMax, rangeYMax = lonlatToMercator 180.0 89.5
 
 // College airspace area
-let sectorXMin, sectorYMin = lonlatToMercator -3.974833333 49.0675 
-let sectorXMax, sectorYMax = lonlatToMercator 5.090666667 53.80883333
+let sectorXMin, sectorYMin = lonlatToMercator -2.5 50.3 //-3.974833333 49.0675 
+let sectorXMax, sectorYMax = lonlatToMercator 1.4 52.0 //5.090666667 53.80883333
 
 // Around Equator for testing purposes
 let testXMin, testYMin = lonlatToMercator -2.0 -1.0

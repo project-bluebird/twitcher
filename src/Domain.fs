@@ -37,6 +37,10 @@ type AircraftInfo = {
 type Coordinates = {
   Latitude : float
   Longitude : float
+}
+
+type Positions = {
+  Coordinates : Coordinates
   Altitude : FlightAltitude
 }
 

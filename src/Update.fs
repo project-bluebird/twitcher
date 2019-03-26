@@ -54,6 +54,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         { model with SimulationViewSize = simulationViewSize()},
         Cmd.none
 
+    | ViewAircraftDetails aircraftID ->
+        { model with ViewDetails = Some(aircraftID) }, Cmd.none
+
+    | CloseAircraftDetails ->
+        { model with ViewDetails = None }, Cmd.none
+
     | GetAllPositions ->
         match model.Config with
         | None ->
@@ -98,7 +104,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | ResetSimulator -> 
         model, 
-        resetSimulatorCmd model.Config.Value
+        Cmd.batch [
+          resetSimulatorCmd model.Config.Value
+          Cmd.ofMsg CloseAircraftDetails
+        ]
 
     | ResetedSimulator result -> 
         if not result then 
@@ -137,8 +146,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Browser.console.log(result)
         model, Cmd.none
 
-    | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) -> model, Cmd.none
-    | ChangedAltitude -> model, Cmd.none
+    | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) -> 
+        model, changeAltitudeCmd model.Config.Value aircraftID requestedAltitude verticalSpeed
+
+    | ChangedAltitude result -> 
+        Browser.console.log(result)
+        model, Cmd.none
 
     | ChangeHeading (aircraftID, requestedHeading) -> model, Cmd.none
     | ChangedHeading -> model, Cmd.none
@@ -209,7 +222,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               Cmd.none
               
       | None | Some _ ->
-          let f, cmd = AircraftForm.init()
+          let f, cmd = AircraftForm.init()  
           { model with FormModel = Some (CreateAircraftForm(f)) }, 
               Cmd.batch [
                 Cmd.map CreateAircraftMsg cmd
