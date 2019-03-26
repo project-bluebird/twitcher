@@ -55,7 +55,7 @@ let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
 let rescaleCollege (longitude, latitude) (xWidth, yWidth) =
   let x,y = lonlatToMercator longitude latitude
   scale sectorXMin sectorXMax 0.0 xWidth x,
-  sectorYMax - (scale sectorYMin sectorYMax 0.0 yWidth y)
+  yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y)
 
 /// Mercator coordinates to visualization coordinates, area around Equator
 let rescaleTest (longitude, latitude) (xWidth, yWidth) =

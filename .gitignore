@@ -197,4 +197,4 @@ project.lock.json
 
 
 # Confidential data
-data/*.csv
+nats.fs
