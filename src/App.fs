@@ -24,19 +24,10 @@ open Fable.PowerPack.Fetch.Fetch_types
 
 
 let init() =
-  let sectorFile = "data/sector31-outline.csv"
-  let sectorOutline =
-    if System.IO.File.Exists sectorFile then
-      System.IO.File.ReadAllLines sectorFile
-      |> fun a -> a.[1..]
-      |> Array.map (fun line -> line.Split ',' |> Array.map float |> fun a -> a.[0], a.[1])
-      |> Some
-    else 
-      None
   { Positions = []
     Animate = false 
     Config = None
-    Sector = sectorOutline
+    Sector = NATS.sectorOutline |> Some
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.

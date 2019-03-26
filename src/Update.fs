@@ -35,7 +35,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
     | Init ->
         model, 
-        getConfigCmd()
+        Cmd.batch [
+          getConfigCmd()
+          Cmd.ofMsg GetSimulationViewSize
+        ]
     
     | ConnectionActive result ->
         if result then 

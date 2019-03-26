@@ -9,7 +9,7 @@ type CommandForm =
 
 type Model = {
   Animate : bool
-  Sector : ((float * float) []) option
+  Sector : ((float * float) list) option
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   Config : Configuration option
   State: TwitcherState

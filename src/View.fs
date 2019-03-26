@@ -51,23 +51,43 @@ let viewSimulation model dispatch =
         div [ ClassName "svg-box" ] [
           svg [
             ClassName "svg-box-content"
-            Style [ BackgroundColor "#f9f9f9" ]
+            Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
             ] 
-            (
-             model.Positions  
-             |> List.map (fun coord ->
-                let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
-                circle [ 
-                  Cx (string x)
-                  Cy (string y)
-                  R "3"
-                  Style 
-                    [ Stroke "black"
-                      StrokeWidth "1"
-                      Fill "grey" ]
-                  OnClick (fun _ -> Browser.console.log(coord.AircraftID))
-                ] []))
+            [
+              yield! 
+                match model.Sector with
+                | Some(points) -> 
+                  let coordinates = 
+                    points 
+                    |> List.map (fun (lat,lon) -> 
+                      let x,y = CoordinateSystem.rescaleCollege (lon, lat) model.SimulationViewSize
+                      string x + "," + string y )
+                    |> String.concat " "
+
+                  [ polygon 
+                      [
+                        Points coordinates                       
+                        Style 
+                          [ Fill "white" ]
+                      ] []]
+                | None -> []                    
+
+              yield! 
+                model.Positions  
+                |> List.map (fun coord ->
+                    let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
+                    circle [ 
+                      Cx (string x)
+                      Cy (string y)
+                      R "3"
+                      Style 
+                        [ Stroke "black"
+                          StrokeWidth "1"
+                          Fill "grey" ]
+                      OnClick (fun _ -> Browser.console.log(coord.AircraftID))
+                    ] [])
+            ]
         ]
       ]
     ]
