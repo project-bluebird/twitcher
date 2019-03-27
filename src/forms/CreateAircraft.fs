@@ -142,18 +142,29 @@ let update msg model =
             Type = Some model.Type
             Time = None
             Heading = Some (float model.Heading)
-            Latitude = float model.Latitude
-            Longitude = float model.Longitude
-            Speed = 
+            Position = {
+              Coordinates = {
+                Latitude = float model.Latitude * 1.<latitude>
+                Longitude = float model.Longitude * 1.<longitude>
+              }
+              Altitude = 
+                match model.AltitudeUnit with
+                | FlightLevels -> FlightLevel((model.Altitude |> float |> round |> int) * 1<FL>)
+                | Feet -> Altitude(float model.Altitude * 1.<ft>) 
+                | Meters -> Altitude(float model.Altitude * 1.<m> |> Conversions.Altitude.m2ft)
+            }
+            GroundSpeed = None
+            VerticalSpeed = None
+            CalibratedAirSpeed =
               match model.SpeedUnit with
-              | SpeedUnit.Knots -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed)) |> Some
-              | SpeedUnit.Mach -> CalibratedAirSpeed(CalibratedAirSpeed.Mach(float model.Speed)) |> Some
-              | SpeedUnit.Kmh -> CalibratedAirSpeed(CalibratedAirSpeed.Knots(float model.Speed/1.852)) |> Some
-            Altitude = 
-              match model.AltitudeUnit with
-              | FlightLevels -> FlightLevel(int (model.Altitude |> float |> round |> int))
-              | Feet -> Altitude(float model.Altitude) 
-              | Meters -> Altitude(float model.Altitude * 3.281)}
+              | SpeedUnit.Knots -> 
+                  float model.Speed * 1.<knot> |> Some
+              | SpeedUnit.Mach ->
+                  float model.Speed * 1.<Mach> |> Conversions.Speed.mach2knot |> Some
+              | SpeedUnit.Kmh -> 
+                  float model.Speed * 1.<km/h> |> Conversions.Speed.kmh2knot |> Some
+              | _ -> None
+            }
         model, Cmd.none, ExternalMsg.Submit aircraftInfo
       else
         model, Cmd.none, NoOp

@@ -116,8 +116,8 @@ type JsonPositionInfo = {
     _validTo: string
     alt: float<m>
     gs: float<m/s>
-    lat: float
-    lon: float
+    lat: float<latitude>
+    lon: float<longitude>
     vs: float<m/s>
 }
 
@@ -309,13 +309,12 @@ let encodeAircraftInfo a =
         "alt", match a.Position.Altitude with 
                | FlightLevel fl -> Encode.string ("FL" + string fl)
                | Altitude alt -> Encode.float (float alt)
-        "lat", Encode.float a.Position.Coordinates.Latitude
-        "lon", Encode.float a.Position.Coordinates.Longitude
+        "lat", Encode.float (float a.Position.Coordinates.Latitude)
+        "lon", Encode.float (float a.Position.Coordinates.Longitude)
         "hdg", Encode.float a.Heading.Value
-        "spd", match a.Speed with
-                | Some(CalibratedAirSpeed cas) -> Encode.float (float cas)
-                | None | Some(GroundSpeed _)  ->
-                    failwith "Cannot create aircraft"
+        "spd", match a.CalibratedAirSpeed with
+                | Some(cas) -> Encode.float (float cas)
+                | None -> failwith "Cannot create aircraft"
       ]
   Encode.toString 0 aircraft
 
@@ -356,8 +355,8 @@ let encodeChangeAltitude aircraftID altitude verticalSpeed =
       [ yield! ["acid", Encode.string aircraftID]
         yield! ["alt", 
           match altitude with 
-                | FlightLevel fl -> Encode.string ("FL" + string fl)
-                | Altitude alt -> Encode.float alt] 
+                | FlightLevel fl -> Encode.string ("FL" + (fl |> int |> string))
+                | Altitude alt -> Encode.float (float alt)] 
         yield! [
            match verticalSpeed with 
            | Some vs -> yield "vspd", Encode.float vs

@@ -52,8 +52,8 @@ let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
   scale rangeYMin rangeYMax 0. yWidth latitude
 
 /// Mercator coordinates to visualization coordinates, college airspace
-let rescaleCollege (longitude, latitude) (xWidth, yWidth) =
-  let x,y = lonlatToMercator longitude latitude
+let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>) (xWidth, yWidth) =
+  let x,y = lonlatToMercator (float longitude) (float latitude)
   scale sectorXMin sectorXMax 0.0 xWidth x,
   yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y)
 

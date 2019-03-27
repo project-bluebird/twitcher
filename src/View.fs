@@ -76,7 +76,7 @@ let viewSimulation model dispatch =
               yield! 
                 model.Positions  
                 |> List.map (fun aircraft ->
-                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Longitude, aircraft.Latitude) model.SimulationViewSize
+                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
                     circle [ 
                       Cx (string x)
                       Cy (string y)
@@ -124,12 +124,12 @@ let viewAircraftDetails model dispatch =
                 tr []
                   [ td [] [ Heading.h6 [] [str "Longitude"] ]
                     td [] 
-                      [ str (sprintf "%.3f" info.Longitude) ]
+                      [ str (sprintf "%.3f" info.Position.Coordinates.Longitude) ]
                     td [] []]    
                 tr []
                   [ td [] [ Heading.h6 [] [str "Latitude"] ]
                     td [] 
-                      [ str (sprintf "%.3f" info.Latitude) ]
+                      [ str (sprintf "%.3f" info.Position.Coordinates.Latitude) ]
                     td [] []]                                      
                 tr []
                   [ td [] [ Heading.h6 [] [str "Heading"] ]
@@ -147,7 +147,7 @@ let viewAircraftDetails model dispatch =
                   [ td [] [ Heading.h6 [] [str "Altitude"] ]
                     td [] 
                       [ str (
-                          match info.Altitude with 
+                          match info.Position.Altitude with 
                           | Altitude(x) -> sprintf "%.1f" x + " feet"
                           | FlightLevel(x) -> "FL" + string x) ]
                     td [] [ 
@@ -160,9 +160,9 @@ let viewAircraftDetails model dispatch =
                   [ td [] [ Heading.h6 [] [str "Ground speed"] ]
                     td [] 
                       [ str (
-                          match info.Speed with 
-                          | Some(Observed s) -> sprintf "%.1f" s.Ground + " knots"
-                          | _ -> "unknown" ) ]
+                          match info.GroundSpeed with 
+                          | Some(s) -> sprintf "%.1f" s + " knots"
+                          | None  -> "unknown" ) ]
                     td [] [
                       Button.button 
                           [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info)) 
@@ -173,9 +173,9 @@ let viewAircraftDetails model dispatch =
                   [ td [] [ Heading.h6 [] [str "Vertical speed"] ]
                     td [] 
                       [ str (
-                          match info.Speed with 
-                          | Some(Observed s) -> sprintf "%.1f" s.Vertical + " knots"
-                          | _ -> "unknown") ]
+                          match info.VerticalSpeed with 
+                          | Some(s) -> sprintf "%.1f" s + " ft/min"
+                          | None -> "unknown") ]
                     td [] []]                    
               ]
 
@@ -220,9 +220,9 @@ let view model dispatch =
                                     (model.Positions 
                                     |> List.map (fun pos -> 
                                         tr [] [ td [] [str pos.AircraftID]
-                                                td [] [str (sprintf "%.3f" pos.Latitude)] 
-                                                td [] [str (sprintf "%.3f" pos.Longitude)] 
-                                                td [] [str (string pos.Altitude)] ]
+                                                td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
+                                                td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
+                                                td [] [str (string pos.Position.Altitude)] ]
                                     ))
                                  ]
                         ]

@@ -16,7 +16,6 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
-
 type FormModel = 
   { AircraftID : string
     CurrentAltitude : FlightAltitude
@@ -84,9 +83,9 @@ let update msg model =
           else true) then
         let altitude = 
           match model.AltitudeUnit with
-          | FlightLevels -> FlightLevel(int (model.NewAltitude |> float |> round |> int))
-          | Feet -> Altitude(float model.NewAltitude) 
-          | Meters -> Altitude(float model.NewAltitude * 3.281)
+          | FlightLevels -> FlightLevel((model.NewAltitude |> float |> round |> int) * 1<FL>)
+          | Feet -> Altitude(float model.NewAltitude * 1.<ft>) 
+          | Meters -> Altitude(float model.NewAltitude * 1.<m> |> Conversions.Altitude.m2ft)
         let verticalSpeed = 
           model.VerticalSpeed 
           |> Option.map (fun value -> float value)

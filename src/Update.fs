@@ -194,7 +194,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             ]       
 
     | ShowChangeAltitudeForm aircraft ->
-        let f, cmd = AltitudeForm.init(aircraft.AircraftID, aircraft.Altitude)
+        let f, cmd = AltitudeForm.init(aircraft.AircraftID, aircraft.Position.Altitude)
         { model with FormModel = Some (ChangeAltitudeForm(f)) }, 
             Cmd.batch [
               Cmd.map CreateAircraftMsg cmd

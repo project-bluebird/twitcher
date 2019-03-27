@@ -30,7 +30,7 @@ let init() =
     Config = None
     Sector = 
       NATS.sectorOutline 
-      |> List.map (fun (lat,lon) -> {Latitude = lat * 1.<deg>; Longitude = lon * 1.<deg>}) 
+      |> List.map (fun (lat,lon) -> {Latitude = lat * 1.<latitude>; Longitude = lon * 1.<longitude>}) 
       |> Some  // TODO: load sector in a more principled way!
     State = NotConnected
     FormModel = None

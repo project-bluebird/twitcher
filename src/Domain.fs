@@ -10,6 +10,20 @@ module Twitcher.Domain
 [<Measure>] type h
 [<Measure>] type minute
 [<Measure>] type s
+[<Measure>] type latitude
+[<Measure>] type longitude
+
+type AltitudeUnit =
+  | Feet
+  | Meters
+  | FlightLevels
+
+type SpeedUnit =
+  | Kmh
+  | Knots
+  | Mach
+  | FeetPerMinute
+  | MetersPerSecond  
 
 type AircraftID = string
 
@@ -22,8 +36,8 @@ type VerticalSpeed = float<ft/minute>
 type Speed = float<knot> 
 
 type Coordinates = {
-  Latitude : float
-  Longitude : float
+  Latitude : float<latitude>
+  Longitude : float<longitude>
 }  
 
 type Position = {
