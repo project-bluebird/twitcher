@@ -114,11 +114,11 @@ let pingBluebirdCmd config =
 
 type JsonPositionInfo = {
     _validTo: string
-    alt: float
-    gs: float
+    alt: float<m>
+    gs: float<m/s>
     lat: float
     lon: float
-    vs: float
+    vs: float<m/s>
 }
 
 let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
@@ -128,10 +128,16 @@ let parseAircraftInfo id info =
       AircraftID = id
       Time = DateTime.Parse(info._validTo) |> Some
       Type = None
-      Altitude = Altitude info.alt
-      Speed = Observed { Ground = info.gs; Vertical = info.vs } |> Some
-      Latitude = info.lat
-      Longitude = info.lon
+      Position = {
+        Altitude = Altitude(info.alt |> Conversions.Altitude.m2ft)
+        Coordinates = {
+          Latitude = info.lat
+          Longitude = info.lon
+        }
+      }
+      GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some 
+      VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
+      CalibratedAirSpeed = None
       Heading = None
     }
 
@@ -300,18 +306,15 @@ let encodeAircraftInfo a =
     Encode.object 
       [ "acid", Encode.string a.AircraftID
         "type", Encode.string a.Type.Value
-        "alt", match a.Altitude with 
+        "alt", match a.Position.Altitude with 
                | FlightLevel fl -> Encode.string ("FL" + string fl)
-               | Altitude alt -> Encode.float alt
-        "lat", Encode.float a.Latitude
-        "lon", Encode.float a.Longitude
+               | Altitude alt -> Encode.float (float alt)
+        "lat", Encode.float a.Position.Coordinates.Latitude
+        "lon", Encode.float a.Position.Coordinates.Longitude
         "hdg", Encode.float a.Heading.Value
         "spd", match a.Speed with
-                | Some(CalibratedAirSpeed cas) -> 
-                    match cas with 
-                    | Knots s -> Encode.float s
-                    | Mach s -> Encode.float s
-                | None | Some(Observed _)  ->
+                | Some(CalibratedAirSpeed cas) -> Encode.float (float cas)
+                | None | Some(GroundSpeed _)  ->
                     failwith "Cannot create aircraft"
       ]
   Encode.toString 0 aircraft

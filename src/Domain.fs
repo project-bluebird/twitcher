@@ -1,47 +1,45 @@
 module Twitcher.Domain
 
+
+[<Measure>] type knot
+[<Measure>] type Mach
+[<Measure>] type km
+[<Measure>] type m
+[<Measure>] type ft
+[<Measure>] type FL
+[<Measure>] type h
+[<Measure>] type minute
+[<Measure>] type s
+
 type AircraftID = string
 
-type SpeedUnit = Knots | Mach | Kmh
-type AltitudeUnit = FlightLevels | Feet | Meters
-
-
 type FlightAltitude =
-  | FlightLevel of int
-  | Altitude of float   // altitude in feet
+  | FlightLevel of int<FL>
+  | Altitude of float<ft>
 
-type ObservedSpeed = {
-  Vertical : float
-  Ground : float
+type VerticalSpeed = float<ft/minute>
+
+type Speed = float<knot> 
+
+type Coordinates = {
+  Latitude : float
+  Longitude : float
+}  
+
+type Position = {
+  Coordinates : Coordinates
+  Altitude : FlightAltitude
 }
-
-type CalibratedAirSpeed =
-  | Knots of float
-  | Mach of float
-
-type Speed =
-  | Observed of ObservedSpeed
-  | CalibratedAirSpeed of CalibratedAirSpeed
 
 type AircraftInfo = {
     AircraftID : AircraftID
     Type : string option 
     Time: System.DateTime option
     Heading : float option
-    Altitude: FlightAltitude
-    Latitude: float
-    Longitude: float
-    Speed : Speed option
-}
-
-type Coordinates = {
-  Latitude : float
-  Longitude : float
-}
-
-type Positions = {
-  Coordinates : Coordinates
-  Altitude : FlightAltitude
+    Position : Position
+    GroundSpeed : Speed option
+    CalibratedAirSpeed : Speed option
+    VerticalSpeed : float<ft/minute> option
 }
 
 type Configuration = {
@@ -73,14 +71,3 @@ type Configuration = {
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
 }
-
-type SimulatorState = 
-  | Playing
-  | Paused
-
-type TwitcherState = 
-  | NotConnected
-  | Connected   // after loading config and pinging the Bluebird server
-  | ConnectionFailed
-  | ActiveSimulation of SimulatorState       // when loaded scenario
-  | ReplaySimulation        // replay simulation from log file without server communication

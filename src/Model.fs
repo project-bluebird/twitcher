@@ -3,6 +3,18 @@ module Twitcher.Model
 open Twitcher.Domain
 open System.Collections.Generic
 
+type SimulatorState = 
+  | Playing
+  | Paused
+
+type TwitcherState = 
+  | NotConnected
+  | Connected   // after loading config and pinging the Bluebird server
+  | ConnectionFailed
+  | ActiveSimulation of SimulatorState       // when loaded scenario
+  | ReplaySimulation        // replay simulation from log file without server communication
+
+
 type CommandForm = 
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
@@ -12,7 +24,7 @@ type Model = {
   Animate : bool
   Sector : (Coordinates list) option
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
-  PositionHistory : Dictionary<AircraftID, Positions list>
+  PositionHistory : Dictionary<AircraftID, Position list>
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
@@ -63,10 +75,10 @@ type Msg =
   | ChangedHeading
 
   | ShowChangeSpeedForm of AircraftInfo
-  | ChangeSpeed of AircraftID * CalibratedAirSpeed
+  | ChangeSpeed of AircraftID * Speed
   | ChangedSpeed
 
-  | ChangeVerticalSpeed of AircraftID * float
+  | ChangeVerticalSpeed of AircraftID * VerticalSpeed
   | ChangedVerticalSpeed
   
   | MakeStep of unit

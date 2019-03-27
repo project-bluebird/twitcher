@@ -30,13 +30,13 @@ let init() =
     Config = None
     Sector = 
       NATS.sectorOutline 
-      |> List.map (fun (lat,lon) -> {Latitude = lat; Longitude = lon}) 
+      |> List.map (fun (lat,lon) -> {Latitude = lat * 1.<deg>; Longitude = lon * 1.<deg>}) 
       |> Some  // TODO: load sector in a more principled way!
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
     ViewDetails = None
-    PositionHistory = Dictionary<AircraftID, Positions list>()
+    PositionHistory = Dictionary<AircraftID, Position list>()
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?
