@@ -148,7 +148,7 @@ let viewAircraftDetails model dispatch =
                     td [] 
                       [ str (
                           match info.Position.Altitude with 
-                          | Altitude(x) -> sprintf "%.1f" x + " feet"
+                          | Altitude(x) -> sprintf "%.0f" x + " feet"
                           | FlightLevel(x) -> "FL" + string x) ]
                     td [] [ 
                       Button.button 
@@ -161,7 +161,7 @@ let viewAircraftDetails model dispatch =
                     td [] 
                       [ str (
                           match info.GroundSpeed with 
-                          | Some(s) -> sprintf "%.1f" s + " knots"
+                          | Some(s) -> sprintf "%.0f" s + " knots"
                           | None  -> "unknown" ) ]
                     td [] [
                       Button.button 
@@ -222,7 +222,7 @@ let view model dispatch =
                                         tr [] [ td [] [str pos.AircraftID]
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
-                                                td [] [str (string pos.Position.Altitude)] ]
+                                                td [] [str (sprintf "%.0f" (match pos.Position.Altitude with | Altitude a -> float a | FlightLevel fl -> (float fl)/1000.)  + " ft" )] ]
                                     ))
                                  ]
                         ]

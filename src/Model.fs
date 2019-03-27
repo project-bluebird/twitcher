@@ -18,6 +18,7 @@ type TwitcherState =
 type CommandForm = 
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
+  | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
 
 
 type Model = {
@@ -76,7 +77,7 @@ type Msg =
 
   | ShowChangeSpeedForm of AircraftInfo
   | ChangeSpeed of AircraftID * Speed
-  | ChangedSpeed
+  | ChangedSpeed of string
 
   | ChangeVerticalSpeed of AircraftID * VerticalSpeed
   | ChangedVerticalSpeed
@@ -88,3 +89,4 @@ type Msg =
 
   | CreateAircraftMsg of AircraftForm.Msg
   | ChangeAltitudeMsg of AltitudeForm.Msg
+  | ChangeSpeedMsg of SpeedForm.Msg

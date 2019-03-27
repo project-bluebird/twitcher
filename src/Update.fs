@@ -156,8 +156,11 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | ChangeHeading (aircraftID, requestedHeading) -> model, Cmd.none
     | ChangedHeading -> model, Cmd.none
 
-    | ChangeSpeed (aircraftID, speed) -> model, Cmd.none
-    | ChangedSpeed -> model, Cmd.none
+    | ChangeSpeed (aircraftID, speed) -> 
+        model, changeSpeedCmd model.Config.Value aircraftID speed
+    | ChangedSpeed result -> 
+        Browser.console.log(result)
+        model, Cmd.none
 
     | ChangeVerticalSpeed (aircraftID, verticalSpeed) -> model, Cmd.none
     | ChangedVerticalSpeed  -> model, Cmd.none
@@ -198,7 +201,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         { model with FormModel = Some (ChangeAltitudeForm(f)) }, 
             Cmd.batch [
               Cmd.map CreateAircraftMsg cmd
-            ]              
+            ]        
+
+    | ShowChangeSpeedForm aircraft ->
+        let f, cmd = SpeedForm.init(aircraft.AircraftID, aircraft.GroundSpeed)
+        { model with FormModel = Some (ChangeSpeedForm(f)) }, 
+            Cmd.batch [
+              Cmd.map CreateAircraftMsg cmd
+            ]                  
 
     | CreateAircraftMsg m ->
       match model.FormModel with
@@ -245,6 +255,31 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           | AltitudeForm.ExternalMsg.NoOp ->
               { model with FormModel = Some (ChangeAltitudeForm(f')) }, 
               Cmd.map ChangeAltitudeMsg cmd
+
+          | AltitudeForm.ExternalMsg.Cancel ->
+              { model with FormModel = None },
+              Cmd.none
+              
+      | None | Some _ ->
+          Browser.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none     
+
+    | ChangeSpeedMsg m ->
+      match model.FormModel with
+
+      | Some(ChangeSpeedForm f) ->
+          let f', cmd, externalMsg = AltitudeForm.update m f
+
+          match externalMsg with
+          | AltitudeForm.ExternalMsg.Submit(acid,alt,vs) ->
+              { model with FormModel = None }, 
+              Cmd.batch [
+                Cmd.ofMsg (ChangeSpeed (acid,alt,vs))
+              ]
+
+          | AltitudeForm.ExternalMsg.NoOp ->
+              { model with FormModel = Some (ChangeSpeedForm(f')) }, 
+              Cmd.map ChangeSpeedMsg cmd
 
           | AltitudeForm.ExternalMsg.Cancel ->
               { model with FormModel = None },

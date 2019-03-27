@@ -8,6 +8,7 @@
     <Compile Include="Conversions.fs" />
     <Compile Include="forms/CreateAircraft.fs" />
     <Compile Include="forms/ChangeAltitude.fs" />
+    <Compile Include="forms/ChangeSpeed.fs" />
     <Compile Include="Model.fs" />  
     <Compile Include="Coordinates.fs" />
     <Compile Include="Commands.fs" />

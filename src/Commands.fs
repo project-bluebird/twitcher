@@ -387,3 +387,42 @@ let changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed) =
 let changeAltitudeCmd config aircraftID requestedAltitude verticalSpeed =
   Cmd.ofPromise changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed)
     ChangedAltitude ConnectionError
+
+// =============================================================== 
+// Change speed
+
+let urlChangeSpeed (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_change_speed ]
+  |> String.concat "/"
+
+let encodeChangeSpeed aircraftID (speed: Speed) =
+  let aircraft = 
+    Encode.object 
+      [ "acid", Encode.string aircraftID
+        "spd", Encode.float (float speed)
+      ]
+  Encode.toString 0 aircraft  
+
+let changeSpeed (config, aircraftID, cas) =
+  promise {
+      let url = urlChangeSpeed config
+      let body = encodeChangeSpeed aircraftID cas
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return "Command accepted, altitude changed"
+      | 400 -> return "Aircraft ID was invalid"
+      | 500 -> return "Aircraft not found " + response.StatusText
+      | _ -> return response.StatusText    
+  }
+
+let changeSpeedCmd config aircraftID calibratedAirSpeed =
+  Cmd.ofPromise changeSpeed (config, aircraftID, calibratedAirSpeed)
+    ChangedSpeed ConnectionError    
