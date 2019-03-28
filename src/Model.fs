@@ -19,6 +19,7 @@ type CommandForm =
   | CreateAircraftForm of Twitcher.AircraftForm.FormModel
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
   | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
+  | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
 
 
 type Model = {
@@ -72,8 +73,8 @@ type Msg =
   | ChangedAltitude of string
 
   | ShowChangeHeadingForm of AircraftInfo
-  | ChangeHeading of AircraftID * float
-  | ChangedHeading
+  | ChangeHeading of AircraftID * Heading
+  | ChangedHeading of string
 
   | ShowChangeSpeedForm of AircraftInfo
   | ChangeSpeed of AircraftID * Speed
@@ -90,3 +91,4 @@ type Msg =
   | CreateAircraftMsg of AircraftForm.Msg
   | ChangeAltitudeMsg of AltitudeForm.Msg
   | ChangeSpeedMsg of SpeedForm.Msg
+  | ChangeHeadingMsg of HeadingForm.Msg

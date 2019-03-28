@@ -63,3 +63,14 @@ let formItemOptions label (options: string list) optionMessage value message che
       ]
   ]
 
+let checkFloat x =
+  let canParse, result = System.Double.TryParse(x)
+  canParse
+
+let checkAircraftID (x: string) =
+  (x.Length >= 3) 
+  && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
+
+let checkAircraftType (x: string) =
+  (x.Length >= 3) 
+  && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))

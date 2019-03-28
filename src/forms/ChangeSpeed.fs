@@ -49,10 +49,6 @@ let init(aircraftID, groundSpeed) =
     CheckFields = false },
   Cmd.none    
 
-let checkFloat x =
-  let canParse, result = System.Double.TryParse(x)
-  canParse
-
 let update msg model =
   match msg with
   | ChangeSpeed x ->

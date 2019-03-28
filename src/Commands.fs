@@ -417,7 +417,7 @@ let changeSpeed (config, aircraftID, cas) =
       
       let! response =  Fetch.fetch url props
       match response.Status with
-      | 200 -> return "Command accepted, altitude changed"
+      | 200 -> return "Command accepted, speed changed"
       | 400 -> return "Aircraft ID was invalid"
       | 500 -> return "Aircraft not found " + response.StatusText
       | _ -> return response.StatusText    
@@ -426,3 +426,43 @@ let changeSpeed (config, aircraftID, cas) =
 let changeSpeedCmd config aircraftID calibratedAirSpeed =
   Cmd.ofPromise changeSpeed (config, aircraftID, calibratedAirSpeed)
     ChangedSpeed ConnectionError    
+
+// =============================================================== 
+// Change heading
+
+let urlChangeHeading (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_change_heading ]
+  |> String.concat "/"
+
+let encodeChangeHeading (aircraftID: AircraftID) (heading: Heading) =
+  let aircraft = 
+    Encode.object 
+      [ "acid", Encode.string aircraftID
+        "hdg", Encode.float (float heading)
+      ]
+  Encode.toString 0 aircraft  
+
+let changeHeading (config, aircraftID, heading) =
+  promise {
+      let url = urlChangeHeading config
+      let body = encodeChangeHeading aircraftID heading
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return "Command accepted, heading changed"
+      | 400 -> return "Aircraft ID was invalid"
+      | 500 -> return "Aircraft not found " + response.StatusText
+      | _ -> return response.StatusText    
+  }
+
+let changeHeadingCmd config aircraftID heading =
+  Browser.console.log("here")
+  Cmd.ofPromise changeHeading (config, aircraftID, heading)
+    ChangedHeading ConnectionError        

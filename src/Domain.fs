@@ -27,6 +27,8 @@ type SpeedUnit =
 
 type AircraftID = string
 
+type Heading = float
+
 type FlightAltitude =
   | FlightLevel of int<FL>
   | Altitude of float<ft>
@@ -49,7 +51,7 @@ type AircraftInfo = {
     AircraftID : AircraftID
     Type : string option 
     Time: System.DateTime option
-    Heading : float option
+    Heading : Heading option
     Position : Position
     GroundSpeed : Speed option
     CalibratedAirSpeed : Speed option

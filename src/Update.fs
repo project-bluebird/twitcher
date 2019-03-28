@@ -153,8 +153,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Browser.console.log(result)
         model, Cmd.none
 
-    | ChangeHeading (aircraftID, requestedHeading) -> model, Cmd.none
-    | ChangedHeading -> model, Cmd.none
+    | ChangeHeading (aircraftID, requestedHeading) -> 
+        model, changeHeadingCmd model.Config.Value aircraftID requestedHeading
+
+    | ChangedHeading result -> 
+        Browser.console.log(result)
+        model, Cmd.none
 
     | ChangeSpeed (aircraftID, speed) -> 
         model, changeSpeedCmd model.Config.Value aircraftID speed
@@ -209,6 +213,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             Cmd.batch [
               Cmd.map ChangeSpeedMsg cmd
             ]                  
+
+    | ShowChangeHeadingForm aircraft ->
+        let f, cmd = HeadingForm.init(aircraft.AircraftID, aircraft.Heading)
+        { model with FormModel = Some (ChangeHeadingForm(f)) }, 
+            Cmd.batch [
+              Cmd.map ChangeHeadingMsg cmd
+            ] 
 
     | CreateAircraftMsg m ->
       match model.FormModel with
@@ -288,3 +299,29 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       | None | Some _ ->
           Browser.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none     
+
+
+    | ChangeHeadingMsg m ->
+      match model.FormModel with
+
+      | Some(ChangeHeadingForm f) ->
+          let f', cmd, externalMsg = HeadingForm.update m f
+
+          match externalMsg with
+          | HeadingForm.ExternalMsg.Submit(acid,heading) ->
+              { model with FormModel = None }, 
+              Cmd.batch [
+                Cmd.ofMsg (ChangeHeading (acid,heading))
+              ]
+
+          | HeadingForm.ExternalMsg.NoOp ->
+              { model with FormModel = Some (ChangeHeadingForm(f')) }, 
+              Cmd.map ChangeHeadingMsg cmd
+
+          | HeadingForm.ExternalMsg.Cancel ->
+              { model with FormModel = None },
+              Cmd.none
+              
+      | None | Some _ ->
+          Browser.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none               

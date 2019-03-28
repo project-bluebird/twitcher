@@ -102,6 +102,8 @@ let commandForm model dispatch =
       [ AltitudeForm.view f (ChangeAltitudeMsg >> dispatch) ]
     | Some(ChangeSpeedForm f) ->
       [ SpeedForm.view f (ChangeSpeedMsg >> dispatch)]
+    | Some(ChangeHeadingForm f) ->
+      [ HeadingForm.view f (ChangeHeadingMsg >> dispatch)]
     | None -> []
     )         
  

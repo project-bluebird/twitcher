@@ -49,10 +49,6 @@ let init(aircraftID, currentAltitude) =
     CheckFields = false },
   Cmd.none    
 
-let checkFloat x =
-  let canParse, result = System.Double.TryParse(x)
-  canParse
-
 let update msg model =
   match msg with
   | ChangeAltitude x ->
@@ -95,7 +91,7 @@ let update msg model =
         model, Cmd.none, ExternalMsg.Submit (model.AircraftID, altitude, verticalSpeed)
       else
         model, Cmd.none, NoOp
-        
+
 
 let view model (dispatch: Msg -> unit) =
   Modal.modal [ Modal.IsActive true ]

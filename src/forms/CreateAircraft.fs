@@ -61,18 +61,6 @@ let init() =
     CheckFields = false },
   Cmd.none    
 
-let checkAircraftID (x: string) =
-  (x.Length >= 3) 
-  && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
-
-let checkAircraftType (x: string) =
-  (x.Length >= 3) 
-  && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
-
-let checkFloat x =
-  let canParse, result = System.Double.TryParse(x)
-  canParse
-
 let update msg model =
   match msg with
   | ChangeAircraftID x ->
