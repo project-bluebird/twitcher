@@ -107,6 +107,7 @@ let pingBluebird config =
 let pingBluebirdCmd config = 
   Cmd.ofPromise pingBluebird config ConnectionActive ConnectionError   
 
+
 // =============================================================== 
 // Aircraft position  
 
