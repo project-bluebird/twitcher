@@ -1,6 +1,8 @@
 module Twitcher.AltitudeForm
 
 open Twitcher.Domain
+open Twitcher.Form
+
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -93,61 +95,7 @@ let update msg model =
         model, Cmd.none, ExternalMsg.Submit (model.AircraftID, altitude, verticalSpeed)
       else
         model, Cmd.none, NoOp
-
-let formItem label value message checkValid isValid warning other (dispatch: Msg -> unit) =
-  Field.div [  ]
-    [ yield!
-        [ Label.label [ ] [ str label ] ]
-      yield!
-        [Input.text [ 
-          Input.Placeholder value
-          Input.Value value    
-          Input.Props 
-            [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch ) ] ] ]
-      
-      yield!
-        (if checkValid && not (isValid value) then        
-          [Help.help 
-            [  Help.Color IsDanger  ]
-            [ str warning ]]
-         else [])
-      yield! 
-        (match other with 
-         | Some(elem) -> [elem]
-         | None -> [] )]        
-
-
-let formItemOptions label (options: string list) optionMessage value message checkValid isValid warning (dispatch: Msg -> unit) = 
-  Field.div [] [
-    Label.label [ ] [ str label ]
-  
-    Field.div [ Field.HasAddons ]
-      [ yield! 
-         [ Select.select [ ]
-            [ select [ DefaultValue (options.Head)
-                       OnChange (fun ev -> !!ev.target?value |> optionMessage |> dispatch ) ]
-                (options
-                 |> List.map (fun value ->
-                    option [ Value value ][ str value] ))
-              ] ]
-        yield!
-         [Input.text [ 
-            Input.Placeholder value
-            Input.Value value    
-            Input.Props 
-              [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
-                 ] ] ]
-           
-        yield!
-          (if checkValid && not (isValid value) then        
-            [Help.help 
-              [  Help.Color IsDanger  ]
-              [ str warning ]]
-           else [])
-      ]
-  ]
-
-
+        
 
 let view model (dispatch: Msg -> unit) =
   Modal.modal [ Modal.IsActive true ]

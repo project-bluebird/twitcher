@@ -1,6 +1,8 @@
 module Twitcher.SpeedForm
 
 open Twitcher.Domain
+open Twitcher.Form
+
 open Elmish
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -18,16 +20,16 @@ open Fable.PowerPack.Fetch.Fetch_types
 
 type FormModel = 
   { AircraftID : string
-    GroundSpeed : Speed
-    AltitudeUnit : AltitudeUnit
-    NewAltitude : string
+    GroundSpeed : Speed option
+    SpeedUnit : SpeedUnit
+    NewSpeed : string
     VerticalSpeed : string option
     CheckFields : bool
    }
 
 type Msg = 
   | ChangeSpeed of string
-  | SetAltitudeUnit of string
+  | SetSpeedUnit of string
   | SubmitForm
   | Cancel
   | Error
@@ -35,14 +37,14 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftID * FlightAltitude * float option  // Submit altitude in feet  
+    | Submit of AircraftID * Speed 
     | Cancel
 
-let init(aircraftID, currentAltitude) =
+let init(aircraftID, groundSpeed) =
   { AircraftID = aircraftID
-    NewAltitude = ""
-    AltitudeUnit = Feet
-    CurrentAltitude = currentAltitude
+    NewSpeed = ""
+    SpeedUnit = Knots
+    GroundSpeed = groundSpeed
     VerticalSpeed = None
     CheckFields = false },
   Cmd.none    
@@ -53,18 +55,18 @@ let checkFloat x =
 
 let update msg model =
   match msg with
-  | ChangeAltitude x ->
-      { model with NewAltitude = x}, Cmd.none, NoOp
+  | ChangeSpeed x ->
+      { model with NewSpeed = x}, Cmd.none, NoOp
 
-  | SetAltitudeUnit x ->
+  | SetSpeedUnit x ->
       Browser.console.log(x)
-      let altUnit =
+      let speedUnit =
         match x with
-        | "Flight levels" -> FlightLevels
-        | "Meters" -> Meters
-        | "Feet" -> Feet
-        | _ -> Feet
-      { model with AltitudeUnit = altUnit}, Cmd.none, NoOp
+        | "Km/h" -> Kmh
+        | "Knots" -> Knots
+        | "Mach" -> Mach
+        | _ -> Knots
+      { model with SpeedUnit = speedUnit}, Cmd.none, NoOp
 
   | SubmitForm ->
       { model with CheckFields = true}, 
@@ -77,76 +79,21 @@ let update msg model =
   | Error
 
   | CheckFields ->
-      if (model.NewAltitude |> checkFloat) &&
+      if (model.NewSpeed |> checkFloat) &&
          (if model.VerticalSpeed.IsSome then 
             model.VerticalSpeed.Value |> checkFloat 
           else true) then
-        let altitude = 
-          match model.AltitudeUnit with
-          | FlightLevels -> FlightLevel((model.NewAltitude |> float |> round |> int) * 1<FL>)
-          | Feet -> Altitude(float model.NewAltitude * 1.<ft>) 
-          | Meters -> Altitude(float model.NewAltitude * 1.<m> |> Conversions.Altitude.m2ft)
-        let verticalSpeed = 
-          model.VerticalSpeed 
-          |> Option.map (fun value -> float value)
-          
-        model, Cmd.none, ExternalMsg.Submit (model.AircraftID, altitude, verticalSpeed)
+        let speed = 
+          match model.SpeedUnit with
+          | Kmh -> float model.NewSpeed * 1.<km/h> |> Conversions.Speed.kmh2knot 
+          | Knots -> float model.NewSpeed * 1.<knot>
+          | Mach -> float model.NewSpeed * 1.<Mach> |> Conversions.Speed.mach2knot
+          | FeetPerMinute -> float model.NewSpeed * 1.<ft/minute> |> Conversions.Speed.fm2ms |> Conversions.Speed.ms2knot 
+          | MetersPerSecond -> float model.NewSpeed * 1.<m/s> |> Conversions.Speed.ms2knot
+
+        model, Cmd.none, ExternalMsg.Submit (model.AircraftID, speed)
       else
         model, Cmd.none, NoOp
-
-let formItem label value message checkValid isValid warning other (dispatch: Msg -> unit) =
-  Field.div [  ]
-    [ yield!
-        [ Label.label [ ] [ str label ] ]
-      yield!
-        [Input.text [ 
-          Input.Placeholder value
-          Input.Value value    
-          Input.Props 
-            [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch ) ] ] ]
-      
-      yield!
-        (if checkValid && not (isValid value) then        
-          [Help.help 
-            [  Help.Color IsDanger  ]
-            [ str warning ]]
-         else [])
-      yield! 
-        (match other with 
-         | Some(elem) -> [elem]
-         | None -> [] )]        
-
-
-let formItemOptions label (options: string list) optionMessage value message checkValid isValid warning (dispatch: Msg -> unit) = 
-  Field.div [] [
-    Label.label [ ] [ str label ]
-  
-    Field.div [ Field.HasAddons ]
-      [ yield! 
-         [ Select.select [ ]
-            [ select [ DefaultValue (options.Head)
-                       OnChange (fun ev -> !!ev.target?value |> optionMessage |> dispatch ) ]
-                (options
-                 |> List.map (fun value ->
-                    option [ Value value ][ str value] ))
-              ] ]
-        yield!
-         [Input.text [ 
-            Input.Placeholder value
-            Input.Value value    
-            Input.Props 
-              [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
-                 ] ] ]
-           
-        yield!
-          (if checkValid && not (isValid value) then        
-            [Help.help 
-              [  Help.Color IsDanger  ]
-              [ str warning ]]
-           else [])
-      ]
-  ]
-
 
 
 let view model (dispatch: Msg -> unit) =
@@ -154,18 +101,18 @@ let view model (dispatch: Msg -> unit) =
       [ Modal.background [ Props [ OnClick (fun _ -> dispatch Msg.Cancel) ] ] [ ]
         Modal.content [ ]
           [ Box.box' [ ] [
-              Heading.p [ Heading.Is5 ] [ str "Change altitude" ]
+              Heading.p [ Heading.Is5 ] [ str "Change calibrated air speed" ]
               form [ ]
-                [ // TODO display current altitude and target altitude?
+                [ // TODO display current speed?
                   formItemOptions
-                    "Altitude" 
-                    [ "Feet"; "Flight levels"; "Meters" ]
-                    SetAltitudeUnit
-                    model.NewAltitude
-                    ChangeAltitude 
+                    "Calibrated air speed (CAS)" 
+                    [ "Knots"; "Mach"; "Km/h" ]
+                    SetSpeedUnit
+                    model.NewSpeed
+                    ChangeSpeed
                     model.CheckFields
                     checkFloat
-                    "Altitude must be a number"
+                    "Speed must be a number"
                     dispatch          
                 ]
               hr []
@@ -182,6 +129,3 @@ let view model (dispatch: Msg -> unit) =
         Modal.close [ Modal.Close.Size IsLarge
                       Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
 
-
-
-// TODO: more reasonable error checking - flight levels etc

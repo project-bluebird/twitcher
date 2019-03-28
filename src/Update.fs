@@ -200,14 +200,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         let f, cmd = AltitudeForm.init(aircraft.AircraftID, aircraft.Position.Altitude)
         { model with FormModel = Some (ChangeAltitudeForm(f)) }, 
             Cmd.batch [
-              Cmd.map CreateAircraftMsg cmd
+              Cmd.map ChangeAltitudeMsg cmd
             ]        
 
     | ShowChangeSpeedForm aircraft ->
         let f, cmd = SpeedForm.init(aircraft.AircraftID, aircraft.GroundSpeed)
         { model with FormModel = Some (ChangeSpeedForm(f)) }, 
             Cmd.batch [
-              Cmd.map CreateAircraftMsg cmd
+              Cmd.map ChangeSpeedMsg cmd
             ]                  
 
     | CreateAircraftMsg m ->
@@ -268,20 +268,20 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       match model.FormModel with
 
       | Some(ChangeSpeedForm f) ->
-          let f', cmd, externalMsg = AltitudeForm.update m f
+          let f', cmd, externalMsg = SpeedForm.update m f
 
           match externalMsg with
-          | AltitudeForm.ExternalMsg.Submit(acid,alt,vs) ->
+          | SpeedForm.ExternalMsg.Submit(acid,cas) ->
               { model with FormModel = None }, 
               Cmd.batch [
-                Cmd.ofMsg (ChangeSpeed (acid,alt,vs))
+                Cmd.ofMsg (ChangeSpeed (acid,cas))
               ]
 
-          | AltitudeForm.ExternalMsg.NoOp ->
+          | SpeedForm.ExternalMsg.NoOp ->
               { model with FormModel = Some (ChangeSpeedForm(f')) }, 
               Cmd.map ChangeSpeedMsg cmd
 
-          | AltitudeForm.ExternalMsg.Cancel ->
+          | SpeedForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
               

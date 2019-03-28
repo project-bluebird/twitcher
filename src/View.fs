@@ -100,8 +100,10 @@ let commandForm model dispatch =
       [ AircraftForm.view f (CreateAircraftMsg >> dispatch) ]
     | Some(ChangeAltitudeForm f) ->
       [ AltitudeForm.view f (ChangeAltitudeMsg >> dispatch) ]
-    | _ ->
-      [])         
+    | Some(ChangeSpeedForm f) ->
+      [ SpeedForm.view f (ChangeSpeedMsg >> dispatch)]
+    | None -> []
+    )         
  
 
 let viewAircraftDetails model dispatch =
@@ -167,7 +169,7 @@ let viewAircraftDetails model dispatch =
                       Button.button 
                           [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info)) 
                             Button.Color IsPrimary ] 
-                          [ str "Change speed" ]]                      
+                          [ str "Change calibrated air speed" ]]                      
                     ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Vertical speed"] ]
