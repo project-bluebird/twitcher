@@ -145,8 +145,10 @@ let viewAircraftDetails model dispatch =
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
-                          Button.Color IsPrimary ] 
-                        [ str "Change heading" ]]]
+                          Button.Color IsPrimary
+                          Button.IsOutlined ] 
+                        [ Icon.faIcon [ ] [ Fa.icon Fa.I.LocationArrow ]
+                          Text.span [] [ str "Change heading" ]]]]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Altitude"] ]
                     td [] 
@@ -157,8 +159,10 @@ let viewAircraftDetails model dispatch =
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeAltitudeForm info))
-                          Button.Color IsPrimary ] 
-                        [ str "Change altitude" ]]
+                          Button.Color IsPrimary
+                          Button.IsOutlined ] 
+                        [ Icon.faIcon [ ] [ Fa.icon Fa.I.ArrowsV ]
+                          Text.span [] [str "Change altitude" ]]]
                   ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Ground speed"] ]
@@ -170,8 +174,10 @@ let viewAircraftDetails model dispatch =
                     td [] [
                       Button.button 
                           [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info)) 
-                            Button.Color IsPrimary ] 
-                          [ str "Change calibrated air speed" ]]                      
+                            Button.Color IsPrimary
+                            Button.IsOutlined ] 
+                          [ Icon.faIcon [ ] [ Fa.icon Fa.I.Tachometer ]
+                            Text.span [] [str "Change calibrated air speed" ]]]                 
                     ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Vertical speed"] ]
@@ -236,7 +242,8 @@ let view model dispatch =
 
                           Button.button [
                             Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
-                            ] [ str "Load test scenario"]  
+                            ] [ Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
+                                Text.span [] [ str "Load test scenario"]  ]
                           
                           Button.button [
                             Button.OnClick (fun _ -> dispatch ResetSimulator)

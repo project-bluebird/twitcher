@@ -99,6 +99,24 @@ let view model (dispatch: Msg -> unit) =
         Modal.content [ ]
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change altitude" ]
+
+              Level.level [] 
+                   [ Level.item [Level.Item.HasTextCentered ] [ 
+                      div [] 
+                        [ yield Level.heading [] [ str "Current altitude"]
+                          let alt = 
+                            match model.CurrentAltitude with 
+                            | Altitude alt -> alt
+                            | FlightLevel fl -> Conversions.Altitude.fl2ft fl
+                          yield
+                            (match model.AltitudeUnit with
+                             | Feet -> Level.title [] [ str (sprintf "%.0f feet" alt)]
+                             | Meters -> Level.title [] [ str (sprintf "%.0f meters" (Conversions.Altitude.ft2m alt))]
+                             | FlightLevels ->
+                                Level.title [] [ str (sprintf "FL%d" (Conversions.Altitude.ft2fl alt)) ]
+                             ) ]
+                    ] ]
+
               form [ ]
                 [ // TODO display current altitude and target altitude?
                   formItemOptions

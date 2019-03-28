@@ -98,6 +98,23 @@ let view model (dispatch: Msg -> unit) =
         Modal.content [ ]
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change calibrated air speed" ]
+              Level.level [] 
+                (match model.GroundSpeed with 
+                 | Some(gs) ->
+                   [ Level.item [Level.Item.HasTextCentered ] [ 
+                      div [] 
+                        [ Level.heading [] [ str "Current ground speed"]
+                          (match model.SpeedUnit with
+                           | Knots -> 
+                              Level.title [] [ str (sprintf "%.0f knots" gs) ]
+                           | Kmh -> 
+                              Level.title [] [ str (sprintf "%.0f km/h" (gs |> Conversions.Speed.knot2kmh)) ]
+                           | Mach -> 
+                              Level.title [] [ str (sprintf "Mach %.3f" (gs |> Conversions.Speed.knot2mach)) ]
+                           | FeetPerMinute | MetersPerSecond -> Level.title [] [ str "Error" ]
+                           ) ]
+                    ] ]
+                 | None -> [])
               form [ ]
                 [ // TODO display current speed?
                   formItemOptions

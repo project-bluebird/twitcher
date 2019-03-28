@@ -83,7 +83,7 @@ let view model (dispatch: Msg -> unit) =
                     model.CheckFields
                     checkFloat
                     "Heading must be a number"
-                    (Some (str "Heading is the angle to North." ))
+                    (Some (str "Heading is the clock-wise angle to North." ))
                     dispatch          
                 ]
               hr []

@@ -25,4 +25,6 @@ module Altitude =
   let m2ft (alt: float<m>) = alt * mftConst
   let ft2m (alt: float<ft>) = alt/mftConst
 
-  
+  let private ftflConst = 100.<ft/FL>
+  let ft2fl (alt: float<ft>) = (alt/ftflConst) |> float |> round |> int |> (*) 1<FL>
+  let fl2ft (alt: int<FL>) = ((float alt) * 1.<FL>)*ftflConst
