@@ -75,18 +75,61 @@ let viewSimulation model dispatch =
 
               yield! 
                 model.Positions  
-                |> List.map (fun aircraft ->
+                |> List.collect (fun aircraft ->
                     let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-                    circle [ 
-                      Cx (string x)
-                      Cy (string y)
-                      R "3"
-                      Style 
-                        [ Stroke "black"
-                          StrokeWidth "1"
-                          Fill "grey" ]
-                      OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                    ] [])
+                    let past = 
+                      if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
+                        (snd model.PositionHistory).[aircraft.AircraftID] 
+                        |> Array.map (fun pastPosition ->
+                          CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude) model.SimulationViewSize)
+                      else [||]
+
+                    [
+                      // plot past path
+                      if past.Length > 0 then 
+                        let path = 
+                          Array.append past [|x,y|]
+                          |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
+                          |> String.concat " "
+                        yield
+                          polyline [
+                            Points path
+                            Style [
+                              Stroke "grey"
+                              Opacity "0.25"
+                              StrokeWidth "1.5"
+                              Fill "none"
+                            ]
+                          ] []
+
+                      // plot current position
+                      match model.ViewDetails with
+                      | Some(acid) when acid = aircraft.AircraftID ->
+                        yield
+                          circle [ 
+                            Cx (string x)
+                            Cy (string y)
+                            R "5"
+                            Style 
+                              [ Stroke "turquoise"
+                                StrokeWidth "5"
+                                Fill "black" ]
+                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+                          ] []
+                      | Some(_) | None ->
+                        yield
+                          circle [ 
+                            Cx (string x)
+                            Cy (string y)
+                            R "3"
+                            Style 
+                              [ Stroke "black"
+                                StrokeWidth "1"
+                                Fill "grey" ]
+                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+                          ] []
+                    ]
+                    )
             ]
         ]
       ]
@@ -232,7 +275,11 @@ let view model dispatch =
                                         tr [] [ td [] [str pos.AircraftID]
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
-                                                td [] [str (sprintf "%.0f" (match pos.Position.Altitude with | Altitude a -> float a | FlightLevel fl -> (float fl)/1000.)  + " ft" )] ]
+                                                td [] [str (sprintf "%.0f" (
+                                                              match pos.Position.Altitude with 
+                                                              | Altitude a -> float a 
+                                                              | FlightLevel fl -> float (Conversions.Altitude.fl2ft fl))
+                                                               + " ft") ] ]
                                     ))
                                  ]
                         ]

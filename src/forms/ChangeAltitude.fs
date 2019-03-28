@@ -110,7 +110,7 @@ let view model (dispatch: Msg -> unit) =
                             | FlightLevel fl -> Conversions.Altitude.fl2ft fl
                           yield
                             (match model.AltitudeUnit with
-                             | Feet -> Level.title [] [ str (sprintf "%.0f feet" alt)]
+                             | Feet -> Level.title [] [ str (sprintf "%.0f feet" alt) ]
                              | Meters -> Level.title [] [ str (sprintf "%.0f meters" (Conversions.Altitude.ft2m alt))]
                              | FlightLevels ->
                                 Level.title [] [ str (sprintf "FL%d" (Conversions.Altitude.ft2fl alt)) ]

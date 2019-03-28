@@ -21,12 +21,11 @@ type CommandForm =
   | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
   | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
 
-
 type Model = {
   Animate : bool
   Sector : (Coordinates list) option
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
-  PositionHistory : Dictionary<AircraftID, Position list>
+  PositionHistory : int * Dictionary<AircraftID, Position []>
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option

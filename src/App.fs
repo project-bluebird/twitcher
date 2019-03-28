@@ -36,7 +36,7 @@ let init() =
     FormModel = None
     SimulationViewSize = 0.,0.
     ViewDetails = None
-    PositionHistory = Dictionary<AircraftID, Position list>()
+    PositionHistory = 0, (Dictionary<AircraftID, Position []>())
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?

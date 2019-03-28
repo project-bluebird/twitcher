@@ -17,6 +17,8 @@ open Twitcher.Model
 open Twitcher.CoordinateSystem
 open Twitcher.Commands
 
+open System.Collections.Generic
+
 
 
 let delayMsg _ =
@@ -29,6 +31,33 @@ let delayMsg _ =
 let simulationViewSize() = 
   Browser.document.getElementById("simulation-viewer").clientWidth,
   Browser.document.getElementById("simulation-viewer").clientHeight  
+
+let historyLength = 10
+let historyInterval = 10
+
+let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) = 
+  if positionHistory.ContainsKey aircraft.AircraftID then
+    let lastItem = positionHistory.[aircraft.AircraftID].[positionHistory.[aircraft.AircraftID].Length-1]
+    positionHistory.[aircraft.AircraftID] <- 
+        if positionHistory.[aircraft.AircraftID].Length < historyLength then
+          Array.append 
+            positionHistory.[aircraft.AircraftID] 
+            [|aircraft.Position|]
+        else
+          Array.append 
+            positionHistory.[aircraft.AircraftID].[1..] 
+            [| aircraft.Position |]
+  else
+    positionHistory.[aircraft.AircraftID] <- [| aircraft.Position|]
+  positionHistory
+
+let updateHistory (counter: int, positionHistory: Dictionary<AircraftID, Position []>) (positionInfo: AircraftInfo []) = 
+  if counter = historyInterval || counter = 0 then
+    positionInfo
+    |> Array.iter (fun aircraft -> updateSingleHistory positionHistory aircraft |> ignore)
+    (1, positionHistory)
+  else
+    (counter + 1, positionHistory)
 
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
@@ -79,7 +108,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions positionInfo ->
-        { model with Positions = positionInfo |> List.ofArray } ,
+        { model with 
+            Positions = positionInfo |> List.ofArray
+            PositionHistory = updateHistory model.PositionHistory positionInfo } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->
