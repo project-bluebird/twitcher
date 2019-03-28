@@ -184,7 +184,8 @@ let viewAircraftDetails model dispatch =
                       [ str (
                           match info.Heading with 
                           | Some(x) -> sprintf "%.1f" x + "°"
-                          | None -> "unknown") ]
+                          | None -> "unknown" // TODO 
+                          ) ]
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
