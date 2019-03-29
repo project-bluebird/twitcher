@@ -20,7 +20,7 @@ open Fable.PowerPack.Fetch.Fetch_types
 
 type FormModel = 
   { AircraftID : string
-    CurrentAltitude : FlightAltitude
+    CurrentAltitude : Altitude
     AltitudeUnit : AltitudeUnit
     NewAltitude : string
     VerticalSpeed : string option
@@ -37,7 +37,7 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftID * FlightAltitude * float option  // Submit altitude in feet  
+    | Submit of AircraftID * Altitude * float option  // Submit altitude in feet  
     | Cancel
 
 let init(aircraftID, currentAltitude) =
@@ -81,9 +81,9 @@ let update msg model =
           else true) then
         let altitude = 
           match model.AltitudeUnit with
-          | FlightLevels -> FlightLevel((model.NewAltitude |> float |> round |> int) * 1<FL>)
-          | Feet -> Altitude(float model.NewAltitude * 1.<ft>) 
-          | Meters -> Altitude(float model.NewAltitude * 1.<m> |> Conversions.Altitude.m2ft)
+          | FlightLevels -> (model.NewAltitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
+          | Feet -> float model.NewAltitude * 1.<ft>
+          | Meters -> float model.NewAltitude * 1.<m> |> Conversions.Altitude.m2ft
         let verticalSpeed = 
           model.VerticalSpeed 
           |> Option.map (fun value -> float value)
@@ -104,10 +104,7 @@ let view model (dispatch: Msg -> unit) =
                    [ Level.item [Level.Item.HasTextCentered ] [ 
                       div [] 
                         [ yield Level.heading [] [ str "Current altitude"]
-                          let alt = 
-                            match model.CurrentAltitude with 
-                            | Altitude alt -> alt
-                            | FlightLevel fl -> Conversions.Altitude.fl2ft fl
+                          let alt = model.CurrentAltitude
                           yield
                             (match model.AltitudeUnit with
                              | Feet -> Level.title [] [ str (sprintf "%.0f feet" alt) ]

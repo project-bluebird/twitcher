@@ -26,11 +26,13 @@ type Model = {
   Sector : (Coordinates list) option
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
+  InConflict : AircraftID[]
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
   SimulationViewSize : float * float // width, height
   ViewDetails : AircraftID option
+  SeparationDistance : float option  // what does the loss of separation distance look like in pixels
 }
 
 type Msg =
@@ -68,7 +70,7 @@ type Msg =
   | CreatedAircraft of string
 
   | ShowChangeAltitudeForm of AircraftInfo
-  | ChangeAltitude of AircraftID * FlightAltitude * float option
+  | ChangeAltitude of AircraftID * Altitude * float option
   | ChangedAltitude of string
 
   | ShowChangeHeadingForm of AircraftInfo

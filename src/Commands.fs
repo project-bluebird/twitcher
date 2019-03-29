@@ -130,7 +130,7 @@ let parseAircraftInfo id info =
       Time = DateTime.Parse(info._validTo) |> Some
       Type = None
       Position = {
-        Altitude = Altitude(info.alt |> Conversions.Altitude.m2ft)
+        Altitude = info.alt |> Conversions.Altitude.m2ft
         Coordinates = {
           Latitude = info.lat
           Longitude = info.lon
@@ -307,9 +307,7 @@ let encodeAircraftInfo a =
     Encode.object 
       [ "acid", Encode.string a.AircraftID
         "type", Encode.string a.Type.Value
-        "alt", match a.Position.Altitude with 
-               | FlightLevel fl -> Encode.string ("FL" + string fl)
-               | Altitude alt -> Encode.float (float alt)
+        "alt", Encode.float (float a.Position.Altitude)
         "lat", Encode.float (float a.Position.Coordinates.Latitude)
         "lon", Encode.float (float a.Position.Coordinates.Longitude)
         "hdg", Encode.float a.Heading.Value
@@ -354,10 +352,7 @@ let encodeChangeAltitude aircraftID altitude verticalSpeed =
   let aircraft = 
     Encode.object 
       [ yield! ["acid", Encode.string aircraftID]
-        yield! ["alt", 
-          match altitude with 
-                | FlightLevel fl -> Encode.string ("FL" + (fl |> int |> string))
-                | Altitude alt -> Encode.float (float alt)] 
+        yield! ["alt", Encode.float (float altitude)] 
         yield! [
            match verticalSpeed with 
            | Some vs -> yield "vspd", Encode.float vs
@@ -385,7 +380,7 @@ let changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed) =
       | _ -> return response.StatusText    
   }
 
-let changeAltitudeCmd config aircraftID requestedAltitude verticalSpeed =
+let changeAltitudeCmd config aircraftID (requestedAltitude: Altitude) verticalSpeed =
   Cmd.ofPromise changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed)
     ChangedAltitude ConnectionError
 

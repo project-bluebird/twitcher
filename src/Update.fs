@@ -39,7 +39,7 @@ let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (
   if positionHistory.ContainsKey aircraft.AircraftID then
     let lastItem = positionHistory.[aircraft.AircraftID].[positionHistory.[aircraft.AircraftID].Length-1]
     positionHistory.[aircraft.AircraftID] <- 
-        if positionHistory.[aircraft.AircraftID].Length < historyLength then
+        if true then //positionHistory.[aircraft.AircraftID].Length < historyLength then
           Array.append 
             positionHistory.[aircraft.AircraftID] 
             [|aircraft.Position|]
@@ -80,6 +80,20 @@ let estimateHeading (model: Model) (aircraftID: AircraftID) =
         clockwiseAngle position currentPosition |> Some
   else None    
 
+let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
+  let onScreen = 
+    positionInfo 
+    |> Array.filter (fun pos -> CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) viewSize)
+
+  [| for i1 in 0..onScreen.Length-1 do
+      for i2 in i1+1..onScreen.Length-1 do 
+        if onScreen.[i1] <> onScreen.[i2] &&
+           abs(onScreen.[i1].Position.Altitude - onScreen.[i2].Position.Altitude) <= 1000.<ft> &&
+           (greatCircleDistance onScreen.[i1].Position onScreen.[i2].Position) <= (5.<nm> |> Conversions.Distance.nm2m) 
+        then 
+          yield  onScreen.[i1].AircraftID
+          yield onScreen.[i2].AircraftID |]
+
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
@@ -101,7 +115,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        pingBluebirdCmd config
        
     | GetSimulationViewSize ->
-        { model with SimulationViewSize = simulationViewSize()},
+        let viewSize = simulationViewSize()
+        { model with 
+            SimulationViewSize = viewSize
+            SeparationDistance = 
+              let x1, y1 = rescaleCollege calibrationPoint1 viewSize
+              let x2, y2 = rescaleCollege calibrationPoint2 viewSize
+              Some(y1 - y2)
+          },
         Cmd.none
 
     | ViewAircraftDetails aircraftID ->
@@ -136,7 +157,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               newModel.Positions
               |> List.map (fun ac -> 
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
-            PositionHistory = updateHistory model.PositionHistory positionInfo } ,
+            PositionHistory = updateHistory model.PositionHistory positionInfo
+            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->
@@ -171,7 +193,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Browser.console.log("Failed to reset the simulator")
           model, Cmd.none
         else
-          { model with State = Connected }, Cmd.none
+          { model with 
+              State = Connected
+              FormModel = None
+              ViewDetails = None
+              PositionHistory = 0, (Dictionary<AircraftID, Position []>())
+              Positions = []
+              InConflict = [||]
+           }, Cmd.none
 
     | PauseSimulation -> 
         model, pauseSimulationCmd model.Config.Value

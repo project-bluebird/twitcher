@@ -62,6 +62,10 @@ let rescaleTest (longitude, latitude) (xWidth, yWidth) =
   scale testXMin testXMax 0. xWidth longitude,
   scale testYMin testYMax 0. yWidth latitude
 
+let isInViewCollege coordinates (xWidth, yWidth) =
+  let x,y = rescaleCollege coordinates (xWidth, yWidth)
+  x >= 0. && x <= xWidth && y >= 0. && y <= yWidth
+
 
 let clockwiseAngle (point1: Position) (point2: Position) =
     let center (v1: Coordinates) (v2: Coordinates) = 
@@ -83,3 +87,86 @@ let clockwiseAngle (point1: Position) (point2: Position) =
       |> fun a -> if a < 0. then -a else 360.-a
       |> fun a -> if System.Double.IsNaN(a) then 0. else a 
     angle
+
+
+// For visualisation purposes, these two points are in the centre of the training sector and 5 nautical miles from each other
+let calibrationPoint1 = (-0.5<longitude>, 51.<latitude>)
+let calibrationPoint2 = (-0.5<longitude>, 51.08323664811<latitude>)
+
+//=======================================================    
+
+let deg2rad d = d * System.Math.PI/180.
+
+
+// Functions for translating latitude, longitude and altitude to x-y-z coordinates
+// Ported from Matlab https://uk.mathworks.com/matlabcentral/fileexchange/7942-covert-lat-lon-alt-to-ecef-cartesian
+// # y = ECEF Y-coordinate (m)
+// # z = ECEF Z-coordinate (m)
+// # lat = geodetic latitude (radians)
+// # lon = longitude (radians)
+// # alt = height above WGS84 ellipsoid (m)
+// # 
+// # Notes: This function assumes the WGS84 model.
+// #        Latitude is customary geodetic (not geocentric).
+// # 
+// # Source: "Department of Defense World Geodetic System 1984"
+// #         Page 4-4
+// #         National Imagery and Mapping Agency
+// #         Last updated June, 2004
+// #         NIMA TR8350.2
+// # 
+// # Michael Kleder, July 2005
+
+/// Convert a lat [degrees], lon [degrees], altitude [m] N-by-3 array of geodetic coordinates (latitude, longitude and altitude) 
+/// lla, to an N-by-3 array of ECEF coordinates, p. lla is in [degrees degrees meters]. p is in meters. 
+/// The default ellipsoid planet is WGS84. Latitude and longitude values can be any value. 
+/// Notes: latitude values of +90 and -90 may return unexpected values because of singularity at the poles.
+let llaToEcef (latitude: float<latitude>) (longitude: float<longitude>) (altitude: float<m>) =
+
+    // translate latitude and longitude to radians
+    let rlatitude = float latitude |> deg2rad
+    let rlongitude = float longitude |> deg2rad
+
+    // WGS84 ellipsoid constants:
+    let a = 6378137.0
+    let e = 8.1819190842622e-2
+
+    // intermediate calculation
+    // (prime vertical radius of curvature)
+    let N = a / sqrt(1.0 - e**2.0 * sin(rlatitude)**2.0)
+
+    // results:
+    let x = (N+float altitude) * cos(rlatitude) * cos(rlongitude) * 1.<m>
+    let y = (N+float altitude) * cos(rlatitude) * sin(rlongitude) * 1.<m>
+    let z = ((1.0-e**2.) * N + float altitude) * sin(rlatitude) * 1.<m>
+
+    (x,y,z)
+
+
+let positionToCartesian (position: Position) =
+  llaToEcef 
+    position.Coordinates.Latitude 
+    position.Coordinates.Longitude
+    (position.Altitude |> Conversions.Altitude.ft2m)
+
+
+//==================================================
+// Great-circle distance between two points
+
+let greatCircleDistance (position1: Position) (position2: Position) =
+
+  let mAltitude (pos: Position) =
+    pos.Altitude  |> Conversions.Altitude.ft2m
+
+  let altitude = (mAltitude position1 + mAltitude position2)/2. 
+
+  let radius = 6371000.<m> + altitude // Radius of the earth in meters + mean altitude
+  let dLat = deg2rad (float (position1.Coordinates.Latitude - position2.Coordinates.Latitude))
+  let dLon = deg2rad (float (position1.Coordinates.Longitude - position2.Coordinates.Longitude))
+  let a = 
+    sin(dLat/2.) * sin(dLat/2.) +
+    cos(deg2rad(float position1.Coordinates.Latitude)) * cos(deg2rad(float position2.Coordinates.Latitude)) * 
+    sin(dLon/2.) * sin(dLon/2.)
+    
+  let c = 2. * System.Math.Atan2(sqrt(a), sqrt(1.-a))
+  radius * c // Distance in meters

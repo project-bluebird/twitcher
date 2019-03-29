@@ -28,3 +28,8 @@ module Altitude =
   let private ftflConst = 100.<ft/FL>
   let ft2fl (alt: float<ft>) = (alt/ftflConst) |> float |> round |> int |> (*) 1<FL>
   let fl2ft (alt: int<FL>) = ((float alt) * 1.<FL>)*ftflConst
+
+module Distance =
+  let private mnmConst = 1852.<m/nm>
+  let m2nm (d: float<m>) = d/mnmConst 
+  let nm2m (d: float<nm>) = d*mnmConst

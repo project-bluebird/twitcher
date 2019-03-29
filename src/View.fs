@@ -75,76 +75,77 @@ let viewSimulation model dispatch =
 
               yield! 
                 model.Positions  
+                |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
+                |> List.map (fun aircraft ->
+                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
+
+                    circle [ 
+                      Cx (string x)
+                      Cy (string y)
+                      R (string (model.SeparationDistance.Value) + "px")
+                      Style 
+                          [
+                            Fill "orange"
+                            Opacity "0.25"
+                          ]
+                    ] []
+                )              
+
+              yield! 
+                model.Positions  
                 |> List.collect (fun aircraft ->
                     let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
                     let past = 
                       if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
                         (snd model.PositionHistory).[aircraft.AircraftID] 
-                        |> Array.map (fun pastPosition ->
+                        |> Array.map (fun pastPosition -> // TODO - precompute this? 
                           CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude) model.SimulationViewSize)
                       else [||]
+                    let selected = model.ViewDetails = Some(aircraft.AircraftID)
+                    let conflict = model.InConflict |> Array.contains aircraft.AircraftID
 
                     [
-                      // plot current position
-                      match model.ViewDetails with
-                      | Some(acid) when acid = aircraft.AircraftID ->
-                        // plot past path
-                        if past.Length > 0 then 
-                          let path = 
-                            Array.append past [|x,y|]
-                            |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
-                            |> String.concat " "
-                          yield
-                            polyline [
-                              Points path
-                              Style [
-                                Stroke "grey"
-                                Opacity "0.25"
-                                StrokeWidth "2"
-                                Fill "none"
-                              ]
-                            ] []
-
-
+                      // plot current position and past path
+                      if past.Length > 0 then 
+                        let path = 
+                          Array.append past [|x,y|]
+                          |> fun a -> if selected then a else Array.skip (a.Length - 11) a
+                          |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
+                          |> String.concat " "
                         yield
-                          circle [ 
-                            Cx (string x)
-                            Cy (string y)
-                            R "5"
-                            Style 
-                              [ Stroke "turquoise"
-                                StrokeWidth "5"
-                                Fill "black" ]
-                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+                          polyline [
+                            Points path
+                            Style [
+                              Stroke "grey"
+                              Opacity (if selected then "0.5" else "0.25")
+                              StrokeWidth (if selected then "2" else "1.5")
+                              Fill "none"
+                            ]
                           ] []
-                      | Some(_) | None ->
-                        // plot past path
-                        if past.Length > 0 then 
-                          let path = 
-                            Array.append past [|x,y|]
-                            |> fun a -> Array.skip (a.Length - 11) a
-                            |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
-                            |> String.concat " "
-                          yield
-                            polyline [
-                              Points path
-                              Style [
-                                Stroke "grey"
-                                Opacity "0.25"
-                                StrokeWidth "1.5"
-                                Fill "none"
-                              ]
-                            ] []
 
+                      if conflict then
                         yield
                           circle [ 
                             Cx (string x)
                             Cy (string y)
-                            R "3"
+                            R (if selected then "5" else "3")
                             Style 
-                              [ Stroke "black"
-                                StrokeWidth "1"
-                                Fill "grey" ]
+                                [ Stroke (if selected then "black" else "black")
+                                  StrokeWidth (if selected then "1" else "1")
+                                  Fill (if selected then "orange" else "grey") ]
+                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+                          ] []      
+
+                      else
+                        yield
+                          circle [ 
+                            Cx (string x)
+                            Cy (string y)
+                            R (if selected then "5" else "3")
+                            Style 
+                                [ Stroke (if selected then "turquoise" else "black")
+                                  StrokeWidth (if selected then "5" else "1")
+                                  Fill (if selected then "black" else "grey") ]
                             OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
                           ] []
                     ]
@@ -215,10 +216,7 @@ let viewAircraftDetails model dispatch =
                 tr []
                   [ td [] [ Heading.h6 [] [str "Altitude"] ]
                     td [] 
-                      [ str (
-                          match info.Position.Altitude with 
-                          | Altitude(x) -> sprintf "%.0f" x + " feet"
-                          | FlightLevel(x) -> "FL" + string x) ]
+                      [ str (sprintf "%.0f ft" info.Position.Altitude) ]
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeAltitudeForm info))
@@ -295,11 +293,7 @@ let view model dispatch =
                                         tr [] [ td [] [str pos.AircraftID]
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
-                                                td [] [str (sprintf "%.0f" (
-                                                              match pos.Position.Altitude with 
-                                                              | Altitude a -> float a 
-                                                              | FlightLevel fl -> float (Conversions.Altitude.fl2ft fl))
-                                                               + " ft") ] ]
+                                                td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
                                     ))
                                  ]
                         ]

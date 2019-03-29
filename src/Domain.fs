@@ -12,6 +12,7 @@ module Twitcher.Domain
 [<Measure>] type s
 [<Measure>] type latitude
 [<Measure>] type longitude
+[<Measure>] type nm // nautical miles
 
 type AltitudeUnit =
   | Feet
@@ -29,9 +30,7 @@ type AircraftID = string
 
 type Heading = float
 
-type FlightAltitude =
-  | FlightLevel of int<FL>
-  | Altitude of float<ft>
+type Altitude = float<ft>
 
 type VerticalSpeed = float<ft/minute>
 
@@ -44,7 +43,7 @@ type Coordinates = {
 
 type Position = {
   Coordinates : Coordinates
-  Altitude : FlightAltitude
+  Altitude : Altitude
 }
 
 type AircraftInfo = {

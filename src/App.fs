@@ -37,6 +37,8 @@ let init() =
     SimulationViewSize = 0.,0.
     ViewDetails = None
     PositionHistory = 0, (Dictionary<AircraftID, Position []>())
+    InConflict = [||]
+    SeparationDistance = None
    },
   Cmd.none
 // TODO save state into cookie to stay through refresh?

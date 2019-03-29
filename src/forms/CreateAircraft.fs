@@ -139,9 +139,9 @@ let update msg model =
               }
               Altitude = 
                 match model.AltitudeUnit with
-                | FlightLevels -> FlightLevel((model.Altitude |> float |> round |> int) * 1<FL>)
-                | Feet -> Altitude(float model.Altitude * 1.<ft>) 
-                | Meters -> Altitude(float model.Altitude * 1.<m> |> Conversions.Altitude.m2ft)
+                | FlightLevels -> (model.Altitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
+                | Feet -> float model.Altitude * 1.<ft>
+                | Meters -> float model.Altitude * 1.<m> |> Conversions.Altitude.m2ft
             }
             GroundSpeed = None
             VerticalSpeed = None
