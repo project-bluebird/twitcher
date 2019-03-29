@@ -74,6 +74,17 @@ let view model (dispatch: Msg -> unit) =
         Modal.content [ ]
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change heading" ]
+
+              Level.level [] 
+                (match model.CurrentHeading with 
+                 | Some(hdg) ->
+                   [ Level.item [Level.Item.HasTextCentered ] [ 
+                      div [] 
+                        [ Level.heading [] [ str "Current course"]
+                          Level.title [] [ str (sprintf "%.1f°" hdg ) ] ]
+                    ] ]
+                 | None -> [])
+
               form [ ]
                 [ // TODO display current heading
                   formItem
@@ -83,7 +94,7 @@ let view model (dispatch: Msg -> unit) =
                     model.CheckFields
                     checkFloat
                     "Heading must be a number"
-                    (Some (str "Heading is the clock-wise angle to North." ))
+                    (Some (str "Heading is the clock-wise angle to North in degrees." ))
                     dispatch          
                 ]
               hr []

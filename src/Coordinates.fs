@@ -61,3 +61,25 @@ let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>) (xWi
 let rescaleTest (longitude, latitude) (xWidth, yWidth) =
   scale testXMin testXMax 0. xWidth longitude,
   scale testYMin testYMax 0. yWidth latitude
+
+
+let clockwiseAngle (point1: Position) (point2: Position) =
+    let center (v1: Coordinates) (v2: Coordinates) = 
+      // make point1 cente of the coordinate system
+       {Longitude = v2.Longitude - v1.Longitude
+        Latitude = v2.Latitude - v1.Latitude }
+
+    let norm (v: Coordinates) = 
+      { Longitude = v.Longitude / sqrt(float v.Latitude**2.0 + float v.Longitude**2.0) 
+        Latitude = v.Latitude / sqrt(float v.Latitude**2.0 + float v.Longitude**2.0)}    
+
+    let x = { Longitude = 0.0<longitude>; Latitude = 1.0<latitude> }
+    let y = center point1.Coordinates point2.Coordinates |> norm
+    
+    let dot = float x.Latitude * float y.Latitude + float x.Longitude* float y.Longitude
+    let det = float x.Longitude * float y.Latitude - float x.Latitude*float y.Longitude
+    let angle = 
+      System.Math.Atan2 (det, dot) * 180.0/System.Math.PI // clockwise angle
+      |> fun a -> if a < 0. then -a else 360.-a
+      |> fun a -> if System.Double.IsNaN(a) then 0. else a 
+    angle

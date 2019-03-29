@@ -19,47 +19,6 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
-let clockwiseAngle (point1: Position) (point2: Position) =
-    let center (v1: Coordinates) (v2: Coordinates) = 
-      // make point1 cente of the coordinate system
-       {Longitude = v2.Longitude - v1.Longitude
-        Latitude = v2.Latitude - v1.Latitude }
-
-    let norm (v: Coordinates) = 
-      { Longitude = v.Longitude / sqrt(float v.Latitude**2.0 + float v.Longitude**2.0) 
-        Latitude = v.Latitude / sqrt(float v.Latitude**2.0 + float v.Longitude**2.0)}    
-
-    let x = { Longitude = 0.0<longitude>; Latitude = 1.0<latitude> }
-    let y = center point1.Coordinates point2.Coordinates |> norm
-    
-    let dot = float x.Latitude * float y.Latitude + float x.Longitude* float y.Longitude
-    let det = float x.Longitude * float y.Latitude - float x.Latitude*float y.Longitude
-    let angle = 
-      System.Math.Atan2 (det, dot) * 180.0/System.Math.PI // clockwise angle
-      |> fun a -> if a < 0. then -a else 360.-a
-      |> fun a -> if System.Double.IsNaN(a) then 0. else a 
-    angle
-
-let estimateHeading (model: Model) (aircraftID: AircraftID) =
-  let currentPosition =
-    model.Positions
-    |> List.find (fun pos -> pos.AircraftID = aircraftID)
-    |> fun info -> info.Position
-  if (snd model.PositionHistory).ContainsKey aircraftID then
-    let lastPosition = 
-      let history =
-        (snd model.PositionHistory).[aircraftID]
-      if history.Length >= 1 then
-        let pos = history.[history.Length-1]
-        if pos <> currentPosition then Some pos
-        else None
-      else None
-
-    match lastPosition with
-    | None -> None
-    | Some position ->
-        clockwiseAngle position currentPosition |> Some
-  else None
   
 
 let basicNavbar model dispatch =
@@ -126,26 +85,27 @@ let viewSimulation model dispatch =
                       else [||]
 
                     [
-                      // plot past path
-                      if past.Length > 0 then 
-                        let path = 
-                          Array.append past [|x,y|]
-                          |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
-                          |> String.concat " "
-                        yield
-                          polyline [
-                            Points path
-                            Style [
-                              Stroke "grey"
-                              Opacity "0.25"
-                              StrokeWidth "1.5"
-                              Fill "none"
-                            ]
-                          ] []
-
                       // plot current position
                       match model.ViewDetails with
                       | Some(acid) when acid = aircraft.AircraftID ->
+                        // plot past path
+                        if past.Length > 0 then 
+                          let path = 
+                            Array.append past [|x,y|]
+                            |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
+                            |> String.concat " "
+                          yield
+                            polyline [
+                              Points path
+                              Style [
+                                Stroke "grey"
+                                Opacity "0.25"
+                                StrokeWidth "2"
+                                Fill "none"
+                              ]
+                            ] []
+
+
                         yield
                           circle [ 
                             Cx (string x)
@@ -158,6 +118,24 @@ let viewSimulation model dispatch =
                             OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
                           ] []
                       | Some(_) | None ->
+                        // plot past path
+                        if past.Length > 0 then 
+                          let path = 
+                            Array.append past [|x,y|]
+                            |> fun a -> Array.skip (a.Length - 11) a
+                            |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
+                            |> String.concat " "
+                          yield
+                            polyline [
+                              Points path
+                              Style [
+                                Stroke "grey"
+                                Opacity "0.25"
+                                StrokeWidth "1.5"
+                                Fill "none"
+                              ]
+                            ] []
+
                         yield
                           circle [ 
                             Cx (string x)
@@ -220,23 +198,20 @@ let viewAircraftDetails model dispatch =
                       [ str (sprintf "%.3f" info.Position.Coordinates.Latitude) ]
                     td [] []]                                      
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Heading"] ]
+                  [ td [] [ Heading.h6 [] [str "Course"] ]
                     td [] 
-                      [ str (
+                      [ 
                           match info.Heading with 
-                          | Some(x) -> sprintf "%.1f" x + "°"
-                          | None -> 
-                            match estimateHeading model info.AircraftID with
-                            | Some(heading) -> sprintf "%.0f" heading + "°"
-                            | None -> "unknown"
-                          ) ]
+                          | Some(x) -> yield (str (sprintf "%.1f" x + "°"))
+                          | None -> yield (Button.a [ Button.IsLoading true; Button.IsOutlined; Button.IsText; Button.Size IsSmall ] [ str "Loading" ])
+                           ]
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
-                          Button.Color IsPrimary
+                          Button.Color IsPrimary  
                           Button.IsOutlined ] 
                         [ Icon.faIcon [ ] [ Fa.icon Fa.I.LocationArrow ]
-                          Text.span [] [ str "Change" ]]]]
+                          Text.span [] [ str "Change heading" ]]]]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Altitude"] ]
                     td [] 
@@ -265,7 +240,7 @@ let viewAircraftDetails model dispatch =
                             Button.Color IsPrimary
                             Button.IsOutlined ] 
                           [ Icon.faIcon [ ] [ Fa.icon Fa.I.Tachometer ]
-                            Text.span [] [str "Change (CAS)" ]]]                 
+                            Text.span [] [str "Change calib. air speed" ]]]                 
                     ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Vertical speed"] ]

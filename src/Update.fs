@@ -32,7 +32,7 @@ let simulationViewSize() =
   Browser.document.getElementById("simulation-viewer").clientWidth,
   Browser.document.getElementById("simulation-viewer").clientHeight  
 
-let historyLength = 10
+let historyLength = 10000
 let historyInterval = 10
 
 let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) = 
@@ -58,6 +58,27 @@ let updateHistory (counter: int, positionHistory: Dictionary<AircraftID, Positio
     (1, positionHistory)
   else
     (counter + 1, positionHistory)
+
+let estimateHeading (model: Model) (aircraftID: AircraftID) =
+  let currentPosition =
+    model.Positions
+    |> List.find (fun pos -> pos.AircraftID = aircraftID)
+    |> fun info -> info.Position
+  if (snd model.PositionHistory).ContainsKey aircraftID then
+    let lastPosition = 
+      let history =
+        (snd model.PositionHistory).[aircraftID]
+      if history.Length >= 1 then
+        let pos = history.[history.Length-1]
+        if pos <> currentPosition then Some pos
+        else None
+      else None
+
+    match lastPosition with
+    | None -> None
+    | Some position ->
+        clockwiseAngle position currentPosition |> Some
+  else None    
 
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
@@ -108,8 +129,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions positionInfo ->
-        { model with 
-            Positions = positionInfo |> List.ofArray
+        let newModel = 
+          { model with Positions = positionInfo |> List.ofArray }
+        { newModel with 
+            Positions = 
+              newModel.Positions
+              |> List.map (fun ac -> 
+                  { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory positionInfo } ,
         Cmd.none
     
