@@ -172,7 +172,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Cmd.none
 
     | LoadScenario path -> 
-        model,
+        { model with 
+              State = Connected
+              FormModel = None
+              ViewDetails = None
+              PositionHistory = 0, (Dictionary<AircraftID, Position []>())
+              Positions = []
+              InConflict = [||] },
         loadScenarioCmd model.Config.Value path
         
     | LoadedScenario response -> 
@@ -221,6 +227,20 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           model, Cmd.none
         else 
           { model with State = ActiveSimulation Playing }, Cmd.ofMsg StartAnimation
+
+    | Observe ->
+        { model with 
+              FormModel = None
+              ViewDetails = None
+              PositionHistory = 0, (Dictionary<AircraftID, Position []>())
+              Positions = []
+              InConflict = [||] 
+              State = ActiveSimulation Observing }, 
+        Cmd.ofMsg StartAnimation
+
+    | StopObserving ->
+        { model with State = Connected },
+        Cmd.ofMsg StopAnimation   
 
     | SetSimulationRateMultiplier rm -> model, Cmd.none
     | ChangedSimulationRateMultiplier -> model, Cmd.none

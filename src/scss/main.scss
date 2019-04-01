@@ -24,3 +24,16 @@ $fa-font-path: "./../../node_modules/font-awesome/fonts/";
   border-spacing: 30px 10px;
   vertical-align: middle;
 }
+
+.table tr.is-selected {
+  background-color:  #ffe4b4;
+  color: black;
+}
+
+.table tr.is-bold {
+  font-weight: bold;
+}
+
+.table tr.is-greyed-out {
+  color: hsl(0, 0%, 71%);
+}

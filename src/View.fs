@@ -290,17 +290,33 @@ let view model dispatch =
                                   tbody [ ]
                                     (model.Positions 
                                     |> List.map (fun pos -> 
-                                        tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) ] 
-                                              [ td [] [str pos.AircraftID]
-                                                td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
-                                                td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
-                                                td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
-                                    ))
+                                        tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) :> IHTMLProp
+                                             (if model.InConflict |> Array.contains pos.AircraftID then
+                                                ClassName "is-selected"
+                                              else
+                                                ClassName "")
+                                             (match model.ViewDetails with
+                                              | Some(id) when id = pos.AircraftID -> ClassName "is-bold"
+                                              | _ -> ClassName "")
+                                             (if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
+                                               ClassName ""
+                                              else 
+                                               ClassName "is-greyed-out")
+                                              ] 
+                                            [ td [] [str pos.AircraftID]
+                                              td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
+                                              td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
+                                              td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
+                                      ))
                                  ]
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.Is2)] [
 
+                          Button.button [
+                            Button.OnClick (fun _ -> dispatch Observe)
+                            ] [ Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
+                                Text.span [] [ str "Run as observer"]  ]
 
                           Button.button [
                             Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))

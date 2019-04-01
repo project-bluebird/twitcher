@@ -6,6 +6,7 @@ open System.Collections.Generic
 type SimulatorState = 
   | Playing
   | Paused
+  | Observing
 
 type TwitcherState = 
   | NotConnected
@@ -52,6 +53,8 @@ type Msg =
 
   | LoadScenario of string
   | LoadedScenario of string
+  | Observe 
+  | StopObserving
 
   | ResetSimulator 
   | ResetedSimulator of bool
