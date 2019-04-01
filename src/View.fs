@@ -362,6 +362,19 @@ let view model dispatch =
                                       Text.span [] [ str "Pause"]                                
                                   
                                      ]
+                                  
+                                  Menu.Item.li [
+                                    Menu.Item.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
+                                    (
+                                      match model.State with
+                                       | ActiveSimulation _ -> 
+                                          Menu.Item.Props []
+                                       | _ -> 
+                                          Menu.Item.Props [ ClassName "is-disabled" ])
+                                    ] [ 
+                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+                                      Text.span [] [ str "Create aircraft"]  
+                                    ]       
                                   ]
                               ]
 
@@ -373,15 +386,6 @@ let view model dispatch =
                         
                     commandForm model dispatch
                     
-                    Button.button [
-                            Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
-                            Button.Disabled (
-                                match model.State with
-                                 | ActiveSimulation _ -> false
-                                 | _ -> true)
-                            ] [ 
-                              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
-                              Text.span [] [ str "Create aircraft"]  
-                            ]      
+  
 
                    ] )] 
