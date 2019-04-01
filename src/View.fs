@@ -41,8 +41,8 @@ let basicNavbar model dispatch =
                   Navbar.Item.a [ ]
                     [ str "Something else" ] ] ]
           Navbar.End.div [ ]
-            [ Navbar.Item.div [ ]
-                [ str "The Alan Turing Institute" ] ] ]
+            [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
+                    Src "assets/Turing-logo.png" ] ] ] 
 
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
@@ -269,19 +269,22 @@ let viewPositionTable model dispatch =
         tbody [ ]
           (model.Positions 
           |> List.map (fun pos -> 
+              let className = [
+                if model.InConflict |> Array.contains pos.AircraftID then
+                    yield  "is-warning"
+                  else
+                    yield  ""
+                match model.ViewDetails with
+                  | Some(acid) when acid = pos.AircraftID -> 
+                      yield  "is-bold "
+                  | _ -> yield  ""
+                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
+                   yield  ""
+                else 
+                   yield "is-greyed-out" ] |> String.concat " "
+
               tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) :> IHTMLProp
-                   (if model.InConflict |> Array.contains pos.AircraftID then
-                      ClassName "is-selected"
-                    else
-                      ClassName "")
-                   (match model.ViewDetails with
-                    | Some(id) when id = pos.AircraftID -> ClassName "is-bold"
-                    | _ -> ClassName "")
-                   (if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
-                     ClassName ""
-                    else 
-                     ClassName "is-greyed-out")
-                    ] 
+                   ClassName className ] 
                   [ td [] [str pos.AircraftID]
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 

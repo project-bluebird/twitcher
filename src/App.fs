@@ -40,7 +40,7 @@ let init() =
     InConflict = [||]
     SeparationDistance = None
    },
-  Cmd.none
+  Cmd.ofMsg Init
 // TODO save state into cookie to stay through refresh?
 
 open Elmish.Debug
