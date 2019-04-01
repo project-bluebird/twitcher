@@ -257,6 +257,102 @@ let viewAircraftDetails model dispatch =
     | None ->
       yield! []
   ]
+
+let viewPositionTable model dispatch =
+  Table.table [ Table.IsHoverable;  ]
+      [ thead [ ]
+          [ tr [ ]
+              [ th [ ] [ str "Aircraft ID" ]
+                th [ ] [ str "Latitude" ]
+                th [ ] [ str "Longitude" ]
+                th [ ] [ str "Altitude" ] ] ]
+        tbody [ ]
+          (model.Positions 
+          |> List.map (fun pos -> 
+              tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) :> IHTMLProp
+                   (if model.InConflict |> Array.contains pos.AircraftID then
+                      ClassName "is-selected"
+                    else
+                      ClassName "")
+                   (match model.ViewDetails with
+                    | Some(id) when id = pos.AircraftID -> ClassName "is-bold"
+                    | _ -> ClassName "")
+                   (if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
+                     ClassName ""
+                    else 
+                     ClassName "is-greyed-out")
+                    ] 
+                  [ td [] [str pos.AircraftID]
+                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
+                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
+                    td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
+            ))
+       ]  
+
+let viewControlMenu model dispatch =
+  Menu.menu [ ]
+    [ Menu.label [ ] [ str "General controls" ]
+      Menu.list [ ]
+        [ Menu.Item.li 
+            [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [ 
+            Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
+            str "Run as observer" ]
+
+          Menu.Item.li 
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn")) ] [ 
+            Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
+            str "Load test scenario" ]
+          
+          Menu.Item.li 
+            [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [ 
+            Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
+            str "Reset simulator" ]                                  
+        ]
+
+      Menu.label [ ] [ str "Simulation controls" ]
+      Menu.list [ ]
+        [    
+          Menu.Item.li 
+            [ Menu.Item.OnClick (fun _ -> dispatch ResumeSimulation)
+              (
+                match model.State with
+                 | ActiveSimulation Paused -> 
+                    Menu.Item.Props []
+                 | _ -> 
+                    Menu.Item.Props [ ClassName "is-disabled" ])
+             ] [ 
+              Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
+              str "Play/Resume" ]                                  
+          
+          Menu.Item.li 
+            [ Menu.Item.OnClick (fun _ -> dispatch PauseSimulation)
+              (
+                match model.State with
+                 | ActiveSimulation Playing -> 
+                    Menu.Item.Props []
+                 | _ -> 
+                    Menu.Item.Props [ ClassName "is-disabled" ])
+             ] [ 
+              Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
+              Text.span [] [ str "Pause"]                                
+          
+             ]
+          
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
+            (
+              match model.State with
+               | ActiveSimulation _ -> 
+                  Menu.Item.Props []
+               | _ -> 
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+            ] [ 
+              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+              Text.span [] [ str "Create aircraft"]  
+            ]       
+          ]
+      ]
+
                 
 let view model dispatch =
     Hero.hero [  ]
@@ -271,121 +367,33 @@ let view model dispatch =
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
                   [ 
-                    viewSimulation model dispatch 
-
+                    Columns.columns [] 
+                      [
+                        Column.column [ Column.Width(Screen.All, Column.Is10)] 
+                          [
+                            viewSimulation model dispatch 
+                          ]
+                        Column.column [ Column.Width(Screen.All, Column.Is2)] 
+                          [
+                            viewControlMenu model dispatch
+                          ]
+                      ]
+                    
                     
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
                         Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
                             
-                            Table.table [ Table.IsHoverable;  ]
-                                [ thead [ ]
-                                    [ tr [ ]
-                                        [ th [ ] [ str "Aircraft ID" ]
-                                          th [ ] [ str "Latitude" ]
-                                          th [ ] [ str "Longitude" ]
-                                          th [ ] [ str "Altitude" ] ] ]
-                                  tbody [ ]
-                                    (model.Positions 
-                                    |> List.map (fun pos -> 
-                                        tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) :> IHTMLProp
-                                             (if model.InConflict |> Array.contains pos.AircraftID then
-                                                ClassName "is-selected"
-                                              else
-                                                ClassName "")
-                                             (match model.ViewDetails with
-                                              | Some(id) when id = pos.AircraftID -> ClassName "is-bold"
-                                              | _ -> ClassName "")
-                                             (if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
-                                               ClassName ""
-                                              else 
-                                               ClassName "is-greyed-out")
-                                              ] 
-                                            [ td [] [str pos.AircraftID]
-                                              td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
-                                              td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
-                                              td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
-                                      ))
-                                 ]
+                            viewPositionTable model dispatch
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.Is3)] [
-
+                        Column.column [ Column.Width(Screen.All, Column.IsHalf)] [
                           viewAircraftDetails model dispatch
-
-
-                          Menu.menu [ ]
-                            [ Menu.label [ ] [ str "General controls" ]
-                              Menu.list [ ]
-                                [ Menu.Item.li 
-                                    [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [ 
-                                    Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
-                                    str "Run as observer" ]
-
-                                  Menu.Item.li 
-                                    [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn")) ] [ 
-                                    Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
-                                    str "Load test scenario" ]
-                                  
-                                  Menu.Item.li 
-                                    [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [ 
-                                    Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
-                                    str "Reset simulator" ]                                  
-                                ]
-
-                              Menu.label [ ] [ str "Simulation controls" ]
-                              Menu.list [ ]
-                                [    
-                                  Menu.Item.li 
-                                    [ Menu.Item.OnClick (fun _ -> dispatch ResumeSimulation)
-                                      (
-                                        match model.State with
-                                         | ActiveSimulation Paused -> 
-                                            Menu.Item.Props []
-                                         | _ -> 
-                                            Menu.Item.Props [ ClassName "is-disabled" ])
-                                     ] [ 
-                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
-                                      str "Play/Resume" ]                                  
-                                  
-                                  Menu.Item.li 
-                                    [ Menu.Item.OnClick (fun _ -> dispatch PauseSimulation)
-                                      (
-                                        match model.State with
-                                         | ActiveSimulation Playing -> 
-                                            Menu.Item.Props []
-                                         | _ -> 
-                                            Menu.Item.Props [ ClassName "is-disabled" ])
-                                     ] [ 
-                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
-                                      Text.span [] [ str "Pause"]                                
-                                  
-                                     ]
-                                  
-                                  Menu.Item.li [
-                                    Menu.Item.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
-                                    (
-                                      match model.State with
-                                       | ActiveSimulation _ -> 
-                                          Menu.Item.Props []
-                                       | _ -> 
-                                          Menu.Item.Props [ ClassName "is-disabled" ])
-                                    ] [ 
-                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
-                                      Text.span [] [ str "Create aircraft"]  
-                                    ]       
-                                  ]
-                              ]
-
                         ]
                           
                       ]
-
-    
                         
                     commandForm model dispatch
                     
-  
-
                    ] )] 
