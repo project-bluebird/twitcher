@@ -278,8 +278,7 @@ let view model dispatch =
                       Columns.IsCentered  ]
                       [
                         Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
-                            viewAircraftDetails model dispatch
-
+                            
                             Table.table [ Table.IsHoverable;  ]
                                 [ thead [ ]
                                     [ tr [ ]
@@ -311,48 +310,70 @@ let view model dispatch =
                                  ]
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.Is2)] [
+                        Column.column [ Column.Width(Screen.All, Column.Is3)] [
 
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch Observe)
-                            ] [ Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
-                                Text.span [] [ str "Run as observer"]  ]
+                          viewAircraftDetails model dispatch
 
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn"))
-                            ] [ Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
-                                Text.span [] [ str "Load test scenario"]  ]
+
+                          Menu.menu [ ]
+                            [ Menu.label [ ] [ str "General controls" ]
+                              Menu.list [ ]
+                                [ Menu.Item.li 
+                                    [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [ 
+                                    Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
+                                    str "Run as observer" ]
+
+                                  Menu.Item.li 
+                                    [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn")) ] [ 
+                                    Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
+                                    str "Load test scenario" ]
+                                  
+                                  Menu.Item.li 
+                                    [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [ 
+                                    Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
+                                    str "Reset simulator" ]                                  
+                                ]
+
+                              Menu.label [ ] [ str "Simulation controls" ]
+                              Menu.list [ ]
+                                [    
+                                  Menu.Item.li 
+                                    [ Menu.Item.OnClick (fun _ -> dispatch ResumeSimulation)
+                                      (
+                                        match model.State with
+                                         | ActiveSimulation Paused -> 
+                                            Menu.Item.Props []
+                                         | _ -> 
+                                            Menu.Item.Props [ ClassName "is-disabled" ])
+                                     ] [ 
+                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
+                                      str "Play/Resume" ]                                  
+                                  
+                                  Menu.Item.li 
+                                    [ Menu.Item.OnClick (fun _ -> dispatch PauseSimulation)
+                                      (
+                                        match model.State with
+                                         | ActiveSimulation Playing -> 
+                                            Menu.Item.Props []
+                                         | _ -> 
+                                            Menu.Item.Props [ ClassName "is-disabled" ])
+                                     ] [ 
+                                      Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
+                                      Text.span [] [ str "Pause"]                                
+                                  
+                                     ]
+                                  ]
+                              ]
+
+                        ]
                           
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch ResetSimulator)
-                            ] [ 
-                              Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
-                              Text.span [] [ str "Reset simulator"]  
-                            ]
+                      ]
 
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch ResumeSimulation)
-                            Button.Disabled (
-                                match model.State with
-                                 | ActiveSimulation Paused -> false
-                                 | _ -> true)
-                            ] [ 
-                              Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
-                              Text.span [] [ str "Play/Resume"]  
-                            ]    
-
-                          Button.button [
-                            Button.OnClick (fun _ -> dispatch PauseSimulation)
-                            Button.Disabled (
-                                match model.State with
-                                 | ActiveSimulation Playing -> false
-                                 | _ -> true)
-                            ] [ 
-                              Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
-                              Text.span [] [ str "Pause"]  
-                            ]
-
-                          Button.button [
+    
+                        
+                    commandForm model dispatch
+                    
+                    Button.button [
                             Button.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
                             Button.Disabled (
                                 match model.State with
@@ -362,12 +383,5 @@ let view model dispatch =
                               Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
                               Text.span [] [ str "Create aircraft"]  
                             ]      
-                        ]
-                          
-                      ]
 
-    
-                        
-                    commandForm model dispatch
-  
                    ] )] 

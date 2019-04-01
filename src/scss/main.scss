@@ -37,3 +37,8 @@ $fa-font-path: "./../../node_modules/font-awesome/fonts/";
 .table tr.is-greyed-out {
   color: hsl(0, 0%, 71%);
 }
+
+.is-disabled {
+    pointer-events: none;
+    opacity: .65;
+}
