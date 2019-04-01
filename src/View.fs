@@ -290,7 +290,8 @@ let view model dispatch =
                                   tbody [ ]
                                     (model.Positions 
                                     |> List.map (fun pos -> 
-                                        tr [] [ td [] [str pos.AircraftID]
+                                        tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) ] 
+                                              [ td [] [str pos.AircraftID]
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
                                                 td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
                                                 td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
