@@ -50,7 +50,7 @@ type ExternalMsg =
 
 let init() =
   { AircraftID = "AB1"
-    Latitude = "55" 
+    Latitude = "51" 
     Longitude = "0"
     Heading = "0"
     Speed = "200"
