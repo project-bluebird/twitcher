@@ -118,7 +118,7 @@ let viewSimulation model dispatch =
                             Style [
                               Stroke "grey"
                               Opacity (if selected then "0.5" else "0.25")
-                              StrokeWidth (if selected then "2" else "1.5")
+                              StrokeWidth (if selected then "3" else "2")
                               Fill "none"
                             ]
                           ] []
@@ -128,7 +128,7 @@ let viewSimulation model dispatch =
                           circle [ 
                             Cx (string x)
                             Cy (string y)
-                            R (if selected then "5" else "3")
+                            R (if selected then "7" else "5")
                             Style 
                                 [ Stroke (if selected then "black" else "black")
                                   StrokeWidth (if selected then "1" else "1")
@@ -141,7 +141,7 @@ let viewSimulation model dispatch =
                           circle [ 
                             Cx (string x)
                             Cy (string y)
-                            R (if selected then "5" else "3")
+                            R (if selected then "7" else "5")
                             Style 
                                 [ Stroke (if selected then "turquoise" else "black")
                                   StrokeWidth (if selected then "5" else "1")
