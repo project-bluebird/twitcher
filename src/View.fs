@@ -28,18 +28,18 @@ let basicNavbar model dispatch =
                 [ Icon.faIcon [ ] [
                   Fa.icon Fa.I.Binoculars ]
                   Heading.p [ Heading.Is5 ] [ str "Twitcher" ]  ]]
-          Navbar.Item.div [ Navbar.Item.HasDropdown
-                            Navbar.Item.IsHoverable ]
-            [ Navbar.Link.a [ ]
-                [ str "Docs" ]
-              Navbar.Dropdown.div [ ]
-                [ Navbar.Item.a [ ]
-                    [ str "Overwiew" ]
-                  Navbar.Item.a [ ]
-                    [ str "Something" ]
-                  Navbar.divider [ ] [ ]
-                  Navbar.Item.a [ ]
-                    [ str "Something else" ] ] ]
+          // Navbar.Item.div [ Navbar.Item.HasDropdown
+          //                   Navbar.Item.IsHoverable ]
+          //   [ Navbar.Link.a [ ]
+          //       [ str "Docs" ]
+          //     Navbar.Dropdown.div [ ]
+          //       [ Navbar.Item.a [ ]
+          //           [ str "Overwiew" ]
+          //         Navbar.Item.a [ ]
+          //           [ str "Something" ]
+          //         Navbar.divider [ ] [ ]
+          //         Navbar.Item.a [ ]
+          //           [ str "Something else" ] ] ]
           Navbar.End.div [ ]
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ] 
@@ -302,7 +302,7 @@ let viewControlMenu model dispatch =
             str "Run as observer" ]
 
           Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 1.json.scn")) ] [ 
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 2.json.scn")) ] [ 
             Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
             str "Load test scenario" ]
           
