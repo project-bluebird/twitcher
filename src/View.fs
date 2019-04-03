@@ -302,7 +302,7 @@ let viewControlMenu model dispatch =
             str "Run as observer" ]
 
           Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/scn_generator/scn_files/Assessment 2.json.scn")) ] [ 
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/agents/scn_files/Assessment 2.json.scn")) ] [ 
             Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
             str "Load test scenario" ]
           

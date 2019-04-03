@@ -39,6 +39,7 @@ type Model = {
 type Msg =
   | Init
   | Config of Configuration
+  | LoadSector
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
