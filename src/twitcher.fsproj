@@ -3,7 +3,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="nats/nats.fs" />
     <Compile Include="Domain.fs" /> 
     <Compile Include="Conversions.fs" />
     <Compile Include="forms/Form.fs" />

@@ -103,6 +103,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           getConfigCmd()
           Cmd.ofMsg GetSimulationViewSize
         ]
+
+    | LoadSector ->
+        model,
+        getSectorOutlineCmd()
+    
+    | SectorOutline outline ->
+        { model with Sector = outline},
+        Cmd.none
     
     | ConnectionActive result ->
         if result then 

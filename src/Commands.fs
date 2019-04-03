@@ -462,3 +462,39 @@ let changeHeadingCmd config aircraftID heading =
   Browser.console.log("here")
   Cmd.ofPromise changeHeading (config, aircraftID, heading)
     ChangedHeading ConnectionError        
+
+//=================================================================
+
+
+let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
+
+
+let getSectorOutline() =
+  promise {
+    let url = "assets/nats-sector.json"
+    try 
+      let! res = Fetch.fetch url []
+      let! txt = res.text()
+      match Decode.fromString sectorDecoder txt with
+      | Ok value -> return Some(value)
+      | Error err -> 
+          Browser.console.log(err)
+          return None
+    with ex ->
+      Browser.console.log(ex)
+
+      // get a default sector
+      let urlDefault = "assets/default-sector.json"
+      let! resDefault = Fetch.fetch urlDefault []
+      let! txt = resDefault.text()
+      match Decode.fromString sectorDecoder txt with
+      | Ok value -> return Some(value)
+      | Error err -> 
+          Browser.console.log(err)
+          return None
+  }
+
+
+/// Fetch sector outline
+let getSectorOutlineCmd() =
+  Cmd.ofPromise getSectorOutline () SectorOutline ErrorMessage    

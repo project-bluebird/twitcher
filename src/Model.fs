@@ -40,6 +40,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
+  | SectorOutline of Coordinates list option
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize

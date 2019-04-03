@@ -28,10 +28,7 @@ let init() =
   { Positions = []
     Animate = false 
     Config = None
-    Sector = 
-      NATS.sectorOutline 
-      |> List.map (fun (lat,lon) -> {Latitude = lat * 1.<latitude>; Longitude = lon * 1.<longitude>}) 
-      |> Some  // TODO: load sector in a more principled way!
+    Sector = None
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.

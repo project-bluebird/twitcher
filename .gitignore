@@ -195,6 +195,5 @@ docs/tools/FSharp.Formatting.svclog
 *.bak
 project.lock.json
 
-
 # Confidential data
-nats.fs
+nats-sector.json
