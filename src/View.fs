@@ -19,8 +19,6 @@ open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
 
-  
-
 let basicNavbar model dispatch =
     Navbar.navbar [ ]
         [ Navbar.Brand.div [ ]
@@ -359,6 +357,7 @@ let viewControlMenu model dispatch =
           ]
       ]
 
+
                 
 let view model dispatch =
     Hero.hero [  ]
@@ -366,6 +365,7 @@ let view model dispatch =
         basicNavbar model dispatch
 
         Container.container [ ]
+
              (match model.State with 
                | NotConnected ->
                    [ Button.button [ Button.OnClick (fun _ -> dispatch Init); Button.IsFullWidth ] [ str "Start" ] ]
@@ -385,7 +385,6 @@ let view model dispatch =
                           ]
                       ]
                     
-                    
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
@@ -403,3 +402,4 @@ let view model dispatch =
                     commandForm model dispatch
                     
                    ] )] 
+

@@ -1,6 +1,5 @@
 module Twitcher.Domain
 
-
 [<Measure>] type knot
 [<Measure>] type Mach
 [<Measure>] type km

@@ -303,6 +303,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
            getAllPositionsCmd model.Config.Value
            Cmd.ofPromise delayMsg () MakeStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
+
           ]
         else
           model,
@@ -471,3 +472,4 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       | None | Some _ ->
           Browser.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none              
+
