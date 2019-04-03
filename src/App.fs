@@ -1,6 +1,7 @@
 module Twitcher.App
 
 open Twitcher.Domain
+open Twitcher.Model
 open Twitcher.CoordinateSystem
 open Twitcher.Update
 open Twitcher.View
@@ -20,15 +21,27 @@ open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
 open Fable.PowerPack.Fetch.Fetch_types
+open System.Collections.Generic
+
 
 
 let init() =
   { Positions = []
     Animate = false 
     Config = None
+    Sector = None
     State = NotConnected
+    FormModel = None
+    SimulationViewSize = 0.,0.
+    ViewDetails = None
+    PositionHistory = 0, (Dictionary<AircraftID, Position []>())
+    InConflict = [||]
+    SeparationDistance = None
    },
-  Cmd.none
+  Cmd.batch [
+    Cmd.ofMsg Init
+    Cmd.ofMsg LoadSector
+  ]  
 // TODO save state into cookie to stay through refresh?
 
 open Elmish.Debug

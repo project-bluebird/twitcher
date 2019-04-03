@@ -1,25 +1,59 @@
 module Twitcher.Domain
 
+[<Measure>] type knot
+[<Measure>] type Mach
+[<Measure>] type km
+[<Measure>] type m
+[<Measure>] type ft
+[<Measure>] type FL
+[<Measure>] type h
+[<Measure>] type minute
+[<Measure>] type s
+[<Measure>] type latitude
+[<Measure>] type longitude
+[<Measure>] type nm // nautical miles
+
+type AltitudeUnit =
+  | Feet
+  | Meters
+  | FlightLevels
+
+type SpeedUnit =
+  | Kmh
+  | Knots
+  | Mach
+  | FeetPerMinute
+  | MetersPerSecond  
+
 type AircraftID = string
 
-type FlightAltitude =
-  | FlightLevel of int
-  | Altitude of float   // altitude in feet
+type Heading = float
+
+type Altitude = float<ft>
+
+type VerticalSpeed = float<ft/minute>
+
+type Speed = float<knot> 
+
+type Coordinates = {
+  Latitude : float<latitude>
+  Longitude : float<longitude>
+}  
+
+type Position = {
+  Coordinates : Coordinates
+  Altitude : Altitude
+}
 
 type AircraftInfo = {
     AircraftID : AircraftID
-    Time: System.DateTime
-    Altitude: float
-    GroundSpeed: float
-    Latitude: float
-    Longitude: float
-    VerticalSpeed: float
-}
-
-type Coordinates = {
-  X : float
-  Y : float
-  Altitude : float
+    Type : string option 
+    Time: System.DateTime option
+    Heading : Heading option
+    Position : Position
+    GroundSpeed : Speed option
+    CalibratedAirSpeed : Speed option
+    VerticalSpeed : float<ft/minute> option
 }
 
 type Configuration = {
@@ -51,60 +85,3 @@ type Configuration = {
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
 }
-
-type SimulationState = 
-  | NotConnected
-  | ConnectionEstablished   // after loading config and pinging the Bluebird server
-  | ConnectionFailed
-  | ActiveSimulation        // when loaded scenario
-  | ReplaySimulation        // replay simulation from log file without server communication
-
-type Model = {
-  Animate : bool
-  Positions : Coordinates list
-  Config : Configuration option
-  State: SimulationState
-}
-
-type Msg =
-  | Init
-  | Config of Configuration
-  | ConnectionActive of bool
-  | ConnectionError of exn
-  
-  | GetPosition of AircraftID
-  | GetAllPositions
-  | FetchedPosition of AircraftInfo option
-  | FetchedAllPositions of AircraftInfo[]
-
-  | LoadScenario of string
-  | LoadedScenario of string
-
-  | ResetSimulation
-  | ResetedSimulation
-
-  | PauseSimulation
-  | PausedSimulation
-
-  | ResumeSimulation
-  | ResumedSimulation
-
-  | SetSimulationRateMultiplier of float
-  | ChangedSimulationRateMultiplier
-
-  | CreateAircraft of AircraftInfo
-  | CreatedAircraft
-
-  | ChangeAltitude of AircraftID * FlightAltitude * float option
-  | ChangedAltitude
-
-  | ChangeHeading of AircraftID * float
-  | ChangedHeading
-
-  | ChangeVerticalSpeed of AircraftID * float
-  | ChangedVerticalSpeed
-  
-  | MakeStep of unit
-  | ErrorMessage of exn
-  | StartAnimation
-  | StopAnimation
