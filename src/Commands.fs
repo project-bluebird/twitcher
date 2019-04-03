@@ -498,3 +498,4 @@ let getSectorOutline() =
 /// Fetch sector outline
 let getSectorOutlineCmd() =
   Cmd.ofPromise getSectorOutline () SectorOutline ErrorMessage    
+

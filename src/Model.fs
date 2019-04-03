@@ -21,6 +21,7 @@ type CommandForm =
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
   | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
   | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
+  | LoadScenarioForm of Twitcher.ScenarioForm.FormModel
 
 type Model = {
   Animate : bool
@@ -89,6 +90,8 @@ type Msg =
   | ChangeVerticalSpeed of AircraftID * VerticalSpeed
   | ChangedVerticalSpeed
   
+  | ShowLoadScenarioForm 
+
   | MakeStep of unit
   | ErrorMessage of exn
   | StartAnimation
@@ -98,3 +101,4 @@ type Msg =
   | ChangeAltitudeMsg of AltitudeForm.Msg
   | ChangeSpeedMsg of SpeedForm.Msg
   | ChangeHeadingMsg of HeadingForm.Msg
+  | LoadScenarioMsg of ScenarioForm.Msg

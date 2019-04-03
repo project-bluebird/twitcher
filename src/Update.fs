@@ -179,6 +179,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
+    | ShowLoadScenarioForm ->
+        let f, cmd = ScenarioForm.init()
+        { model with FormModel = Some (LoadScenarioForm(f)) }, 
+            Cmd.batch [
+              Cmd.map LoadScenarioMsg cmd
+            ]    
+
     | LoadScenario path -> 
         { model with 
               State = Connected
@@ -439,3 +446,28 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       | None | Some _ ->
           Browser.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none               
+
+    | LoadScenarioMsg m ->
+      match model.FormModel with
+
+      | Some(LoadScenarioForm f) ->
+          let f', cmd, externalMsg = ScenarioForm.update m f
+
+          match externalMsg with
+          | ScenarioForm.ExternalMsg.Submit(path) ->
+              { model with FormModel = None }, 
+              Cmd.batch [
+                Cmd.ofMsg (LoadScenario path)
+              ]
+
+          | ScenarioForm.ExternalMsg.NoOp ->
+              { model with FormModel = Some (LoadScenarioForm(f')) }, 
+              Cmd.map ChangeHeadingMsg cmd
+
+          | ScenarioForm.ExternalMsg.Cancel ->
+              { model with FormModel = None },
+              Cmd.none
+              
+      | None | Some _ ->
+          Browser.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none              

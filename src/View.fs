@@ -167,6 +167,8 @@ let commandForm model dispatch =
       [ SpeedForm.view f (ChangeSpeedMsg >> dispatch)]
     | Some(ChangeHeadingForm f) ->
       [ HeadingForm.view f (ChangeHeadingMsg >> dispatch)]
+    | Some(LoadScenarioForm f) ->
+      [ ScenarioForm.view f (LoadScenarioMsg >> dispatch)]
     | None -> []
     )         
  
@@ -302,7 +304,8 @@ let viewControlMenu model dispatch =
             str "Run as observer" ]
 
           Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "/Users/egabasova/Projects/nats-birdhouse/agents/scn_files/Assessment 2.json.scn")) ] [ 
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [ 
+            //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [ 
             Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
             str "Load test scenario" ]
           
