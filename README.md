@@ -36,3 +36,8 @@ In development mode, we activate:
 
 1. Run: `./fake.sh build`
 2. All the files needed for deployment are under the `output` folder.
+
+
+### Notes
+
+By default, the app displays a default sector outline. To load the training sector 31 outline, put the `nats-sector.json` file from Sharepoint into the `static` folder.
