@@ -100,10 +100,13 @@ let pingBluebird config =
       try
         let! res = Fetch.fetch url props
         match res.Status with
-        | 200 -> return true
-        | _ -> return false
+          | 200 | 400 -> return true
+          | _ -> return false
       with e ->
-        return false
+          if e.Message.StartsWith("400") then   
+            return true 
+          else 
+            return false
   }
 
 let pingBluebirdCmd config = 
@@ -115,7 +118,7 @@ let pingBluebirdCmd config =
 
 
 type JsonPositionInfo = {
-    _validTo: string
+    actype: string
     alt: float<m>
     gs: float<m/s>
     lat: float<latitude>
@@ -128,8 +131,8 @@ let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
 let parseAircraftInfo id info =
     {
       AircraftID = id
-      Time = DateTime.Parse(info._validTo) |> Some
-      Type = None
+      Time = None 
+      Type = Some info.actype
       Position = {
         Altitude = info.alt |> Conversions.Altitude.m2ft
         Coordinates = {
@@ -158,15 +161,24 @@ let getAllPositions config =
             ]
 
       let! res = Fetch.fetch url props
-      let! txt = res.text()
-      let result =
-        Decode.fromString (Decode.dict positionDecoder) txt
-      match result with
-      | Ok values ->
-          return parseAllPositions values
-      | Error err -> 
-          Browser.console.log("Error getting aircraft positions: " + err)
-          return [||]
+      match res.Status with
+      | 400 -> 
+        Browser.console.log("No aircraft in simulation")
+        return [||]
+      | 200 -> 
+        let! txt = res.text()
+        let result =
+          Decode.fromString (Decode.dict positionDecoder) txt
+        match result with
+        | Ok values ->
+            Browser.console.log(values)
+            return parseAllPositions values
+        | Error err -> 
+            Browser.console.log("Error getting aircraft positions: " + err)
+            return [||]
+      | _ -> 
+        Browser.console.log("Cannot get aircraft positions, return code " + string res.Status)
+        return [||]
   }
 
 let getAllPositionsCmd config  =
