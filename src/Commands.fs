@@ -23,7 +23,8 @@ open System
 
 let getYamlAttribute name (text: string []) =
   let result = 
-    text |> Array.filter (fun line -> line.Trim().StartsWith name)
+    text 
+    |> Array.filter (fun line -> line.Trim().StartsWith (name + ":"))
     |> Array.exactlyOne
   result.Remove(0,result.IndexOf ":" + 1)
   |> fun s -> s.Replace("\"","").Trim()
@@ -52,10 +53,12 @@ let decodeConfig (alltext: string) =
     Endpoint_change_speed = getYamlAttribute "endpoint_change_speed" text
     Endpoint_change_vertical_speed = getYamlAttribute "endpoint_change_vertical_speed" text
     Query_aircraft_id = getYamlAttribute "query_aircraft_id" text
+    Aircraft_type = getYamlAttribute "aircraft_type" text
     Latitude = getYamlAttribute "latitude" text
     Longitude = getYamlAttribute "longitude" text
     Altitude = getYamlAttribute "altitude" text
     Ground_speed = getYamlAttribute "ground_speed" text
+    Simulator_time = getYamlAttribute "simulator_time" text
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int

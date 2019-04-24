@@ -115,7 +115,7 @@ let view model (dispatch: Msg -> unit) =
                     ] ]
 
               form [ ]
-                [ // TODO display current altitude and target altitude?
+                [ 
                   formItemOptions
                     "Altitude" 
                     [ "Feet"; "Flight levels"; "Meters" ]
