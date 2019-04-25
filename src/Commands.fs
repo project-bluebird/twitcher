@@ -90,15 +90,10 @@ let urlAircraftPosition (config: Configuration) =
 
 let pingBluebird config = 
   promise {
-      let url = 
-        urlAircraftPosition config + "?acid=all"
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
+      let url = urlAircraftPosition config + "?acid=all"
 
       try
-        let! res = Fetch.fetch url props
+        let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
         match res.Status with
           | 200 | 400 -> return true
           | _ -> return false
@@ -116,7 +111,6 @@ let pingBluebirdCmd config =
 // Aircraft position  
 
 
-
 type JsonPositionInfo = {
     actype: string
     alt: float<m>
@@ -126,7 +120,7 @@ type JsonPositionInfo = {
     vs: float<m/s>
 }
 
-let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
+let positionDecoder = Decode.Auto.generateDecoder<obj>()
 
 let parseAircraftInfo id info =
     {
@@ -146,32 +140,33 @@ let parseAircraftInfo id info =
       Heading = None
     }
 
-let parseAllPositions (data: Map<string, JsonPositionInfo>) =
+let parseAllPositions (data: Map<string, obj>) =
   data
   |> Map.toArray
-  |> Array.map (fun (id, info) -> parseAircraftInfo id info)
+  |> Array.filter (fun (key, info) -> key <> "sim_t")
+  |> Array.map (fun (acid, info) -> parseAircraftInfo acid (info :?> JsonPositionInfo))
 
 let getAllPositions config =
   promise {
       let url = 
         urlAircraftPosition config + "?acid=all"
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
+      let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
-      let! res = Fetch.fetch url props
       match res.Status with
       | 400 -> 
         Browser.console.log("No aircraft in simulation")
         return [||]
       | 200 -> 
         let! txt = res.text()
-        let result =
-          Decode.fromString (Decode.dict positionDecoder) txt
+
+        let decodeTime = Decode.field "sim_t" (Decode.int)
+        let resultTime = Decode.fromString decodeTime txt   // TODO 
+
+        let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
+        let result = Decode.fromString (Decode.dict positionDecoder) txt
+        
         match result with
         | Ok values ->
-            Browser.console.log(values)
             return parseAllPositions values
         | Error err -> 
             Browser.console.log("Error getting aircraft positions: " + err)
@@ -192,15 +187,11 @@ let getAircraftPosition (config, aircraftID) =
   promise {
       let url = 
         urlAircraftPosition config + "?acid=" + aircraftID
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
 
-      let! res = Fetch.fetch url props
+      let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       let! txt = res.text()
-      match Decode.fromString positionDecoder txt with
-      | Ok value -> return Some(parseAircraftInfo aircraftID value)
+      match Decode.fromString (Decode.dict positionDecoder) txt with
+      | Ok value -> return Some(parseAllPositions value |> Array.exactlyOne)
       | Error err -> return None
   }
 
@@ -246,13 +237,8 @@ let urlReset config =
 
 let resetSimulator config = 
   promise {
-      let url = urlReset config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let url = urlReset config    
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
@@ -269,12 +255,7 @@ let urlPause config = [ urlBase config; config.Endpoint_pause_simulation ] |> St
 let pauseSimulation config = 
   promise {
       let url = urlPause config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
@@ -291,13 +272,8 @@ let urlResume config = [ urlBase config; config.Endpoint_resume_simulation ] |> 
 
 let resumeSimulation config = 
   promise {
-      let url = urlResume config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let url = urlResume config      
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
