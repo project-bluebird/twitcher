@@ -2,16 +2,19 @@ module Twitcher.Domain
 
 [<Measure>] type knot
 [<Measure>] type Mach
+
 [<Measure>] type km
 [<Measure>] type m
 [<Measure>] type ft
 [<Measure>] type FL
+[<Measure>] type nm // nautical miles
+
 [<Measure>] type h
 [<Measure>] type minute
 [<Measure>] type s
+
 [<Measure>] type latitude
 [<Measure>] type longitude
-[<Measure>] type nm // nautical miles
 
 type AltitudeUnit =
   | Feet
@@ -77,11 +80,13 @@ type Configuration = {
     Endpoint_change_speed: string
     Endpoint_change_vertical_speed: string
     Query_aircraft_id: string
+    Aircraft_type: string
     Latitude: string
     Longitude: string
     Altitude: string
     Ground_speed: string
     Vertical_speed: string
+    Simulator_time: string
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
 }

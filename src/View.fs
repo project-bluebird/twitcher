@@ -209,7 +209,7 @@ let viewAircraftDetails model dispatch =
                     td [] [ 
                       Button.button 
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
-                          Button.Color IsPrimary  
+                          Button.Color IsPrimary 
                           Button.IsOutlined ] 
                         [ Icon.faIcon [ ] [ Fa.icon Fa.I.LocationArrow ]
                           Text.span [] [ str "Change heading" ]]]]

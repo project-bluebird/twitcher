@@ -173,7 +173,7 @@ let view model (dispatch: Msg -> unit) =
                     ChangeAircraftID 
                     model.CheckFields
                     checkAircraftID 
-                    "Aircraft ID must be alphanumericc and have at least 3 characters." 
+                    "Aircraft ID must be alphanumeric and have at least 3 characters." 
                     None
                     dispatch 
 

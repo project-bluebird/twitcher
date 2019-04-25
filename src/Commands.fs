@@ -23,7 +23,8 @@ open System
 
 let getYamlAttribute name (text: string []) =
   let result = 
-    text |> Array.filter (fun line -> line.Trim().StartsWith name)
+    text 
+    |> Array.filter (fun line -> line.Trim().StartsWith (name + ":"))
     |> Array.exactlyOne
   result.Remove(0,result.IndexOf ":" + 1)
   |> fun s -> s.Replace("\"","").Trim()
@@ -52,10 +53,12 @@ let decodeConfig (alltext: string) =
     Endpoint_change_speed = getYamlAttribute "endpoint_change_speed" text
     Endpoint_change_vertical_speed = getYamlAttribute "endpoint_change_vertical_speed" text
     Query_aircraft_id = getYamlAttribute "query_aircraft_id" text
+    Aircraft_type = getYamlAttribute "aircraft_type" text
     Latitude = getYamlAttribute "latitude" text
     Longitude = getYamlAttribute "longitude" text
     Altitude = getYamlAttribute "altitude" text
     Ground_speed = getYamlAttribute "ground_speed" text
+    Simulator_time = getYamlAttribute "simulator_time" text
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
@@ -87,20 +90,18 @@ let urlAircraftPosition (config: Configuration) =
 
 let pingBluebird config = 
   promise {
-      let url = 
-        urlAircraftPosition config + "?acid=all"
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
+      let url = urlAircraftPosition config + "?acid=all"
 
       try
-        let! res = Fetch.fetch url props
+        let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
         match res.Status with
-        | 200 -> return true
-        | _ -> return false
+          | 200 | 400 -> return true
+          | _ -> return false
       with e ->
-        return false
+          if e.Message.StartsWith("400") then   
+            return true 
+          else 
+            return false
   }
 
 let pingBluebirdCmd config = 
@@ -110,9 +111,8 @@ let pingBluebirdCmd config =
 // Aircraft position  
 
 
-
 type JsonPositionInfo = {
-    _validTo: string
+    actype: string
     alt: float<m>
     gs: float<m/s>
     lat: float<latitude>
@@ -120,13 +120,13 @@ type JsonPositionInfo = {
     vs: float<m/s>
 }
 
-let positionDecoder = Decode.Auto.generateDecoder<JsonPositionInfo>()
+let positionDecoder = Decode.Auto.generateDecoder<obj>()
 
 let parseAircraftInfo id info =
     {
       AircraftID = id
-      Time = DateTime.Parse(info._validTo) |> Some
-      Type = None
+      Time = None 
+      Type = Some info.actype
       Position = {
         Altitude = info.alt |> Conversions.Altitude.m2ft
         Coordinates = {
@@ -140,30 +140,40 @@ let parseAircraftInfo id info =
       Heading = None
     }
 
-let parseAllPositions (data: Map<string, JsonPositionInfo>) =
+let parseAllPositions (data: Map<string, obj>) =
   data
   |> Map.toArray
-  |> Array.map (fun (id, info) -> parseAircraftInfo id info)
+  |> Array.filter (fun (key, info) -> key <> "sim_t")
+  |> Array.map (fun (acid, info) -> parseAircraftInfo acid (info :?> JsonPositionInfo))
 
 let getAllPositions config =
   promise {
       let url = 
         urlAircraftPosition config + "?acid=all"
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
+      let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
-      let! res = Fetch.fetch url props
-      let! txt = res.text()
-      let result =
-        Decode.fromString (Decode.dict positionDecoder) txt
-      match result with
-      | Ok values ->
-          return parseAllPositions values
-      | Error err -> 
-          Browser.console.log("Error getting aircraft positions: " + err)
-          return [||]
+      match res.Status with
+      | 400 -> 
+        Browser.console.log("No aircraft in simulation")
+        return [||]
+      | 200 -> 
+        let! txt = res.text()
+
+        let decodeTime = Decode.field "sim_t" (Decode.int)
+        let resultTime = Decode.fromString decodeTime txt   // TODO 
+
+        let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
+        let result = Decode.fromString (Decode.dict positionDecoder) txt
+        
+        match result with
+        | Ok values ->
+            return parseAllPositions values
+        | Error err -> 
+            Browser.console.log("Error getting aircraft positions: " + err)
+            return [||]
+      | _ -> 
+        Browser.console.log("Cannot get aircraft positions, return code " + string res.Status)
+        return [||]
   }
 
 let getAllPositionsCmd config  =
@@ -177,15 +187,11 @@ let getAircraftPosition (config, aircraftID) =
   promise {
       let url = 
         urlAircraftPosition config + "?acid=" + aircraftID
-      let props =
-          [ RequestProperties.Method HttpMethod.GET
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
 
-      let! res = Fetch.fetch url props
+      let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       let! txt = res.text()
-      match Decode.fromString positionDecoder txt with
-      | Ok value -> return Some(parseAircraftInfo aircraftID value)
+      match Decode.fromString (Decode.dict positionDecoder) txt with
+      | Ok value -> return Some(parseAllPositions value |> Array.exactlyOne)
       | Error err -> return None
   }
 
@@ -231,13 +237,8 @@ let urlReset config =
 
 let resetSimulator config = 
   promise {
-      let url = urlReset config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let url = urlReset config    
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
@@ -254,12 +255,7 @@ let urlPause config = [ urlBase config; config.Endpoint_pause_simulation ] |> St
 let pauseSimulation config = 
   promise {
       let url = urlPause config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
@@ -276,13 +272,8 @@ let urlResume config = [ urlBase config; config.Endpoint_resume_simulation ] |> 
 
 let resumeSimulation config = 
   promise {
-      let url = urlResume config
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            ]
-      
-      let! response =  Fetch.fetch url props
+      let url = urlResume config      
+      let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
       | _ -> return false 
