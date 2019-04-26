@@ -155,7 +155,7 @@ let getAllPositions config =
       match res.Status with
       | 400 -> 
         Browser.console.log("No aircraft in simulation")
-        return [||]
+        return [||], TimeSpan.FromSeconds 0.0
       | 200 -> 
         let! txt = res.text()
 
@@ -165,15 +165,15 @@ let getAllPositions config =
         let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
         let result = Decode.fromString (Decode.dict positionDecoder) txt
         
-        match result with
-        | Ok values ->
-            return parseAllPositions values
-        | Error err -> 
+        match result, resultTime with
+        | Ok values, Ok elapsed ->
+            return parseAllPositions values, TimeSpan.FromSeconds(float elapsed)
+        | Error err, _ | _, Error err -> 
             Browser.console.log("Error getting aircraft positions: " + err)
-            return [||]
+            return [||], TimeSpan.FromSeconds(0.0)
       | _ -> 
         Browser.console.log("Cannot get aircraft positions, return code " + string res.Status)
-        return [||]
+        return [||], TimeSpan.FromSeconds(0.0)
   }
 
 let getAllPositionsCmd config  =

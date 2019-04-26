@@ -157,7 +157,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             model,
             getAircraftPositionCmd config aircraftID
 
-    | FetchedAllPositions positionInfo ->
+    | FetchedAllPositions (positionInfo, elapsed) ->
         let newModel = 
           { model with Positions = positionInfo |> List.ofArray }
         { newModel with 
@@ -166,7 +166,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               |> List.map (fun ac -> 
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory positionInfo
-            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo } ,
+            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo
+            SimulationTime = elapsed } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->

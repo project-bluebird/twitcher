@@ -292,6 +292,24 @@ let viewPositionTable model dispatch =
             ))
        ]  
 
+
+let viewTimer model dispatch =
+  Level.level [ ]
+    [ Level.item [ Level.Item.HasTextCentered ]
+        [ div [ ]
+            [ Level.heading [ ]
+                [ str "Simulation time" ]
+              Level.title [ ]
+                [ str (
+                    sprintf "%02d:%02d:%02d" 
+                      model.SimulationTime.Hours 
+                      model.SimulationTime.Minutes 
+                      model.SimulationTime.Seconds
+                )]
+            ]
+        ]
+    ]
+
 let viewControlMenu model dispatch =
   Menu.menu [ ]
     [ Menu.label [ ] [ str "General controls" ]
@@ -434,6 +452,8 @@ let view model dispatch =
                           ]
                       ]
                     
+                    viewTimer model dispatch
+
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [
