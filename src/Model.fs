@@ -35,6 +35,7 @@ type Model = {
   SimulationViewSize : float * float // width, height
   ViewDetails : AircraftID option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
+  SimulationSpeed : float
 }
 
 type Msg =
@@ -69,7 +70,7 @@ type Msg =
   | ResumedSimulation of bool
 
   | SetSimulationRateMultiplier of float
-  | ChangedSimulationRateMultiplier
+  | ChangedSimulationRateMultiplier of float option
 
   | ShowCreateAircraftForm
   | CreateAircraft of AircraftInfo

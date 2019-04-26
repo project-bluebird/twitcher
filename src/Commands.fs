@@ -282,6 +282,37 @@ let resumeSimulation config =
 let resumeSimulationCmd config =
   Cmd.ofPromise resumeSimulation config ResumedSimulation ConnectionError    
 
+//=============================================================== 
+// Change simulation speed (simulation rate multiplier)
+
+let changeSimulationSpeed (config, rate) =
+  promise {
+      let url = [ urlBase config; config.Endpoint_set_simulation_rate_multiplier ] |> String.concat "/"
+      let body = 
+        Encode.object [ yield! ["multiplier", Encode.float rate] ]
+        |> Encode.toString 0
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return Some rate
+      | 400 -> 
+          Browser.console.log("Rate multiplier was invalid")
+          return None
+      | 500 -> 
+          Browser.console.log("Could not change the rate multiplier: " + response.StatusText)
+          return None
+      | _ -> return None
+  }
+
+let changeSimulationRateMultiplierCmd config rate = 
+  Cmd.ofPromise changeSimulationSpeed (config, rate) ChangedSimulationRateMultiplier ConnectionError
+
 // =============================================================== 
 // Create aircraft
 
