@@ -157,7 +157,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             model,
             getAircraftPositionCmd config aircraftID
 
-    | FetchedAllPositions positionInfo ->
+    | FetchedAllPositions (positionInfo, elapsed) ->
         let newModel = 
           { model with Positions = positionInfo |> List.ofArray }
         { newModel with 
@@ -166,7 +166,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               |> List.map (fun ac -> 
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory positionInfo
-            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo } ,
+            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo
+            SimulationTime = elapsed } ,
         Cmd.none
     
     | FetchedPosition positionInfo ->
@@ -231,7 +232,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Browser.console.log("Failed to pause the simulation")
           model, Cmd.none
         else 
-          { model with State = ActiveSimulation Paused }, Cmd.ofMsg StopAnimation
+          { model with State = ActiveSimulation Paused; SimulationSpeed = 1.0 }, Cmd.ofMsg StopAnimation
 
     | ResumeSimulation -> 
         model, resumeSimulationCmd model.Config.Value
@@ -241,7 +242,18 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Browser.console.log("Failed to resume the simulation")
           model, Cmd.none
         else 
-          { model with State = ActiveSimulation Playing }, Cmd.ofMsg StartAnimation
+          { model with State = ActiveSimulation Playing; SimulationSpeed = 1.0 }, Cmd.ofMsg StartAnimation
+    
+    | SetSimulationRateMultiplier rt ->
+        model, changeSimulationRateMultiplierCmd model.Config.Value rt
+
+    | ChangedSimulationRateMultiplier result ->
+        match result with
+        | None -> 
+          Browser.console.log("Failed to change simulation rate multiplier")
+          model, Cmd.none
+        | Some rt ->
+          { model with SimulationSpeed = rt }, Cmd.none
 
     | Observe ->
         { model with 
@@ -256,9 +268,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | StopObserving ->
         { model with State = Connected },
         Cmd.ofMsg StopAnimation   
-
-    | SetSimulationRateMultiplier rm -> model, Cmd.none
-    | ChangedSimulationRateMultiplier -> model, Cmd.none
 
     | CreateAircraft aircraftInfo -> 
         model, createAircraftCmd model.Config.Value aircraftInfo

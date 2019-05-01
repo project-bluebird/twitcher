@@ -292,6 +292,24 @@ let viewPositionTable model dispatch =
             ))
        ]  
 
+
+let viewTimer model dispatch =
+  Level.level [ ]
+    [ Level.item [ Level.Item.HasTextCentered ]
+        [ div [ ]
+            [ Level.heading [ ]
+                [ str "Simulation time" ]
+              Level.title [ ]
+                [ str (
+                    sprintf "%02d:%02d:%02d" 
+                      model.SimulationTime.Hours 
+                      model.SimulationTime.Minutes 
+                      model.SimulationTime.Seconds
+                )]
+            ]
+        ]
+    ]
+
 let viewControlMenu model dispatch =
   Menu.menu [ ]
     [ Menu.label [ ] [ str "General controls" ]
@@ -341,7 +359,56 @@ let viewControlMenu model dispatch =
               Text.span [] [ str "Pause"]                                
           
              ]
+
+          Menu.Item.li 
+            [ (match model.State with
+                 | ActiveSimulation Playing | ActiveSimulation Observing | ReplaySimulation -> 
+                    Menu.Item.Props []
+                 | _ -> 
+                    Menu.Item.Props [ ClassName "is-disabled" ])
+             ] [ 
+              Icon.faIcon [ ] [ Fa.icon Fa.I.Tachometer ]
+              Text.span [] [ str "Simulator speed"]
+              Field.div [ Field.HasAddons ] 
+                [
+                  Control.div [] [ 
+                    Button.button 
+                      [ Button.Size IsSmall; 
+                        Button.Color (if model.SimulationSpeed = 0.5 then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 0.5)) ] 
+                      [ str "0.5×"] ]
+                  Control.div [] [ 
+                    Button.button 
+                      [ Button.Size IsSmall; 
+                        Button.Color (if model.SimulationSpeed = 1.0 then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 1.0)) ] 
+                      [ str "1×"] ]
+                  Control.div [] [ 
+                    Button.button 
+                      [ Button.Size IsSmall; 
+                        Button.Color (if model.SimulationSpeed = 2.0 then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 2.0)) ] 
+                      [ str "2×"] ]
+                  Control.div [] [ 
+                    Button.button 
+                      [ Button.Size IsSmall; 
+                        Button.Color (if model.SimulationSpeed = 5.0 then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 5.0)) ] 
+                      [ str "5×"] ]
+                  Control.div [] [ 
+                    Button.button 
+                      [ Button.Size IsSmall; 
+                        Button.Color (if model.SimulationSpeed = 10. then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 10.)) ] 
+                      [ str "10×"] ]
+                ]                                
           
+             ]   
+        ]
+
+      Menu.label [ ] [ str "Aircraft controls" ]
+      Menu.list [ ]
+        [       
           Menu.Item.li [
             Menu.Item.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
             (
@@ -385,6 +452,8 @@ let view model dispatch =
                           ]
                       ]
                     
+                    viewTimer model dispatch
+
                     Columns.columns [ 
                       Columns.IsCentered  ]
                       [

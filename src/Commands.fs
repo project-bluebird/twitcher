@@ -155,7 +155,7 @@ let getAllPositions config =
       match res.Status with
       | 400 -> 
         Browser.console.log("No aircraft in simulation")
-        return [||]
+        return [||], TimeSpan.FromSeconds 0.0
       | 200 -> 
         let! txt = res.text()
 
@@ -165,15 +165,15 @@ let getAllPositions config =
         let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
         let result = Decode.fromString (Decode.dict positionDecoder) txt
         
-        match result with
-        | Ok values ->
-            return parseAllPositions values
-        | Error err -> 
+        match result, resultTime with
+        | Ok values, Ok elapsed ->
+            return parseAllPositions values, TimeSpan.FromSeconds(float elapsed)
+        | Error err, _ | _, Error err -> 
             Browser.console.log("Error getting aircraft positions: " + err)
-            return [||]
+            return [||], TimeSpan.FromSeconds(0.0)
       | _ -> 
         Browser.console.log("Cannot get aircraft positions, return code " + string res.Status)
-        return [||]
+        return [||], TimeSpan.FromSeconds(0.0)
   }
 
 let getAllPositionsCmd config  =
@@ -281,6 +281,37 @@ let resumeSimulation config =
 
 let resumeSimulationCmd config =
   Cmd.ofPromise resumeSimulation config ResumedSimulation ConnectionError    
+
+//=============================================================== 
+// Change simulation speed (simulation rate multiplier)
+
+let changeSimulationSpeed (config, rate) =
+  promise {
+      let url = [ urlBase config; config.Endpoint_set_simulation_rate_multiplier ] |> String.concat "/"
+      let body = 
+        Encode.object [ yield! ["multiplier", Encode.float rate] ]
+        |> Encode.toString 0
+
+      let props =
+          [ RequestProperties.Method HttpMethod.POST
+            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+            RequestProperties.Body !^body
+            ]
+      
+      let! response =  Fetch.fetch url props
+      match response.Status with
+      | 200 -> return Some rate
+      | 400 -> 
+          Browser.console.log("Rate multiplier was invalid")
+          return None
+      | 500 -> 
+          Browser.console.log("Could not change the rate multiplier: " + response.StatusText)
+          return None
+      | _ -> return None
+  }
+
+let changeSimulationRateMultiplierCmd config rate = 
+  Cmd.ofPromise changeSimulationSpeed (config, rate) ChangedSimulationRateMultiplier ConnectionError
 
 // =============================================================== 
 // Create aircraft

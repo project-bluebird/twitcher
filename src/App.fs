@@ -37,6 +37,8 @@ let init() =
     PositionHistory = 0, (Dictionary<AircraftID, Position []>())
     InConflict = [||]
     SeparationDistance = None
+    SimulationSpeed = 1.0
+    SimulationTime = System.TimeSpan.FromSeconds(0.0)
    },
   Cmd.batch [
     Cmd.ofMsg Init

@@ -23,6 +23,8 @@ type CommandForm =
   | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
   | LoadScenarioForm of Twitcher.ScenarioForm.FormModel
 
+type ElapsedTime = System.TimeSpan
+
 type Model = {
   Animate : bool
   Sector : (Coordinates list) option
@@ -35,7 +37,10 @@ type Model = {
   SimulationViewSize : float * float // width, height
   ViewDetails : AircraftID option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
+  SimulationSpeed : float
+  SimulationTime: ElapsedTime
 }
+
 
 type Msg =
   | Init
@@ -52,7 +57,7 @@ type Msg =
   | GetPosition of AircraftID
   | GetAllPositions
   | FetchedPosition of AircraftInfo option
-  | FetchedAllPositions of AircraftInfo[]
+  | FetchedAllPositions of AircraftInfo[] * ElapsedTime
 
   | LoadScenario of string
   | LoadedScenario of string
@@ -69,7 +74,7 @@ type Msg =
   | ResumedSimulation of bool
 
   | SetSimulationRateMultiplier of float
-  | ChangedSimulationRateMultiplier
+  | ChangedSimulationRateMultiplier of float option
 
   | ShowCreateAircraftForm
   | CreateAircraft of AircraftInfo
