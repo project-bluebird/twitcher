@@ -1,0 +1,18 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+	"name": "F# (.NET Core 2.1)",
+	"dockerFile": "Dockerfile",
+
+	"appPort": 8080,
+
+	// Uncomment the next line to run commands after the container is created.
+	"postCreateCommand": "rm -r paket-files/paket.restore.cached; ./fake.sh build",
+
+	"extensions": [
+		"Ionide.Ionide-fsharp",
+		"ms-vscode.csharp"
+	],
+	"settings": {
+		"FSharp.fsacRuntime":"netcore"
+	}
+}
