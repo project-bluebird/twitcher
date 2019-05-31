@@ -90,3 +90,4 @@ RUN apt-get autoremove -y \
 ENV SHELL /bin/bash
 	
 EXPOSE 8080
+EXPOSE 5001

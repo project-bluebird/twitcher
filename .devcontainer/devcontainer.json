@@ -6,7 +6,7 @@
 	"appPort": 8080,
 
 	// Uncomment the next line to run commands after the container is created.
-	"postCreateCommand": "rm -r paket-files/paket.restore.cached; ./fake.sh build",
+	"postCreateCommand": "rm -r paket-files/paket.restore.cached; ./fake.sh build; ./fake.sh build",
 
 	"extensions": [
 		"Ionide.Ionide-fsharp",

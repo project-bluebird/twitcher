@@ -18,6 +18,7 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "Install" (fun _ ->
+    printfn "%A" __SOURCE_DIRECTORY__
     DotNet.restore
         (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
         "twitcher.sln"
