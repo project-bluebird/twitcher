@@ -90,5 +90,12 @@ RUN apt-get autoremove -y \
 # Set the default shell to bash instead of sh
 ENV SHELL /bin/bash
 
+ENV IN_DOCKER 1
+
+# Restore dependencies and build the project
+COPY . /workspaces/twitcher
+WORKDIR /workspaces/twitcher
+RUN rm -r paket-files/paket.restore.cached; ./fake.sh build; ./fake.sh build; ./fake.sh build
+
 EXPOSE 8080
-#EXPOSE 5001
+

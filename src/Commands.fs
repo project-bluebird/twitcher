@@ -33,7 +33,7 @@ let getYamlAttribute name (text: string []) =
 let decodeConfig (alltext: string) = 
   let text = alltext.Split '\n'
   {
-    Host = getYamlAttribute "host" text
+    Host = "host.docker.internal" //getYamlAttribute "host" text
     Port = getYamlAttribute "port" text
     Api_path = getYamlAttribute "api_path" text
     Api_version = getYamlAttribute "api_version" text 

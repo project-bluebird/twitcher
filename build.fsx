@@ -18,7 +18,6 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "Install" (fun _ ->
-    printfn "%A" __SOURCE_DIRECTORY__
     DotNet.restore
         (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
         "twitcher.sln"
@@ -29,6 +28,10 @@ Target.create "YarnInstall" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
+    let docker = if System.Environment.GetEnvironmentVariable("IN_DOCKER") = "1" then true else false
+
+    printfn "****\n\n\n%A\n\n\n***" docker
+
     let result =
         DotNet.exec
             (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
