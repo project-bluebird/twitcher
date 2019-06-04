@@ -10,6 +10,11 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.JavaScript
 
+let deployDir = "./deploy" |> Path.getFullName
+let staticDir = "./static/assets" |> Path.getFullName
+
+let localConfig = staticDir + "/api-config.yaml"
+
 Target.create "Clean" (fun _ ->
     !! "src/bin"
     ++ "src/obj"
@@ -28,9 +33,11 @@ Target.create "YarnInstall" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
-    let docker = if System.Environment.GetEnvironmentVariable("IN_DOCKER") = "1" then true else false
 
-    printfn "****\n\n\n%A\n\n\n***" docker
+    // download API config yaml file
+    let configFile = "https://raw.githubusercontent.com/alan-turing-institute/dodo/master/config.yml"
+    let wc = new System.Net.WebClient()
+    wc.DownloadFile(configFile, localConfig)
 
     let result =
         DotNet.exec
@@ -51,10 +58,27 @@ Target.create "Watch" (fun _ ->
     if not result.OK then failwithf "dotnet fable failed with code %i" result.ExitCode
 )
 
+Target.create "DockerBuild" (fun _ ->
+
+    // change internal address for Bluebird to run in Docker
+    let apiConfig = System.IO.File.ReadAllText(localConfig)
+    let apiConfig' = apiConfig.Replace("localhost", "host.docker.internal")
+    System.IO.File.WriteAllText(localConfig, apiConfig')
+
+    let result =
+        DotNet.exec
+            (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
+            "fable"
+            "webpack --port free -- -p"
+            
+    !! "output/*.*" |> Fake.IO.Shell.copyFiles deployDir
+)
+
 // Build order
 "Clean"
     ==> "Install"
     ==> "YarnInstall"
+    ==> "DockerBuild"
     ==> "Build"
 
 "Watch"

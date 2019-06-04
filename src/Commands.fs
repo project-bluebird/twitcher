@@ -33,7 +33,7 @@ let getYamlAttribute name (text: string []) =
 let decodeConfig (alltext: string) = 
   let text = alltext.Split '\n'
   {
-    Host = "host.docker.internal" //getYamlAttribute "host" text
+    Host = getYamlAttribute "host" text //"host.docker.internal" //
     Port = getYamlAttribute "port" text
     Api_path = getYamlAttribute "api_path" text
     Api_version = getYamlAttribute "api_version" text 
@@ -65,11 +65,11 @@ let decodeConfig (alltext: string) =
 }
 
 
-let configFile = "https://raw.githubusercontent.com/alan-turing-institute/dodo/master/config.yml"
+let configFile = "assets/api-config.yaml"
 let getConfig () =
   promise {
     let url = configFile
-    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+    let! res = Fetch.fetch url []
     let! txt = res.text()
     return decodeConfig txt
   }
