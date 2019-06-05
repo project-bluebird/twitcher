@@ -2,6 +2,6 @@ version: '3'
 services:
   web:
     build: .
-    command: http-server /workspaces/twitcher/output
+    command: http-server .
     ports:
       - "8080:8080"
