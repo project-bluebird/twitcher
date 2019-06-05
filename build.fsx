@@ -71,7 +71,7 @@ Target.create "DockerBuild" (fun _ ->
             "fable"
             "webpack --port free -- -p"
             
-    !! "output/*.*" |> Fake.IO.Shell.copyFiles deployDir
+    Fake.IO.Shell.copyRecursive "output" deployDir true |> ignore
 )
 
 // Build order
