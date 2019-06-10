@@ -10,6 +10,15 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.JavaScript
 
+
+let deployDir = "./deploy" |> Path.getFullName
+let staticDir = "./static/assets" |> Path.getFullName
+let dockerUser = "evelina"
+let dockerOrg = "turinginst"
+let dockerImageName = "twitcher"
+
+let localConfig = staticDir + "/api-config.yaml"
+
 Target.create "Clean" (fun _ ->
     !! "src/bin"
     ++ "src/obj"
@@ -28,6 +37,12 @@ Target.create "YarnInstall" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
+
+    // download API config yaml file
+    let configFile = "https://raw.githubusercontent.com/alan-turing-institute/dodo/master/config.yml"
+    let wc = new System.Net.WebClient()
+    wc.DownloadFile(configFile, localConfig)
+
     let result =
         DotNet.exec
             (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
@@ -47,14 +62,28 @@ Target.create "Watch" (fun _ ->
     if not result.OK then failwithf "dotnet fable failed with code %i" result.ExitCode
 )
 
+Target.create "DockerBuild" (fun _ ->
+
+    // let result =
+    //     DotNet.exec
+    //         (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
+    //         "fable"
+    //         "webpack --port free -- -p"
+            
+    Fake.IO.Shell.copyRecursive "output" deployDir true |> ignore
+
+    // if not result.OK then failwithf "dotnet fable failed with code %i" result.ExitCode
+)
+
 // Build order
 "Clean"
     ==> "Install"
     ==> "YarnInstall"
     ==> "Build"
+    ==> "DockerBuild"
 
 "Watch"
     <== [ "YarnInstall" ]
 
 // start build
-Target.runOrDefault "Build"
+Target.runOrDefault "DockerBuild"
