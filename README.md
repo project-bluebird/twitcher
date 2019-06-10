@@ -7,13 +7,31 @@ Wikipedia [article on birdwatching](https://en.wikipedia.org/wiki/Birdwatching) 
 
 ## Running Twitcher
 
-Twitcher is built using .NET Core and Fable. 
+The recommended way to run Twitcher is via a docker container. Simply clone the repository and run
 
-### Requirements
+```
+docker-compose up --build
+```
+
+Then go to [http://localhost:8080/](http://localhost:8080/) in your browser. The visualisation is tested in Chrome.
+
+Twitcher assumes that [Bluesky](https://github.com/alan-turing-institute/bluesky/) and [Bluebird](https://github.com/alan-turing-institute/bluebird/) are already running on the same machine.
+
+## Developing Twitcher
+
+Twitcher is built using .NET Core and Fable, then compiled to Javascript. 
+
+The recommended method of developing is inside a docker container, using [VS Code Remote - Containers extension](https://code.visualstudio.com/docs/remote/containers). The folder `.devcontainer` contains the required settings and the `Dockerfile` of the development machine with all dependencies installed. To start developing, install the VS Code extension and open the project in a dev container.
+
+### Overview of requirements
+
+If you want to develop the app outside of the dev container, here is the list of requirements (see also `.devcontainer/Dockerfile`):
 
 * [dotnet SDK](https://www.microsoft.com/net/download/core) 2.1 or higher
 * [node.js](https://nodejs.org) with [yarn](https://yarnpkg.com/lang/en/)
+* [mono](https://www.mono-project.com/docs/getting-started/install/) (or [.NET Framework](https://dotnet.microsoft.com/download/dotnet-framework)) for restoring dependencies
 * For development: Visual Studio Code with [Ionide plugin](http://ionide.io/).
+
 
 ### Building and running the app
 
