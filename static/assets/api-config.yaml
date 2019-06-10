@@ -1,5 +1,5 @@
 default:
-  host: "host.docker.internal"
+  host: "localhost"
   port: "5001"
   api_path: "api"
   api_version: "v1"

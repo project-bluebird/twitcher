@@ -2,6 +2,7 @@ version: '3'
 services:
   web:
     build: .
+    image: turinginst/twitcher
     command: http-server .
     ports:
       - "8080:8080"
