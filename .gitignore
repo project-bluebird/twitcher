@@ -197,3 +197,6 @@ project.lock.json
 
 # Confidential data
 nats-sector.json
+
+# PyCharm files
+.idea/
