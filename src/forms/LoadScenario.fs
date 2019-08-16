@@ -5,26 +5,26 @@ open Twitcher.Domain
 open Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 
-type FormModel = 
+
+
+type FormModel =
   { Path : string
     CheckFields : bool
    }
 
-type Msg = 
+type Msg =
   | ChangePath of string
   | SubmitForm
   | Cancel
@@ -37,7 +37,7 @@ type ExternalMsg =
 
 let init() =
   { Path = ""; CheckFields = false },
-  Cmd.none    
+  Cmd.none
 
 let update msg model =
   match msg with
@@ -61,10 +61,10 @@ let view model (dispatch: Msg -> unit) =
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Select scenario file" ]
               form [] [
-                formItem 
-                    "File path" 
+                formItem
+                    "File path"
                     model.Path
-                    ChangePath 
+                    ChangePath
                     model.CheckFields
                     (fun _ -> true)
                     "Please enter a valid path"
@@ -73,7 +73,7 @@ let view model (dispatch: Msg -> unit) =
 
 
                 Field.div [ ]
-                    [ File.file [ 
+                    [ File.file [
                           File.HasName
                           File.Option.Props [
                             OnChange (fun ev -> !!ev.target?value |> ChangePath |> dispatch) ]]
@@ -81,24 +81,23 @@ let view model (dispatch: Msg -> unit) =
                             [ File.input [  ]
                               File.cta [ ]
                                 [ File.icon [ ]
-                                    [ Icon.faIcon [ ] [ Fa.icon Fa.I.Upload ] ]
+                                    [ Icon.icon [ ] [ Fa.i [Fa.Solid.Upload][] ] ]
                                   File.label [ ]
                                     [ str "Choose a file..." ] ]
                               File.name [ ]
                                 [ str model.Path ] ] ] ]
-            
+
                 hr []
-                Button.button 
+                Button.button
                     [ Button.OnClick (fun _ -> dispatch SubmitForm)
                       Button.Color Color.IsPrimary ]
                     [str "Submit"]
-                Button.button 
+                Button.button
                     [ Button.OnClick (fun _ -> dispatch Msg.Cancel)
                       Button.Color Color.IsGrey ]
-                    [str "Cancel"]         
+                    [str "Cancel"]
               ]
           ]
           ]
         Modal.close [ Modal.Close.Size IsLarge
-                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
-
+                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]

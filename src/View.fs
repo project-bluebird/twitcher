@@ -4,27 +4,27 @@ open Twitcher.Domain
 open Twitcher.Model
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
+open Fable.FontAwesome.Free
 
 open System.Collections.Generic
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
+
 
 let basicNavbar model dispatch =
     Navbar.navbar [ ]
         [ Navbar.Brand.div [ ]
             [ Navbar.Item.a [ Navbar.Item.Props [ Href "#" ] ]
-                [ Icon.faIcon [ ] [
-                  Fa.icon Fa.I.Binoculars ]
+                [ Icon.icon [ ] [
+                  Fa.i [Fa.Solid.Binoculars] [] ]
                   Heading.p [ Heading.Is5 ] [ str "Twitcher" ]  ]]
           // Navbar.Item.div [ Navbar.Item.HasDropdown
           //                   Navbar.Item.IsHoverable ]
@@ -40,7 +40,7 @@ let basicNavbar model dispatch =
           //           [ str "Something else" ] ] ]
           Navbar.End.div [ ]
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
-                    Src "assets/Turing-logo.png" ] ] ] 
+                    Src "assets/Turing-logo.png" ] ] ]
 
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
@@ -51,52 +51,52 @@ let viewSimulation model dispatch =
             ClassName "svg-box-content"
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
-            ] 
+            ]
             [
-              yield! 
+              yield!
                 match model.Sector with
-                | Some(points) -> 
-                  let coordinates = 
-                    points 
-                    |> List.map (fun coord -> 
+                | Some(points) ->
+                  let coordinates =
+                    points
+                    |> List.map (fun coord ->
                       let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
                       string x + "," + string y )
                     |> String.concat " "
 
-                  [ polygon 
+                  [ polygon
                       [
-                        Points coordinates                       
-                        Style 
+                        Points coordinates
+                        Style
                           [ Fill "white" ]
                       ] []]
-                | None -> []                    
+                | None -> []
 
-              yield! 
-                model.Positions  
+              yield!
+                model.Positions
                 |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
                 |> List.map (fun aircraft ->
                     let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
 
-                    circle [ 
+                    circle [
                       Cx (string x)
                       Cy (string y)
                       R (string (model.SeparationDistance.Value) + "px")
-                      Style 
+                      Style
                           [
                             Fill "orange"
                             Opacity "0.25"
                           ]
                     ] []
-                )              
+                )
 
-              yield! 
-                model.Positions  
+              yield!
+                model.Positions
                 |> List.collect (fun aircraft ->
                     let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-                    let past = 
+                    let past =
                       if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
-                        (snd model.PositionHistory).[aircraft.AircraftID] 
-                        |> Array.map (fun pastPosition -> // TODO - precompute this? 
+                        (snd model.PositionHistory).[aircraft.AircraftID]
+                        |> Array.map (fun pastPosition -> // TODO - precompute this?
                           CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude) model.SimulationViewSize)
                       else [||]
                     let selected = model.ViewDetails = Some(aircraft.AircraftID)
@@ -104,8 +104,8 @@ let viewSimulation model dispatch =
 
                     [
                       // plot current position and past path
-                      if past.Length > 0 then 
-                        let path = 
+                      if past.Length > 0 then
+                        let path =
                           Array.append past [|x,y|]
                           |> fun a -> if selected then a else Array.skip (a.Length - 11) a
                           |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
@@ -123,24 +123,24 @@ let viewSimulation model dispatch =
 
                       if conflict then
                         yield
-                          circle [ 
+                          circle [
                             Cx (string x)
                             Cy (string y)
                             R (if selected then "7" else "5")
-                            Style 
+                            Style
                                 [ Stroke (if selected then "black" else "black")
                                   StrokeWidth (if selected then "1" else "1")
                                   Fill (if selected then "orange" else "grey") ]
                             OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                          ] []      
+                          ] []
 
                       else
                         yield
-                          circle [ 
+                          circle [
                             Cx (string x)
                             Cy (string y)
                             R (if selected then "7" else "5")
-                            Style 
+                            Style
                                 [ Stroke (if selected then "turquoise" else "black")
                                   StrokeWidth (if selected then "5" else "1")
                                   Fill (if selected then "black" else "grey") ]
@@ -153,7 +153,7 @@ let viewSimulation model dispatch =
       ]
     ]
 
-  
+
 let commandForm model dispatch =
   Container.container []
    (match model.FormModel with
@@ -168,8 +168,8 @@ let commandForm model dispatch =
     | Some(LoadScenarioForm f) ->
       [ ScenarioForm.view f (LoadScenarioMsg >> dispatch)]
     | None -> []
-    )         
- 
+    )
+
 
 let viewAircraftDetails model dispatch =
   div [] [
@@ -180,77 +180,77 @@ let viewAircraftDetails model dispatch =
       yield! [
         Message.message [ Message.Color IsPrimary ] [
           Message.header [] [
-            Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
+            Icon.icon [ ] [ Fa.i [ Fa.Solid.Plane ] [] ]
             str info.AircraftID
             Delete.delete [ Delete.OnClick (fun _ -> dispatch CloseAircraftDetails) ] []
           ]
           Message.body [] [
 
-            Table.table [ Table.Props [ClassName "table-no-border"] ] 
+            Table.table [ Table.Props [ClassName "table-no-border"] ]
               [
                 tr []
                   [ td [] [ Heading.h6 [] [str "Longitude"] ]
-                    td [] 
+                    td []
                       [ str (sprintf "%.3f" info.Position.Coordinates.Longitude) ]
-                    td [] []]    
+                    td [] []]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Latitude"] ]
-                    td [] 
+                    td []
                       [ str (sprintf "%.3f" info.Position.Coordinates.Latitude) ]
-                    td [] []]                                      
+                    td [] []]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Course"] ]
-                    td [] 
-                      [ 
-                          match info.Heading with 
+                    td []
+                      [
+                          match info.Heading with
                           | Some(x) -> yield (str (sprintf "%.1f" x + "°"))
                           | None -> yield (Button.a [ Button.IsLoading true; Button.IsOutlined; Button.IsText; Button.Size IsSmall ] [ str "Loading" ])
                            ]
-                    td [] [ 
-                      Button.button 
+                    td [] [
+                      Button.button
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
-                          Button.Color IsPrimary 
-                          Button.IsOutlined ] 
-                        [ Icon.faIcon [ ] [ Fa.icon Fa.I.LocationArrow ]
+                          Button.Color IsPrimary
+                          Button.IsOutlined ]
+                        [ Icon.icon [ ] [ Fa.i [Fa.Solid.LocationArrow] [] ]
                           Text.span [] [ str "Change heading" ]]]]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Altitude"] ]
-                    td [] 
+                    td []
                       [ str (sprintf "%.0f ft" info.Position.Altitude) ]
-                    td [] [ 
-                      Button.button 
+                    td [] [
+                      Button.button
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeAltitudeForm info))
                           Button.Color IsPrimary
-                          Button.IsOutlined ] 
-                        [ Icon.faIcon [ ] [ Fa.icon Fa.I.ArrowsV ]
+                          Button.IsOutlined ]
+                        [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV] [] ]
                           Text.span [] [str "Change" ]]]
                   ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Ground speed"] ]
-                    td [] 
+                    td []
                       [ str (
-                          match info.GroundSpeed with 
+                          match info.GroundSpeed with
                           | Some(s) -> sprintf "%.0f" s + " knots"
                           | None  -> "unknown" ) ]
                     td [] [
-                      Button.button 
-                          [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info)) 
+                      Button.button
+                          [ Button.OnClick (fun _ -> dispatch (ShowChangeSpeedForm info))
                             Button.Color IsPrimary
-                            Button.IsOutlined ] 
-                          [ Icon.faIcon [ ] [ Fa.icon Fa.I.Tachometer ]
-                            Text.span [] [str "Change calib. air speed" ]]]                 
+                            Button.IsOutlined ]
+                          [ Icon.icon [ ] [ Fa.i [Fa.Solid.TachometerAlt][] ]
+                            Text.span [] [str "Change calib. air speed" ]]]
                     ]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Vertical speed"] ]
-                    td [] 
+                    td []
                       [ str (
-                          match info.VerticalSpeed with 
+                          match info.VerticalSpeed with
                           | Some(s) -> sprintf "%.1f" s + " ft/min"
                           | None -> "unknown") ]
-                    td [] []]                    
+                    td [] []]
               ]
 
-            
+
           ]
         ]
       ]
@@ -267,30 +267,30 @@ let viewPositionTable model dispatch =
                 th [ ] [ str "Longitude" ]
                 th [ ] [ str "Altitude" ] ] ]
         tbody [ ]
-          (model.Positions 
-          |> List.map (fun pos -> 
+          (model.Positions
+          |> List.map (fun pos ->
               let className = [
                 if model.InConflict |> Array.contains pos.AircraftID then
                     yield  "is-warning"
                   else
                     yield  ""
                 match model.ViewDetails with
-                  | Some(acid) when acid = pos.AircraftID -> 
+                  | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then 
+                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then
                    yield  ""
-                else 
+                else
                    yield "is-greyed-out" ] |> String.concat " "
 
               tr [ OnClick (fun _ -> dispatch (ViewAircraftDetails pos.AircraftID)) :> IHTMLProp
-                   ClassName className ] 
+                   ClassName className ]
                   [ td [] [str pos.AircraftID]
-                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)] 
-                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)] 
+                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)]
+                    td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)]
                     td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
             ))
-       ]  
+       ]
 
 
 let viewTimer model dispatch =
@@ -301,9 +301,9 @@ let viewTimer model dispatch =
                 [ str "Simulation time" ]
               Level.title [ ]
                 [ str (
-                    sprintf "%02d:%02d:%02d" 
-                      model.SimulationTime.Hours 
-                      model.SimulationTime.Minutes 
+                    sprintf "%02d:%02d:%02d"
+                      model.SimulationTime.Hours
+                      model.SimulationTime.Minutes
                       model.SimulationTime.Seconds
                 )]
             ]
@@ -314,118 +314,118 @@ let viewControlMenu model dispatch =
   Menu.menu [ ]
     [ Menu.label [ ] [ str "General controls" ]
       Menu.list [ ]
-        [ Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [ 
-            Icon.faIcon [ ] [ Fa.icon Fa.I.Binoculars ]
+        [ Menu.Item.li
+            [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [
+            Icon.icon [ ] [ Fa.i [Fa.Solid.Binoculars][] ]
             str "Run as observer" ]
 
-          Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [ 
-            //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [ 
-            Icon.faIcon [ ] [ Fa.icon Fa.I.FileO ]
+          Menu.Item.li
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [
+            //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [
+            Icon.icon [ ] [ Fa.i [Fa.Solid.FileImport ][]]
             str "Load test scenario" ]
-          
-          Menu.Item.li 
-            [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [ 
-            Icon.faIcon [ ] [ Fa.icon Fa.I.Times ]
-            str "Reset simulator" ]                                  
+
+          Menu.Item.li
+            [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [
+            Icon.icon [ ] [ Fa.i [Fa.Solid.Times][] ]
+            str "Reset simulator" ]
         ]
 
       Menu.label [ ] [ str "Simulation controls" ]
       Menu.list [ ]
-        [    
-          Menu.Item.li 
+        [
+          Menu.Item.li
             [ Menu.Item.OnClick (fun _ -> dispatch ResumeSimulation)
               (
                 match model.State with
-                 | ActiveSimulation Paused -> 
+                 | ActiveSimulation Paused ->
                     Menu.Item.Props []
-                 | _ -> 
+                 | _ ->
                     Menu.Item.Props [ ClassName "is-disabled" ])
-             ] [ 
-              Icon.faIcon [ ] [ Fa.icon Fa.I.Play ]
-              str "Play/Resume" ]                                  
-          
-          Menu.Item.li 
+             ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Play][] ]
+              str "Play/Resume" ]
+
+          Menu.Item.li
             [ Menu.Item.OnClick (fun _ -> dispatch PauseSimulation)
               (
                 match model.State with
-                 | ActiveSimulation Playing -> 
+                 | ActiveSimulation Playing ->
                     Menu.Item.Props []
-                 | _ -> 
+                 | _ ->
                     Menu.Item.Props [ ClassName "is-disabled" ])
-             ] [ 
-              Icon.faIcon [ ] [ Fa.icon Fa.I.Pause ]
-              Text.span [] [ str "Pause"]                                
-          
+             ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Pause][] ]
+              Text.span [] [ str "Pause"]
+
              ]
 
-          Menu.Item.li 
+          Menu.Item.li
             [ (match model.State with
-                 | ActiveSimulation Playing | ActiveSimulation Observing | ReplaySimulation -> 
+                 | ActiveSimulation Playing | ActiveSimulation Observing | ReplaySimulation ->
                     Menu.Item.Props []
-                 | _ -> 
+                 | _ ->
                     Menu.Item.Props [ ClassName "is-disabled" ])
-             ] [ 
-              Icon.faIcon [ ] [ Fa.icon Fa.I.Tachometer ]
+             ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.TachometerAlt][] ]
               Text.span [] [ str "Simulator speed"]
-              Field.div [ Field.HasAddons ] 
+              Field.div [ Field.HasAddons ]
                 [
-                  Control.div [] [ 
-                    Button.button 
-                      [ Button.Size IsSmall; 
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
                         Button.Color (if model.SimulationSpeed = 0.5 then IsLight else IsWhite)
-                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 0.5)) ] 
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 0.5)) ]
                       [ str "0.5×"] ]
-                  Control.div [] [ 
-                    Button.button 
-                      [ Button.Size IsSmall; 
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
                         Button.Color (if model.SimulationSpeed = 1.0 then IsLight else IsWhite)
-                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 1.0)) ] 
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 1.0)) ]
                       [ str "1×"] ]
-                  Control.div [] [ 
-                    Button.button 
-                      [ Button.Size IsSmall; 
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
                         Button.Color (if model.SimulationSpeed = 2.0 then IsLight else IsWhite)
-                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 2.0)) ] 
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 2.0)) ]
                       [ str "2×"] ]
-                  Control.div [] [ 
-                    Button.button 
-                      [ Button.Size IsSmall; 
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
                         Button.Color (if model.SimulationSpeed = 5.0 then IsLight else IsWhite)
-                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 5.0)) ] 
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 5.0)) ]
                       [ str "5×"] ]
-                  Control.div [] [ 
-                    Button.button 
-                      [ Button.Size IsSmall; 
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
                         Button.Color (if model.SimulationSpeed = 10. then IsLight else IsWhite)
-                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 10.)) ] 
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 10.)) ]
                       [ str "10×"] ]
-                ]                                
-          
-             ]   
+                ]
+
+             ]
         ]
 
       Menu.label [ ] [ str "Aircraft controls" ]
       Menu.list [ ]
-        [       
+        [
           Menu.Item.li [
             Menu.Item.OnClick (fun _ -> dispatch ShowCreateAircraftForm)
             (
               match model.State with
-               | ActiveSimulation _ -> 
+               | ActiveSimulation _ ->
                   Menu.Item.Props []
-               | _ -> 
+               | _ ->
                   Menu.Item.Props [ ClassName "is-disabled" ])
-            ] [ 
-              Icon.faIcon [ ] [ Fa.icon Fa.I.Plane ]
-              Text.span [] [ str "Create aircraft"]  
-            ]       
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Plane][] ]
+              Text.span [] [ str "Create aircraft"]
+            ]
           ]
       ]
 
 
-                
+
 let view model dispatch =
     Hero.hero [  ]
       [
@@ -433,42 +433,41 @@ let view model dispatch =
 
         Container.container [ ]
 
-             (match model.State with 
+             (match model.State with
                | NotConnected ->
                    [ Button.button [ Button.OnClick (fun _ -> dispatch Init); Button.IsFullWidth ] [ str "Start" ] ]
                | ConnectionFailed ->
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
-                  [ 
-                    Columns.columns [] 
+                  [
+                    Columns.columns []
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is10)] 
+                        Column.column [ Column.Width(Screen.All, Column.Is10)]
                           [
-                            viewSimulation model dispatch 
+                            viewSimulation model dispatch
                           ]
-                        Column.column [ Column.Width(Screen.All, Column.Is2)] 
+                        Column.column [ Column.Width(Screen.All, Column.Is2)]
                           [
                             viewControlMenu model dispatch
                           ]
                       ]
-                    
+
                     viewTimer model dispatch
 
-                    Columns.columns [ 
+                    Columns.columns [
                       Columns.IsCentered  ]
                       [
                         Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
-                            
+
                             viewPositionTable model dispatch
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.IsHalf)] [
                           viewAircraftDetails model dispatch
                         ]
-                          
-                      ]
-                        
-                    commandForm model dispatch
-                    
-                   ] )] 
 
+                      ]
+
+                    commandForm model dispatch
+
+                   ] )]

@@ -5,4 +5,9 @@ Fable.Elmish.Browser
 Fable.Elmish.Debugger
 Fable.Elmish.HMR
 Fable.React
+Fable.Promise
+Fable.Fetch
 Fulma
+Fulma.Extensions.Wikiki.PageLoader
+Fable.FontAwesome.Free
+Thoth.Json

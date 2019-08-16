@@ -10,7 +10,12 @@ nuget Fable.Elmish.Browser
 nuget Fable.Elmish.Debugger
 nuget Fable.Elmish.HMR
 nuget Fable.React
-nuget Fulma prerelease
+nuget Fable.Promise
+nuget Fulma
+nuget Fulma.Extensions.Wikiki.PageLoader
+nuget Fable.FontAwesome.Free
+nuget Thoth.Json
+nuget Fable.Fetch
 
 group netcorebuild
     storage:none

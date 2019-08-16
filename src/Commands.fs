@@ -3,40 +3,40 @@ module Twitcher.Commands
 open Twitcher.Domain
 open Twitcher.Model
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 open System.Net.Http
 open System
+open Fable
+open Fetch
 
 
 // TODO: Change this to OpenAPI type provider when implemented
 
 let getYamlAttribute name (text: string []) =
-  let result = 
-    text 
+  let result =
+    text
     |> Array.filter (fun line -> line.Trim().StartsWith (name + ":"))
     |> Array.exactlyOne
   result.Remove(0,result.IndexOf ":" + 1)
   |> fun s -> s.Replace("\"","").Trim()
 
 
-let decodeConfig (alltext: string) = 
+let decodeConfig (alltext: string) =
   let text = alltext.Split '\n'
   {
     Host = getYamlAttribute "host" text //"host.docker.internal" //
     Port = getYamlAttribute "port" text
     Api_path = getYamlAttribute "api_path" text
-    Api_version = getYamlAttribute "api_version" text 
+    Api_version = getYamlAttribute "api_version" text
     Simulator = getYamlAttribute "simulator" text
     Bluesky_simulator = getYamlAttribute "bluesky_simulator" text
     College_simulator = getYamlAttribute "college_simulator" text
@@ -74,21 +74,21 @@ let getConfig () =
     return decodeConfig txt
   }
 
-let getConfigCmd () = 
-  Cmd.ofPromise getConfig () Config ConnectionError
+let getConfigCmd () =
+  Cmd.OfPromise.either getConfig () Config ConnectionError
 
 
-let urlBase config = 
-  ["http://" + config.Host + ":" + config.Port; 
+let urlBase config =
+  ["http://" + config.Host + ":" + config.Port;
    config.Api_path
    config.Api_version ] |> String.concat "/"
 
 let urlAircraftPosition (config: Configuration) =
   [urlBase config
    config.Endpoint_aircraft_position ]
-  |> String.concat "/"   
+  |> String.concat "/"
 
-let pingBluebird config = 
+let pingBluebird config =
   promise {
       let url = urlAircraftPosition config + "?acid=all"
 
@@ -98,17 +98,17 @@ let pingBluebird config =
           | 200 | 400 -> return true
           | _ -> return false
       with e ->
-          if e.Message.StartsWith("400") then   
-            return true 
-          else 
+          if e.Message.StartsWith("400") then
+            return true
+          else
             return false
   }
 
-let pingBluebirdCmd config = 
-  Cmd.ofPromise pingBluebird config ConnectionActive ConnectionError   
+let pingBluebirdCmd config =
+  Cmd.OfPromise.either pingBluebird config ConnectionActive ConnectionError
 
-// =============================================================== 
-// Aircraft position  
+// ===============================================================
+// Aircraft position
 
 
 type JsonPositionInfo = {
@@ -125,7 +125,7 @@ let positionDecoder = Decode.Auto.generateDecoder<obj>()
 let parseAircraftInfo id info =
     {
       AircraftID = id
-      Time = None 
+      Time = None
       Type = Some info.actype
       Position = {
         Altitude = info.alt |> Conversions.Altitude.m2ft
@@ -134,58 +134,58 @@ let parseAircraftInfo id info =
           Longitude = info.lon
         }
       }
-      GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some 
+      GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some
       VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
       CalibratedAirSpeed = None
       Heading = None
     }
 
-let parseAllPositions (data: Map<string, obj>) =
+let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
   data
-  |> Map.toArray
+  |> Collections.Map.toArray
   |> Array.filter (fun (key, info) -> key <> "sim_t")
   |> Array.map (fun (acid, info) -> parseAircraftInfo acid (info :?> JsonPositionInfo))
 
 let getAllPositions config =
   promise {
-      let url = 
+      let url =
         urlAircraftPosition config + "?acid=all"
       let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
       match res.Status with
-      | 400 -> 
-        Browser.console.log("No aircraft in simulation")
+      | 400 ->
+        Fable.Core.JS.console.log("No aircraft in simulation")
         return [||], TimeSpan.FromSeconds 0.0
-      | 200 -> 
+      | 200 ->
         let! txt = res.text()
 
         let decodeTime = Decode.field "sim_t" (Decode.int)
-        let resultTime = Decode.fromString decodeTime txt   // TODO 
+        let resultTime = Decode.fromString decodeTime txt   // TODO
 
         let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
         let result = Decode.fromString (Decode.dict positionDecoder) txt
-        
+
         match result, resultTime with
         | Ok values, Ok elapsed ->
             return parseAllPositions values, TimeSpan.FromSeconds(float elapsed)
-        | Error err, _ | _, Error err -> 
-            Browser.console.log("Error getting aircraft positions: " + err)
+        | Error err, _ | _, Error err ->
+            Fable.Core.JS.console.log("Error getting aircraft positions: " + err)
             return [||], TimeSpan.FromSeconds(0.0)
-      | _ -> 
-        Browser.console.log("Cannot get aircraft positions, return code " + string res.Status)
+      | _ ->
+        Fable.Core.JS.console.log("Cannot get aircraft positions, return code " + string res.Status)
         return [||], TimeSpan.FromSeconds(0.0)
   }
 
 let getAllPositionsCmd config  =
-  Cmd.ofPromise getAllPositions config FetchedAllPositions ConnectionError
+  Cmd.OfPromise.either getAllPositions config FetchedAllPositions ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Get single aircraft's position
 
 
 let getAircraftPosition (config, aircraftID) =
   promise {
-      let url = 
+      let url =
         urlAircraftPosition config + "?acid=" + aircraftID
 
       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
@@ -196,9 +196,9 @@ let getAircraftPosition (config, aircraftID) =
   }
 
 let getAircraftPositionCmd config aircraftID =
-  Cmd.ofPromise getAircraftPosition (config, aircraftID) FetchedPosition ConnectionError
+  Cmd.OfPromise.either getAircraftPosition (config, aircraftID) FetchedPosition ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Load scenario
 
 let urlLoadScenario (config: Configuration) =
@@ -215,7 +215,7 @@ let loadScenario (config, path) =
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return "Scenario loaded"
@@ -225,9 +225,9 @@ let loadScenario (config, path) =
   }
 
 let loadScenarioCmd config path =
-  Cmd.ofPromise loadScenario (config, path) LoadedScenario ConnectionError
+  Cmd.OfPromise.either loadScenario (config, path) LoadedScenario ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Reset simulator
 
 let urlReset config =
@@ -235,60 +235,60 @@ let urlReset config =
     config.Endpoint_reset_simulation ]
   |> String.concat "/"
 
-let resetSimulator config = 
+let resetSimulator config =
   promise {
-      let url = urlReset config    
+      let url = urlReset config
       let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
-      | _ -> return false 
+      | _ -> return false
   }
 
 let resetSimulatorCmd config =
-  Cmd.ofPromise resetSimulator config ResetedSimulator ConnectionError
+  Cmd.OfPromise.either resetSimulator config ResetedSimulator ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Pause simulation
 
 let urlPause config = [ urlBase config; config.Endpoint_pause_simulation ] |> String.concat "/"
 
-let pauseSimulation config = 
+let pauseSimulation config =
   promise {
       let url = urlPause config
       let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
-      | _ -> return false 
+      | _ -> return false
   }
 
 let pauseSimulationCmd config =
-  Cmd.ofPromise pauseSimulation config PausedSimulation ConnectionError  
+  Cmd.OfPromise.either pauseSimulation config PausedSimulation ConnectionError
 
 
-// =============================================================== 
+// ===============================================================
 // Resume simulation
 
 let urlResume config = [ urlBase config; config.Endpoint_resume_simulation ] |> String.concat "/"
 
-let resumeSimulation config = 
+let resumeSimulation config =
   promise {
-      let url = urlResume config      
+      let url = urlResume config
       let! response =  Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       match response.Status with
       | 200 -> return true
-      | _ -> return false 
+      | _ -> return false
   }
 
 let resumeSimulationCmd config =
-  Cmd.ofPromise resumeSimulation config ResumedSimulation ConnectionError    
+  Cmd.OfPromise.either resumeSimulation config ResumedSimulation ConnectionError
 
-//=============================================================== 
+//===============================================================
 // Change simulation speed (simulation rate multiplier)
 
 let changeSimulationSpeed (config, rate) =
   promise {
       let url = [ urlBase config; config.Endpoint_set_simulation_rate_multiplier ] |> String.concat "/"
-      let body = 
+      let body =
         Encode.object [ yield! ["multiplier", Encode.float rate] ]
         |> Encode.toString 0
 
@@ -297,23 +297,23 @@ let changeSimulationSpeed (config, rate) =
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return Some rate
-      | 400 -> 
-          Browser.console.log("Rate multiplier was invalid")
+      | 400 ->
+          Fable.Core.JS.console.log("Rate multiplier was invalid")
           return None
-      | 500 -> 
-          Browser.console.log("Could not change the rate multiplier: " + response.StatusText)
+      | 500 ->
+          Fable.Core.JS.console.log("Could not change the rate multiplier: " + response.StatusText)
           return None
       | _ -> return None
   }
 
-let changeSimulationRateMultiplierCmd config rate = 
-  Cmd.ofPromise changeSimulationSpeed (config, rate) ChangedSimulationRateMultiplier ConnectionError
+let changeSimulationRateMultiplierCmd config rate =
+  Cmd.OfPromise.either changeSimulationSpeed (config, rate) ChangedSimulationRateMultiplier ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Create aircraft
 
 let urlCreateAircraft (config: Configuration) =
@@ -323,8 +323,8 @@ let urlCreateAircraft (config: Configuration) =
 
 
 let encodeAircraftInfo a =
-  let aircraft = 
-    Encode.object 
+  let aircraft =
+    Encode.object
       [ "acid", Encode.string a.AircraftID
         "type", Encode.string a.Type.Value
         "alt", Encode.float (float a.Position.Altitude)
@@ -341,14 +341,14 @@ let createAircraft (config, aircraftData: AircraftInfo) =
   promise {
       let url = urlCreateAircraft config
       let body = encodeAircraftInfo aircraftData
-      Browser.console.log(body)
+      Fable.Core.JS.console.log(body)
 
       let props =
           [ RequestProperties.Method HttpMethod.POST
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return "Aircraft created"
@@ -358,9 +358,9 @@ let createAircraft (config, aircraftData: AircraftInfo) =
   }
 
 let createAircraftCmd config aircraftData =
-  Cmd.ofPromise createAircraft (config, aircraftData) CreatedAircraft ConnectionError
+  Cmd.OfPromise.either createAircraft (config, aircraftData) CreatedAircraft ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Change altitude
 
 let urlChangeAltitude (config: Configuration) =
@@ -369,42 +369,42 @@ let urlChangeAltitude (config: Configuration) =
   |> String.concat "/"
 
 let encodeChangeAltitude aircraftID altitude verticalSpeed =
-  let aircraft = 
-    Encode.object 
+  let aircraft =
+    Encode.object
       [ yield! ["acid", Encode.string aircraftID]
-        yield! ["alt", Encode.float (float altitude)] 
+        yield! ["alt", Encode.float (float altitude)]
         yield! [
-           match verticalSpeed with 
+           match verticalSpeed with
            | Some vs -> yield "vspd", Encode.float vs
            | None -> () ]
       ]
-  Encode.toString 0 aircraft  
+  Encode.toString 0 aircraft
 
 let changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed) =
   promise {
       let url = urlChangeAltitude config
       let body = encodeChangeAltitude aircraftID requestedAltitude verticalSpeed
-      Browser.console.log(body)
+      Fable.Core.JS.console.log(body)
 
       let props =
           [ RequestProperties.Method HttpMethod.POST
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return "Command accepted, altitude changed"
       | 400 -> return "Aircraft ID was invalid"
       | 500 -> return "Aircraft not found " + response.StatusText
-      | _ -> return response.StatusText    
+      | _ -> return response.StatusText
   }
 
 let changeAltitudeCmd config aircraftID (requestedAltitude: Altitude) verticalSpeed =
-  Cmd.ofPromise changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed)
+  Cmd.OfPromise.either changeAltitude (config, aircraftID, requestedAltitude, verticalSpeed)
     ChangedAltitude ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Change speed
 
 let urlChangeSpeed (config: Configuration) =
@@ -413,12 +413,12 @@ let urlChangeSpeed (config: Configuration) =
   |> String.concat "/"
 
 let encodeChangeSpeed aircraftID (speed: Speed) =
-  let aircraft = 
-    Encode.object 
+  let aircraft =
+    Encode.object
       [ "acid", Encode.string aircraftID
         "spd", Encode.float (float speed)
       ]
-  Encode.toString 0 aircraft  
+  Encode.toString 0 aircraft
 
 let changeSpeed (config, aircraftID, cas) =
   promise {
@@ -430,20 +430,20 @@ let changeSpeed (config, aircraftID, cas) =
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return "Command accepted, speed changed"
       | 400 -> return "Aircraft ID was invalid"
       | 500 -> return "Aircraft not found " + response.StatusText
-      | _ -> return response.StatusText    
+      | _ -> return response.StatusText
   }
 
 let changeSpeedCmd config aircraftID calibratedAirSpeed =
-  Cmd.ofPromise changeSpeed (config, aircraftID, calibratedAirSpeed)
-    ChangedSpeed ConnectionError    
+  Cmd.OfPromise.either changeSpeed (config, aircraftID, calibratedAirSpeed)
+    ChangedSpeed ConnectionError
 
-// =============================================================== 
+// ===============================================================
 // Change heading
 
 let urlChangeHeading (config: Configuration) =
@@ -452,12 +452,12 @@ let urlChangeHeading (config: Configuration) =
   |> String.concat "/"
 
 let encodeChangeHeading (aircraftID: AircraftID) (heading: Heading) =
-  let aircraft = 
-    Encode.object 
+  let aircraft =
+    Encode.object
       [ "acid", Encode.string aircraftID
         "hdg", Encode.float (float heading)
       ]
-  Encode.toString 0 aircraft  
+  Encode.toString 0 aircraft
 
 let changeHeading (config, aircraftID, heading) =
   promise {
@@ -469,19 +469,19 @@ let changeHeading (config, aircraftID, heading) =
             Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
             RequestProperties.Body !^body
             ]
-      
+
       let! response =  Fetch.fetch url props
       match response.Status with
       | 200 -> return "Command accepted, heading changed"
       | 400 -> return "Aircraft ID was invalid"
       | 500 -> return "Aircraft not found " + response.StatusText
-      | _ -> return response.StatusText    
+      | _ -> return response.StatusText
   }
 
 let changeHeadingCmd config aircraftID heading =
-  Browser.console.log("here")
-  Cmd.ofPromise changeHeading (config, aircraftID, heading)
-    ChangedHeading ConnectionError        
+  Fable.Core.JS.console.log("here")
+  Cmd.OfPromise.either changeHeading (config, aircraftID, heading)
+    ChangedHeading ConnectionError
 
 //=================================================================
 
@@ -492,16 +492,16 @@ let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 let getSectorOutline() =
   promise {
     let url = "assets/nats-sector.json"
-    try 
+    try
       let! res = Fetch.fetch url []
       let! txt = res.text()
       match Decode.fromString sectorDecoder txt with
       | Ok value -> return Some(value)
-      | Error err -> 
-          Browser.console.log(err)
+      | Error err ->
+          Fable.Core.JS.console.log(err)
           return None
     with ex ->
-      Browser.console.log(ex)
+      Fable.Core.JS.console.log(ex)
 
       // get a default sector
       let urlDefault = "assets/default-sector.json"
@@ -509,13 +509,12 @@ let getSectorOutline() =
       let! txt = resDefault.text()
       match Decode.fromString sectorDecoder txt with
       | Ok value -> return Some(value)
-      | Error err -> 
-          Browser.console.log(err)
+      | Error err ->
+          Fable.Core.JS.console.log(err)
           return None
   }
 
 
 /// Fetch sector outline
 let getSectorOutlineCmd() =
-  Cmd.ofPromise getSectorOutline () SectorOutline ErrorMessage    
-
+  Cmd.OfPromise.either getSectorOutline () SectorOutline ErrorMessage

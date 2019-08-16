@@ -4,10 +4,10 @@ open Twitcher.Domain
 open Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 
 open Elmish.React
@@ -16,7 +16,7 @@ open Fable.Import
 open Fable.Core.JsInterop
 
 
-type FormModel = 
+type FormModel =
   { AircraftID : string
     Latitude : string
     Longitude : string
@@ -28,7 +28,7 @@ type FormModel =
     CheckFields : bool
     Type : string }
 
-type Msg = 
+type Msg =
   | ChangeAircraftID of string
   | ChangeAircraftType of string
   | ChangeLatitude of string
@@ -45,12 +45,12 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftInfo  
+    | Submit of AircraftInfo
     | Cancel
 
 let init() =
   { AircraftID = "AB1"
-    Latitude = "51" 
+    Latitude = "51"
     Longitude = "0"
     Heading = "0"
     Speed = "200"
@@ -59,12 +59,12 @@ let init() =
     Type = "B744"
     AltitudeUnit = Feet
     CheckFields = false },
-  Cmd.none    
+  Cmd.none
 
 let update msg model =
   match msg with
   | ChangeAircraftID x ->
-    { model with 
+    { model with
         FormModel.AircraftID = x },
     Cmd.none,
     NoOp
@@ -76,16 +76,16 @@ let update msg model =
     NoOp
 
   | ChangeLatitude x ->
-      { model with Latitude = x }, Cmd.none, NoOp  
-  
+      { model with Latitude = x }, Cmd.none, NoOp
+
   | ChangeLongitude x ->
-      { model with Longitude = x }, Cmd.none, NoOp  
-  
+      { model with Longitude = x }, Cmd.none, NoOp
+
   | ChangeHeading x ->
       { model with Heading = x }, Cmd.none, NoOp
 
   | ChangeSpeed x ->
-      { model with Speed = x }, Cmd.none, NoOp  
+      { model with Speed = x }, Cmd.none, NoOp
 
   | SetSpeedUnit su ->
       let speedUnit =
@@ -100,7 +100,7 @@ let update msg model =
       { model with Altitude = x}, Cmd.none, NoOp
 
   | SetAltitudeUnit x ->
-      Browser.console.log(x)
+      Fable.Core.JS.console.log(x)
       let altUnit =
         match x with
         | "Flight levels" -> FlightLevels
@@ -110,7 +110,7 @@ let update msg model =
       { model with AltitudeUnit = altUnit}, Cmd.none, NoOp
 
   | SubmitForm ->
-      { model with CheckFields = true}, 
+      { model with CheckFields = true},
       Cmd.ofMsg CheckFields,
       NoOp
 
@@ -127,7 +127,7 @@ let update msg model =
         (model.Heading |> checkFloat) &&
         (model.Speed |> checkFloat) &&
         (model.Altitude |> checkFloat) then
-        let aircraftInfo = 
+        let aircraftInfo =
           { AircraftID = model.AircraftID
             Type = Some model.Type
             Time = None
@@ -137,7 +137,7 @@ let update msg model =
                 Latitude = float model.Latitude * 1.<latitude>
                 Longitude = float model.Longitude * 1.<longitude>
               }
-              Altitude = 
+              Altitude =
                 match model.AltitudeUnit with
                 | FlightLevels -> (model.Altitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
                 | Feet -> float model.Altitude * 1.<ft>
@@ -147,11 +147,11 @@ let update msg model =
             VerticalSpeed = None
             CalibratedAirSpeed =
               match model.SpeedUnit with
-              | SpeedUnit.Knots -> 
+              | SpeedUnit.Knots ->
                   float model.Speed * 1.<knot> |> Some
               | SpeedUnit.Mach ->
                   float model.Speed * 1.<Mach> |> Conversions.Speed.mach2knot |> Some
-              | SpeedUnit.Kmh -> 
+              | SpeedUnit.Kmh ->
                   float model.Speed * 1.<km/h> |> Conversions.Speed.kmh2knot |> Some
               | _ -> None
             }
@@ -167,34 +167,34 @@ let view model (dispatch: Msg -> unit) =
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Create new aircraft" ]
               form [ ]
-                [ formItem 
+                [ formItem
                     "Aircraft identifier"
-                    model.AircraftID    
-                    ChangeAircraftID 
+                    model.AircraftID
+                    ChangeAircraftID
                     model.CheckFields
-                    checkAircraftID 
-                    "Aircraft ID must be alphanumeric and have at least 3 characters." 
+                    checkAircraftID
+                    "Aircraft ID must be alphanumeric and have at least 3 characters."
                     None
-                    dispatch 
+                    dispatch
 
-                  formItem 
+                  formItem
                     "Aircraft type (ICAO identifier)"
-                    model.Type    
-                    ChangeAircraftType 
+                    model.Type
+                    ChangeAircraftType
                     model.CheckFields
-                    checkAircraftType 
-                    "Aircraft type is an alphanumeric identifier, for example B744 is Boeing 747-400." 
-                    (Some( 
-                      Text.span 
-                        [ Modifiers [Modifier.TextSize (Screen.All, TextSize.Is7) ]] 
+                    checkAircraftType
+                    "Aircraft type is an alphanumeric identifier, for example B744 is Boeing 747-400."
+                    (Some(
+                      Text.span
+                        [ Modifiers [Modifier.TextSize (Screen.All, TextSize.Is7) ]]
                         [ a [ Href "https://en.wikipedia.org/wiki/List_of_ICAO_aircraft_type_designators"
                               Target "_blank"
-                            ] [ str "Wikipedia - list of ICAO aircraft identifiers" ] 
+                            ] [ str "Wikipedia - list of ICAO aircraft identifiers" ]
                             ]))
-                    dispatch  
+                    dispatch
 
-                  formItem 
-                    "Latitude [decimal degrees]" 
+                  formItem
+                    "Latitude [decimal degrees]"
                     model.Latitude
                     ChangeLatitude
                     model.CheckFields
@@ -203,20 +203,20 @@ let view model (dispatch: Msg -> unit) =
                     None
                     dispatch
 
-                  formItem 
-                    "Longitude [decimal degrees]" 
+                  formItem
+                    "Longitude [decimal degrees]"
                     model.Longitude
-                    ChangeLongitude 
+                    ChangeLongitude
                     model.CheckFields
                     checkFloat
                     "Longitude must be a floating point number"
                     None
                     dispatch
 
-                  formItem 
-                    "Heading [degrees]" 
+                  formItem
+                    "Heading [degrees]"
                     model.Heading
-                    ChangeHeading 
+                    ChangeHeading
                     model.CheckFields
                     checkFloat
                     "Heading must be a floating point number"
@@ -224,39 +224,39 @@ let view model (dispatch: Msg -> unit) =
                     dispatch
 
                   formItemOptions
-                    "Altitude" 
+                    "Altitude"
                     [ "Feet"; "Flight levels"; "Meters" ]
                     SetAltitudeUnit
                     model.Altitude
-                    ChangeAltitude 
+                    ChangeAltitude
                     model.CheckFields
                     checkFloat
                     "Altitude must be a number"
-                    dispatch          
+                    dispatch
                   formItemOptions
                     "Calibrated air speed"
                     ["Knots"; "Mach"; "Km/h" ]
                     SetSpeedUnit
                     model.Speed
-                    ChangeSpeed 
+                    ChangeSpeed
                     model.CheckFields
                     checkFloat
                     "Speed must be a number"
-                    dispatch        
+                    dispatch
                 ]
               hr []
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch SubmitForm)
                     Button.Color Color.IsPrimary ]
                   [str "Submit"]
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch Msg.Cancel)
                     Button.Color Color.IsGrey ]
-                  [str "Cancel"]         
+                  [str "Cancel"]
           ]
           ]
         Modal.close [ Modal.Close.Size IsLarge
-                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
+                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]
 
 
 
