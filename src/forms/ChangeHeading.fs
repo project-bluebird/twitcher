@@ -4,28 +4,27 @@ open Twitcher.Domain
 open Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 
-type FormModel = 
+
+type FormModel =
   { AircraftID : string
     CurrentHeading : Heading option
     NewHeading : string
     CheckFields : bool
    }
 
-type Msg = 
+type Msg =
   | ChangeHeading of string
   | SubmitForm
   | Cancel
@@ -34,7 +33,7 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftID * Heading 
+    | Submit of AircraftID * Heading
     | Cancel
 
 let init(aircraftID, heading) =
@@ -42,7 +41,7 @@ let init(aircraftID, heading) =
     CurrentHeading = heading
     NewHeading = ""
     CheckFields = false },
-  Cmd.none    
+  Cmd.none
 
 
 let update msg model =
@@ -51,7 +50,7 @@ let update msg model =
       { model with NewHeading = x}, Cmd.none, NoOp
 
   | SubmitForm ->
-      { model with CheckFields = true}, 
+      { model with CheckFields = true},
       Cmd.ofMsg CheckFields,
       NoOp
 
@@ -75,11 +74,11 @@ let view model (dispatch: Msg -> unit) =
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change heading" ]
 
-              Level.level [] 
-                (match model.CurrentHeading with 
+              Level.level []
+                (match model.CurrentHeading with
                  | Some(hdg) ->
-                   [ Level.item [Level.Item.HasTextCentered ] [ 
-                      div [] 
+                   [ Level.item [Level.Item.HasTextCentered ] [
+                      div []
                         [ Level.heading [] [ str "Current course"]
                           Level.title [] [ str (sprintf "%.1f°" hdg ) ] ]
                     ] ]
@@ -88,26 +87,25 @@ let view model (dispatch: Msg -> unit) =
               form [ ]
                 [ // TODO display current heading
                   formItem
-                    "Heading" 
+                    "Heading"
                     model.NewHeading
                     ChangeHeading
                     model.CheckFields
                     checkFloat
                     "Heading must be a number"
                     (Some (str "Heading is the clock-wise angle to North in degrees." ))
-                    dispatch          
+                    dispatch
                 ]
               hr []
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch SubmitForm)
                     Button.Color Color.IsPrimary ]
                   [str "Submit"]
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch Msg.Cancel)
                     Button.Color Color.IsGrey ]
-                  [str "Cancel"]         
+                  [str "Cancel"]
           ]
           ]
         Modal.close [ Modal.Close.Size IsLarge
-                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
-
+                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]

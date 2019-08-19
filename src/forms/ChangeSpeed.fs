@@ -4,21 +4,20 @@ open Twitcher.Domain
 open Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 
-type FormModel = 
+
+type FormModel =
   { AircraftID : string
     GroundSpeed : Speed option
     SpeedUnit : SpeedUnit
@@ -27,7 +26,7 @@ type FormModel =
     CheckFields : bool
    }
 
-type Msg = 
+type Msg =
   | ChangeSpeed of string
   | SetSpeedUnit of string
   | SubmitForm
@@ -37,7 +36,7 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftID * Speed 
+    | Submit of AircraftID * Speed
     | Cancel
 
 let init(aircraftID, groundSpeed) =
@@ -47,7 +46,7 @@ let init(aircraftID, groundSpeed) =
     GroundSpeed = groundSpeed
     VerticalSpeed = None
     CheckFields = false },
-  Cmd.none    
+  Cmd.none
 
 let update msg model =
   match msg with
@@ -55,7 +54,7 @@ let update msg model =
       { model with NewSpeed = x}, Cmd.none, NoOp
 
   | SetSpeedUnit x ->
-      Browser.console.log(x)
+      Fable.Core.JS.console.log(x)
       let speedUnit =
         match x with
         | "Km/h" -> Kmh
@@ -65,7 +64,7 @@ let update msg model =
       { model with SpeedUnit = speedUnit}, Cmd.none, NoOp
 
   | SubmitForm ->
-      { model with CheckFields = true}, 
+      { model with CheckFields = true},
       Cmd.ofMsg CheckFields,
       NoOp
 
@@ -76,15 +75,15 @@ let update msg model =
 
   | CheckFields ->
       if (model.NewSpeed |> checkFloat) &&
-         (if model.VerticalSpeed.IsSome then 
-            model.VerticalSpeed.Value |> checkFloat 
+         (if model.VerticalSpeed.IsSome then
+            model.VerticalSpeed.Value |> checkFloat
           else true) then
-        let speed = 
+        let speed =
           match model.SpeedUnit with
-          | Kmh -> float model.NewSpeed * 1.<km/h> |> Conversions.Speed.kmh2knot 
+          | Kmh -> float model.NewSpeed * 1.<km/h> |> Conversions.Speed.kmh2knot
           | Knots -> float model.NewSpeed * 1.<knot>
           | Mach -> float model.NewSpeed * 1.<Mach> |> Conversions.Speed.mach2knot
-          | FeetPerMinute -> float model.NewSpeed * 1.<ft/minute> |> Conversions.Speed.fm2ms |> Conversions.Speed.ms2knot 
+          | FeetPerMinute -> float model.NewSpeed * 1.<ft/minute> |> Conversions.Speed.fm2ms |> Conversions.Speed.ms2knot
           | MetersPerSecond -> float model.NewSpeed * 1.<m/s> |> Conversions.Speed.ms2knot
 
         model, Cmd.none, ExternalMsg.Submit (model.AircraftID, speed)
@@ -98,18 +97,18 @@ let view model (dispatch: Msg -> unit) =
         Modal.content [ ]
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change calibrated air speed" ]
-              Level.level [] 
-                (match model.GroundSpeed with 
+              Level.level []
+                (match model.GroundSpeed with
                  | Some(gs) ->
-                   [ Level.item [Level.Item.HasTextCentered ] [ 
-                      div [] 
+                   [ Level.item [Level.Item.HasTextCentered ] [
+                      div []
                         [ Level.heading [] [ str "Current ground speed"]
                           (match model.SpeedUnit with
-                           | Knots -> 
+                           | Knots ->
                               Level.title [] [ str (sprintf "%.0f knots" gs) ]
-                           | Kmh -> 
+                           | Kmh ->
                               Level.title [] [ str (sprintf "%.0f km/h" (gs |> Conversions.Speed.knot2kmh)) ]
-                           | Mach -> 
+                           | Mach ->
                               Level.title [] [ str (sprintf "Mach %.3f" (gs |> Conversions.Speed.knot2mach)) ]
                            | FeetPerMinute | MetersPerSecond -> Level.title [] [ str "Error" ]
                            ) ]
@@ -118,7 +117,7 @@ let view model (dispatch: Msg -> unit) =
               form [ ]
                 [ // TODO display current speed?
                   formItemOptions
-                    "Calibrated air speed (CAS)" 
+                    "Calibrated air speed (CAS)"
                     [ "Knots"; "Mach"; "Km/h" ]
                     SetSpeedUnit
                     model.NewSpeed
@@ -126,19 +125,18 @@ let view model (dispatch: Msg -> unit) =
                     model.CheckFields
                     checkFloat
                     "Speed must be a number"
-                    dispatch          
+                    dispatch
                 ]
               hr []
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch SubmitForm)
                     Button.Color Color.IsPrimary ]
                   [str "Submit"]
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch Msg.Cancel)
                     Button.Color Color.IsGrey ]
-                  [str "Cancel"]         
+                  [str "Cancel"]
           ]
           ]
         Modal.close [ Modal.Close.Size IsLarge
-                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
-
+                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]

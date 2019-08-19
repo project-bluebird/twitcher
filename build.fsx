@@ -1,15 +1,21 @@
 #r "paket: groupref netcorebuild //"
 #load ".fake/build.fsx/intellisense.fsx"
+#if !FAKE
+#r "Facades/netstandard"
+#r "netstandard"
+#endif
 
 #nowarn "52"
 
+open System
 open Fake.Core
 open Fake.Core.TargetOperators
 open Fake.DotNet
 open Fake.IO
 open Fake.IO.Globbing.Operators
+open Fake.IO.FileSystemOperators
+open Fake.Tools.Git
 open Fake.JavaScript
-
 
 let deployDir = "./deploy" |> Path.getFullName
 let staticDir = "./static/assets" |> Path.getFullName
@@ -26,7 +32,7 @@ Target.create "Clean" (fun _ ->
     |> Seq.iter Shell.cleanDir
 )
 
-Target.create "Install" (fun _ ->
+Target.create "DotnetRestore" (fun _ ->
     DotNet.restore
         (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
         "twitcher.sln"
@@ -43,23 +49,11 @@ Target.create "Build" (fun _ ->
     let wc = new System.Net.WebClient()
     wc.DownloadFile(configFile, localConfig)
 
-    let result =
-        DotNet.exec
-            (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
-            "fable"
-            "webpack --port free -- -p"
-
-    if not result.OK then failwithf "dotnet fable failed with code %i" result.ExitCode
+    Yarn.exec "webpack" id
 )
 
 Target.create "Watch" (fun _ ->
-    let result =
-        DotNet.exec
-            (DotNet.Options.withWorkingDirectory __SOURCE_DIRECTORY__)
-            "fable"
-            "webpack-dev-server --port free"
-
-    if not result.OK then failwithf "dotnet fable failed with code %i" result.ExitCode
+    Yarn.exec "webpack-dev-server" id
 )
 
 Target.create "DockerBuild" (fun _ ->
@@ -77,7 +71,7 @@ Target.create "DockerBuild" (fun _ ->
 
 // Build order
 "Clean"
-    ==> "Install"
+    ==> "DotnetRestore"
     ==> "YarnInstall"
     ==> "Build"
     ==> "DockerBuild"

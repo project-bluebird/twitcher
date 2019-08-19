@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Domain.fs" /> 
+    <Compile Include="Domain.fs" />
     <Compile Include="Conversions.fs" />
     <Compile Include="forms/Form.fs" />
     <Compile Include="forms/LoadScenario.fs" />
@@ -11,7 +11,7 @@
     <Compile Include="forms/ChangeAltitude.fs" />
     <Compile Include="forms/ChangeSpeed.fs" />
     <Compile Include="forms/ChangeHeading.fs" />
-    <Compile Include="Model.fs" />  
+    <Compile Include="Model.fs" />
     <Compile Include="Coordinates.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="View.fs" />

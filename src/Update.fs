@@ -1,57 +1,55 @@
 module Twitcher.Update
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
 
 open Twitcher
 open Twitcher.Domain
 open Twitcher.Model
 open Twitcher.CoordinateSystem
 open Twitcher.Commands
+open Fable
 
 open System.Collections.Generic
-
 
 
 let delayMsg _ =
   promise {
     do! Promise.sleep 1000
     return ()
-  } 
+  }
 
 
-let simulationViewSize() = 
-  Browser.document.getElementById("simulation-viewer").clientWidth,
-  Browser.document.getElementById("simulation-viewer").clientHeight  
+let simulationViewSize() =
+  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth,
+  Browser.Dom.window.document.getElementById("simulation-viewer").clientHeight
 
 let historyLength = 10000
 let historyInterval = 10
 
-let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) = 
+let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) =
   if positionHistory.ContainsKey aircraft.AircraftID then
     let lastItem = positionHistory.[aircraft.AircraftID].[positionHistory.[aircraft.AircraftID].Length-1]
-    positionHistory.[aircraft.AircraftID] <- 
+    positionHistory.[aircraft.AircraftID] <-
         if true then //positionHistory.[aircraft.AircraftID].Length < historyLength then
-          Array.append 
-            positionHistory.[aircraft.AircraftID] 
+          Array.append
+            positionHistory.[aircraft.AircraftID]
             [|aircraft.Position|]
         else
-          Array.append 
-            positionHistory.[aircraft.AircraftID].[1..] 
+          Array.append
+            positionHistory.[aircraft.AircraftID].[1..]
             [| aircraft.Position |]
   else
     positionHistory.[aircraft.AircraftID] <- [| aircraft.Position|]
   positionHistory
 
-let updateHistory (counter: int, positionHistory: Dictionary<AircraftID, Position []>) (positionInfo: AircraftInfo []) = 
+let updateHistory (counter: int, positionHistory: Dictionary<AircraftID, Position []>) (positionInfo: AircraftInfo []) =
   if counter = historyInterval || counter = 0 then
     positionInfo
     |> Array.iter (fun aircraft -> updateSingleHistory positionHistory aircraft |> ignore)
@@ -65,7 +63,7 @@ let estimateHeading (model: Model) (aircraftID: AircraftID) =
     |> List.find (fun pos -> pos.AircraftID = aircraftID)
     |> fun info -> info.Position
   if (snd model.PositionHistory).ContainsKey aircraftID then
-    let lastPosition = 
+    let lastPosition =
       let history =
         (snd model.PositionHistory).[aircraftID]
       if history.Length >= 1 then
@@ -78,19 +76,19 @@ let estimateHeading (model: Model) (aircraftID: AircraftID) =
     | None -> None
     | Some position ->
         clockwiseAngle position currentPosition |> Some
-  else None    
+  else None
 
 let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
-  let onScreen = 
-    positionInfo 
+  let onScreen =
+    positionInfo
     |> Array.filter (fun pos -> CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) viewSize)
 
   [| for i1 in 0..onScreen.Length-1 do
-      for i2 in i1+1..onScreen.Length-1 do 
+      for i2 in i1+1..onScreen.Length-1 do
         if onScreen.[i1] <> onScreen.[i2] &&
            abs(onScreen.[i1].Position.Altitude - onScreen.[i2].Position.Altitude) <= 1000.<ft> &&
-           (greatCircleDistance onScreen.[i1].Position onScreen.[i2].Position) <= (5.<nm> |> Conversions.Distance.nm2m) 
-        then 
+           (greatCircleDistance onScreen.[i1].Position onScreen.[i2].Position) <= (5.<nm> |> Conversions.Distance.nm2m)
+        then
           yield  onScreen.[i1].AircraftID
           yield onScreen.[i2].AircraftID |]
 
@@ -98,7 +96,7 @@ let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
     | Init ->
-        model, 
+        model,
         Cmd.batch [
           getConfigCmd()
           Cmd.ofMsg GetSimulationViewSize
@@ -107,26 +105,26 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | LoadSector ->
         model,
         getSectorOutlineCmd()
-    
+
     | SectorOutline outline ->
         { model with Sector = outline},
         Cmd.none
-    
+
     | ConnectionActive result ->
-        if result then 
+        if result then
           { model with State = Connected }, Cmd.none
-        else 
+        else
           { model with State = ConnectionFailed}, Cmd.none
 
     | Config config ->
-       { model with Config = Some config }, 
+       { model with Config = Some config },
        pingBluebirdCmd config
-       
+
     | GetSimulationViewSize ->
         let viewSize = simulationViewSize()
-        { model with 
+        { model with
             SimulationViewSize = viewSize
-            SeparationDistance = 
+            SeparationDistance =
               let x1, y1 = rescaleCollege calibrationPoint1 viewSize
               let x2, y2 = rescaleCollege calibrationPoint2 viewSize
               Some(y1 - y2)
@@ -142,53 +140,53 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | GetAllPositions ->
         match model.Config with
         | None ->
-            Browser.console.log("No configuration found")
+            Fable.Core.JS.console.log("No configuration found")
             model, Cmd.none
         | Some config ->
             model,
-            getAllPositionsCmd config 
+            getAllPositionsCmd config
 
     | GetPosition aircraftID ->
         match model.Config with
         | None ->
-            Browser.console.log("No configuration found")
+            Fable.Core.JS.console.log("No configuration found")
             model, Cmd.none
         | Some config ->
             model,
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions (positionInfo, elapsed) ->
-        let newModel = 
+        let newModel =
           { model with Positions = positionInfo |> List.ofArray }
-        { newModel with 
-            Positions = 
+        { newModel with
+            Positions =
               newModel.Positions
-              |> List.map (fun ac -> 
+              |> List.map (fun ac ->
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory positionInfo
             InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo
             SimulationTime = elapsed } ,
         Cmd.none
-    
+
     | FetchedPosition positionInfo ->
         match positionInfo with
         | Some position ->
-          Browser.console.log(position)
+          Fable.Core.JS.console.log(position)
         | None ->
-          Browser.console.log("Aircraft not found")
+          Fable.Core.JS.console.log("Aircraft not found")
 
         model,
         Cmd.none
 
     | ShowLoadScenarioForm ->
         let f, cmd = ScenarioForm.init()
-        { model with FormModel = Some (LoadScenarioForm(f)) }, 
+        { model with FormModel = Some (LoadScenarioForm(f)) },
             Cmd.batch [
               Cmd.map LoadScenarioMsg cmd
-            ]    
+            ]
 
-    | LoadScenario path -> 
-        { model with 
+    | LoadScenario path ->
+        { model with
               State = Connected
               FormModel = None
               ViewDetails = None
@@ -196,26 +194,26 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               Positions = []
               InConflict = [||] },
         loadScenarioCmd model.Config.Value path
-        
-    | LoadedScenario response -> 
+
+    | LoadedScenario response ->
         // pause the scenario
         { model with
-            State = ActiveSimulation Playing }, 
+            State = ActiveSimulation Playing },
         pauseSimulationCmd model.Config.Value
 
-    | ResetSimulator -> 
-        model, 
+    | ResetSimulator ->
+        model,
         Cmd.batch [
           resetSimulatorCmd model.Config.Value
           Cmd.ofMsg CloseAircraftDetails
         ]
 
-    | ResetedSimulator result -> 
-        if not result then 
-          Browser.console.log("Failed to reset the simulator")
+    | ResetedSimulator result ->
+        if not result then
+          Fable.Core.JS.console.log("Failed to reset the simulator")
           model, Cmd.none
         else
-          { model with 
+          { model with
               State = Connected
               FormModel = None
               ViewDetails = None
@@ -224,76 +222,76 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               InConflict = [||]
            }, Cmd.none
 
-    | PauseSimulation -> 
+    | PauseSimulation ->
         model, pauseSimulationCmd model.Config.Value
 
-    | PausedSimulation result -> 
-        if not result then 
-          Browser.console.log("Failed to pause the simulation")
+    | PausedSimulation result ->
+        if not result then
+          Fable.Core.JS.console.log("Failed to pause the simulation")
           model, Cmd.none
-        else 
+        else
           { model with State = ActiveSimulation Paused; SimulationSpeed = 1.0 }, Cmd.ofMsg StopAnimation
 
-    | ResumeSimulation -> 
+    | ResumeSimulation ->
         model, resumeSimulationCmd model.Config.Value
 
-    | ResumedSimulation result ->         
-        if not result then 
-          Browser.console.log("Failed to resume the simulation")
+    | ResumedSimulation result ->
+        if not result then
+          Fable.Core.JS.console.log("Failed to resume the simulation")
           model, Cmd.none
-        else 
+        else
           { model with State = ActiveSimulation Playing; SimulationSpeed = 1.0 }, Cmd.ofMsg StartAnimation
-    
+
     | SetSimulationRateMultiplier rt ->
         model, changeSimulationRateMultiplierCmd model.Config.Value rt
 
     | ChangedSimulationRateMultiplier result ->
         match result with
-        | None -> 
-          Browser.console.log("Failed to change simulation rate multiplier")
+        | None ->
+          Fable.Core.JS.console.log("Failed to change simulation rate multiplier")
           model, Cmd.none
         | Some rt ->
           { model with SimulationSpeed = rt }, Cmd.none
 
     | Observe ->
-        { model with 
+        { model with
               FormModel = None
               ViewDetails = None
               PositionHistory = 0, (Dictionary<AircraftID, Position []>())
               Positions = []
-              InConflict = [||] 
-              State = ActiveSimulation Observing }, 
+              InConflict = [||]
+              State = ActiveSimulation Observing },
         Cmd.ofMsg StartAnimation
 
     | StopObserving ->
         { model with State = Connected },
-        Cmd.ofMsg StopAnimation   
+        Cmd.ofMsg StopAnimation
 
-    | CreateAircraft aircraftInfo -> 
+    | CreateAircraft aircraftInfo ->
         model, createAircraftCmd model.Config.Value aircraftInfo
 
-    | CreatedAircraft result -> 
-        Browser.console.log(result)
+    | CreatedAircraft result ->
+        Fable.Core.JS.console.log(result)
         model, Cmd.none
 
-    | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) -> 
+    | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) ->
         model, changeAltitudeCmd model.Config.Value aircraftID requestedAltitude verticalSpeed
 
-    | ChangedAltitude result -> 
-        Browser.console.log(result)
+    | ChangedAltitude result ->
+        Fable.Core.JS.console.log(result)
         model, Cmd.none
 
-    | ChangeHeading (aircraftID, requestedHeading) -> 
+    | ChangeHeading (aircraftID, requestedHeading) ->
         model, changeHeadingCmd model.Config.Value aircraftID requestedHeading
 
-    | ChangedHeading result -> 
-        Browser.console.log(result)
+    | ChangedHeading result ->
+        Fable.Core.JS.console.log(result)
         model, Cmd.none
 
-    | ChangeSpeed (aircraftID, speed) -> 
+    | ChangeSpeed (aircraftID, speed) ->
         model, changeSpeedCmd model.Config.Value aircraftID speed
-    | ChangedSpeed result -> 
-        Browser.console.log(result)
+    | ChangedSpeed result ->
+        Fable.Core.JS.console.log(result)
         model, Cmd.none
 
     | ChangeVerticalSpeed (aircraftID, verticalSpeed) -> model, Cmd.none
@@ -301,7 +299,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
 
     | ConnectionError exn | ErrorMessage exn ->
-        Browser.console.error(exn)
+        Fable.Core.JS.console.error(exn)
         model,
         Cmd.none
 
@@ -310,7 +308,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           model,
           Cmd.batch [
            getAllPositionsCmd model.Config.Value
-           Cmd.ofPromise delayMsg () MakeStep ErrorMessage
+           Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
 
           ]
@@ -326,31 +324,31 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | ShowCreateAircraftForm ->
         let f, cmd = AircraftForm.init()
-        { model with FormModel = Some (CreateAircraftForm(f)) }, 
+        { model with FormModel = Some (CreateAircraftForm(f)) },
             Cmd.batch [
               Cmd.map CreateAircraftMsg cmd
-            ]       
+            ]
 
     | ShowChangeAltitudeForm aircraft ->
         let f, cmd = AltitudeForm.init(aircraft.AircraftID, aircraft.Position.Altitude)
-        { model with FormModel = Some (ChangeAltitudeForm(f)) }, 
+        { model with FormModel = Some (ChangeAltitudeForm(f)) },
             Cmd.batch [
               Cmd.map ChangeAltitudeMsg cmd
-            ]        
+            ]
 
     | ShowChangeSpeedForm aircraft ->
         let f, cmd = SpeedForm.init(aircraft.AircraftID, aircraft.GroundSpeed)
-        { model with FormModel = Some (ChangeSpeedForm(f)) }, 
+        { model with FormModel = Some (ChangeSpeedForm(f)) },
             Cmd.batch [
               Cmd.map ChangeSpeedMsg cmd
-            ]                  
+            ]
 
     | ShowChangeHeadingForm aircraft ->
         let f, cmd = HeadingForm.init(aircraft.AircraftID, aircraft.Heading)
-        { model with FormModel = Some (ChangeHeadingForm(f)) }, 
+        { model with FormModel = Some (ChangeHeadingForm(f)) },
             Cmd.batch [
               Cmd.map ChangeHeadingMsg cmd
-            ] 
+            ]
 
     | CreateAircraftMsg m ->
       match model.FormModel with
@@ -360,26 +358,26 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           match externalMsg with
           | AircraftForm.ExternalMsg.Submit info ->
-              { model with FormModel = None }, 
+              { model with FormModel = None },
               Cmd.batch [
                 Cmd.ofMsg (CreateAircraft info)
               ]
 
           | AircraftForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (CreateAircraftForm(f')) }, 
+              { model with FormModel = Some (CreateAircraftForm(f')) },
               Cmd.map CreateAircraftMsg cmd
 
           | AircraftForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
-              
+
       | None | Some _ ->
-          let f, cmd = AircraftForm.init()  
-          { model with FormModel = Some (CreateAircraftForm(f)) }, 
+          let f, cmd = AircraftForm.init()
+          { model with FormModel = Some (CreateAircraftForm(f)) },
               Cmd.batch [
                 Cmd.map CreateAircraftMsg cmd
                 Cmd.ofMsg (CreateAircraftMsg m) // initialized, resend
-              ]          
+              ]
 
     | ChangeAltitudeMsg m ->
       match model.FormModel with
@@ -389,22 +387,22 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           match externalMsg with
           | AltitudeForm.ExternalMsg.Submit(acid,alt,vs) ->
-              { model with FormModel = None }, 
+              { model with FormModel = None },
               Cmd.batch [
                 Cmd.ofMsg (ChangeAltitude (acid,alt,vs))
               ]
 
           | AltitudeForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (ChangeAltitudeForm(f')) }, 
+              { model with FormModel = Some (ChangeAltitudeForm(f')) },
               Cmd.map ChangeAltitudeMsg cmd
 
           | AltitudeForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
-              
+
       | None | Some _ ->
-          Browser.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none     
+          Fable.Core.JS.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none
 
     | ChangeSpeedMsg m ->
       match model.FormModel with
@@ -414,22 +412,22 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           match externalMsg with
           | SpeedForm.ExternalMsg.Submit(acid,cas) ->
-              { model with FormModel = None }, 
+              { model with FormModel = None },
               Cmd.batch [
                 Cmd.ofMsg (ChangeSpeed (acid,cas))
               ]
 
           | SpeedForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (ChangeSpeedForm(f')) }, 
+              { model with FormModel = Some (ChangeSpeedForm(f')) },
               Cmd.map ChangeSpeedMsg cmd
 
           | SpeedForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
-              
+
       | None | Some _ ->
-          Browser.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none     
+          Fable.Core.JS.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none
 
 
     | ChangeHeadingMsg m ->
@@ -440,22 +438,22 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           match externalMsg with
           | HeadingForm.ExternalMsg.Submit(acid,heading) ->
-              { model with FormModel = None }, 
+              { model with FormModel = None },
               Cmd.batch [
                 Cmd.ofMsg (ChangeHeading (acid,heading))
               ]
 
           | HeadingForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (ChangeHeadingForm(f')) }, 
+              { model with FormModel = Some (ChangeHeadingForm(f')) },
               Cmd.map ChangeHeadingMsg cmd
 
           | HeadingForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
-              
+
       | None | Some _ ->
-          Browser.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none               
+          Fable.Core.JS.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none
 
     | LoadScenarioMsg m ->
       match model.FormModel with
@@ -465,20 +463,19 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           match externalMsg with
           | ScenarioForm.ExternalMsg.Submit(path) ->
-              { model with FormModel = None }, 
+              { model with FormModel = None },
               Cmd.batch [
                 Cmd.ofMsg (LoadScenario path)
               ]
 
           | ScenarioForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (LoadScenarioForm(f')) }, 
+              { model with FormModel = Some (LoadScenarioForm(f')) },
               Cmd.map ChangeHeadingMsg cmd
 
           | ScenarioForm.ExternalMsg.Cancel ->
               { model with FormModel = None },
               Cmd.none
-              
-      | None | Some _ ->
-          Browser.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none              
 
+      | None | Some _ ->
+          Fable.Core.JS.console.log("Error - incorrect form model")
+          { model with FormModel = None }, Cmd.none

@@ -1,13 +1,12 @@
 module Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 open Elmish.React
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 
 let formItem label value message checkValid isValid warning other dispatch =
@@ -15,30 +14,30 @@ let formItem label value message checkValid isValid warning other dispatch =
     [ yield!
         [ Label.label [ ] [ str label ] ]
       yield!
-        [Input.text [ 
+        [Input.text [
           Input.Placeholder value
-          Input.Value value    
-          Input.Props 
+          Input.Value value
+          Input.Props
             [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch ) ] ] ]
-      
+
       yield!
-        (if checkValid && not (isValid value) then        
-          [Help.help 
+        (if checkValid && not (isValid value) then
+          [Help.help
             [  Help.Color IsDanger  ]
             [ str warning ]]
          else [])
-      yield! 
-        (match other with 
+      yield!
+        (match other with
          | Some(elem) -> [elem]
-         | None -> [] )]        
+         | None -> [] )]
 
 
-let formItemOptions label (options: string list) optionMessage value message checkValid isValid warning dispatch = 
+let formItemOptions label (options: string list) optionMessage value message checkValid isValid warning dispatch =
   Field.div [] [
     Label.label [ ] [ str label ]
-  
+
     Field.div [ Field.HasAddons ]
-      [ yield! 
+      [ yield!
          [ Select.select [ ]
             [ select [ DefaultValue (options.Head)
                        OnChange (fun ev -> !!ev.target?value |> optionMessage |> dispatch ) ]
@@ -47,16 +46,16 @@ let formItemOptions label (options: string list) optionMessage value message che
                     option [ Value value ][ str value] ))
               ] ]
         yield!
-         [Input.text [ 
+         [Input.text [
             Input.Placeholder value
-            Input.Value value    
-            Input.Props 
+            Input.Value value
+            Input.Props
               [ OnChange (fun ev -> !!ev.target?value |> message |> dispatch )
                  ] ] ]
-           
+
         yield!
-          (if checkValid && not (isValid value) then        
-            [Help.help 
+          (if checkValid && not (isValid value) then
+            [Help.help
               [  Help.Color IsDanger  ]
               [ str warning ]]
            else [])
@@ -68,9 +67,9 @@ let checkFloat x =
   canParse
 
 let checkAircraftID (x: string) =
-  (x.Length >= 3) 
+  (x.Length >= 3)
   && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))
 
 let checkAircraftType (x: string) =
-  (x.Length >= 3) 
+  (x.Length >= 3)
   && (x |> Seq.forall (fun c -> System.Char.IsLetterOrDigit(c)))

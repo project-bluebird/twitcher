@@ -4,21 +4,21 @@ open Twitcher.Domain
 open Twitcher.Form
 
 open Elmish
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Fable.React
+open Fable.React.Props
 open Fulma
-open Fulma.FontAwesome
+open Fable.FontAwesome
 
 
 open Elmish.React
 
 open Fable.Import
-open Fable.PowerPack
 open Fable.Core.JsInterop
 open Thoth.Json
-open Fable.PowerPack.Fetch.Fetch_types
+open Fable
 
-type FormModel = 
+
+type FormModel =
   { AircraftID : string
     CurrentAltitude : Altitude
     AltitudeUnit : AltitudeUnit
@@ -27,7 +27,7 @@ type FormModel =
     CheckFields : bool
    }
 
-type Msg = 
+type Msg =
   | ChangeAltitude of string
   | SetAltitudeUnit of string
   | SubmitForm
@@ -37,7 +37,7 @@ type Msg =
 
 type ExternalMsg =
     | NoOp
-    | Submit of AircraftID * Altitude * float option  // Submit altitude in feet  
+    | Submit of AircraftID * Altitude * float option  // Submit altitude in feet
     | Cancel
 
 let init(aircraftID, currentAltitude) =
@@ -47,7 +47,7 @@ let init(aircraftID, currentAltitude) =
     CurrentAltitude = currentAltitude
     VerticalSpeed = None
     CheckFields = false },
-  Cmd.none    
+  Cmd.none
 
 let update msg model =
   match msg with
@@ -55,7 +55,7 @@ let update msg model =
       { model with NewAltitude = x}, Cmd.none, NoOp
 
   | SetAltitudeUnit x ->
-      Browser.console.log(x)
+      Fable.Core.JS.console.log(x)
       let altUnit =
         match x with
         | "Flight levels" -> FlightLevels
@@ -65,7 +65,7 @@ let update msg model =
       { model with AltitudeUnit = altUnit}, Cmd.none, NoOp
 
   | SubmitForm ->
-      { model with CheckFields = true}, 
+      { model with CheckFields = true},
       Cmd.ofMsg CheckFields,
       NoOp
 
@@ -76,18 +76,18 @@ let update msg model =
 
   | CheckFields ->
       if (model.NewAltitude |> checkFloat) &&
-         (if model.VerticalSpeed.IsSome then 
-            model.VerticalSpeed.Value |> checkFloat 
+         (if model.VerticalSpeed.IsSome then
+            model.VerticalSpeed.Value |> checkFloat
           else true) then
-        let altitude = 
+        let altitude =
           match model.AltitudeUnit with
           | FlightLevels -> (model.NewAltitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
           | Feet -> float model.NewAltitude * 1.<ft>
           | Meters -> float model.NewAltitude * 1.<m> |> Conversions.Altitude.m2ft
-        let verticalSpeed = 
-          model.VerticalSpeed 
+        let verticalSpeed =
+          model.VerticalSpeed
           |> Option.map (fun value -> float value)
-          
+
         model, Cmd.none, ExternalMsg.Submit (model.AircraftID, altitude, verticalSpeed)
       else
         model, Cmd.none, NoOp
@@ -100,9 +100,9 @@ let view model (dispatch: Msg -> unit) =
           [ Box.box' [ ] [
               Heading.p [ Heading.Is5 ] [ str "Change altitude" ]
 
-              Level.level [] 
-                   [ Level.item [Level.Item.HasTextCentered ] [ 
-                      div [] 
+              Level.level []
+                   [ Level.item [Level.Item.HasTextCentered ] [
+                      div []
                         [ yield Level.heading [] [ str "Current altitude"]
                           let alt = model.CurrentAltitude
                           yield
@@ -115,31 +115,31 @@ let view model (dispatch: Msg -> unit) =
                     ] ]
 
               form [ ]
-                [ 
+                [
                   formItemOptions
-                    "Altitude" 
+                    "Altitude"
                     [ "Feet"; "Flight levels"; "Meters" ]
                     SetAltitudeUnit
                     model.NewAltitude
-                    ChangeAltitude 
+                    ChangeAltitude
                     model.CheckFields
                     checkFloat
                     "Altitude must be a number"
-                    dispatch          
+                    dispatch
                 ]
               hr []
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch SubmitForm)
                     Button.Color Color.IsPrimary ]
                   [str "Submit"]
-              Button.button 
+              Button.button
                   [ Button.OnClick (fun _ -> dispatch Msg.Cancel)
                     Button.Color Color.IsGrey ]
-                  [str "Cancel"]         
+                  [str "Cancel"]
           ]
           ]
         Modal.close [ Modal.Close.Size IsLarge
-                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]   
+                      Modal.Close.OnClick (fun _ -> dispatch Msg.Cancel) ] [ ] ]
 
 
 
