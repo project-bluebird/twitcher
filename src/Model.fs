@@ -25,6 +25,11 @@ type CommandForm =
 
 type ElapsedTime = System.TimeSpan
 
+type SectorDisplay =
+  | TopDown
+  | LateralNorthSouth
+  | LateralEastWest
+
 type Model = {
   Animate : bool
   Sector : (Coordinates list) option
@@ -39,6 +44,7 @@ type Model = {
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
+  SectorDisplay : SectorDisplay
 }
 
 
@@ -50,6 +56,8 @@ type Msg =
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
+
+  | ChangeDisplay of SectorDisplay
 
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails

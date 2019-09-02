@@ -42,6 +42,7 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
+// TODO: implement lateral views
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
     [
@@ -424,7 +425,30 @@ let viewControlMenu model dispatch =
           ]
       ]
 
-
+let viewDisplayMenu model dispatch =
+  Menu.menu [ ]
+    [ Menu.label [ ] [ str "Display controls" ]
+      Field.div [ Field.HasAddons ]
+        [
+          Control.div [] [
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = TopDown then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.TopDown)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.Eye ][] ]] 
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = LateralEastWest then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.LateralEastWest)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltH ][] ]] 
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = LateralNorthSouth then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.LateralNorthSouth)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV ][] ]] 
+          ]
+        ]
+    ]
 
 let view model dispatch =
     Hero.hero [  ]
@@ -449,6 +473,7 @@ let view model dispatch =
                         Column.column [ Column.Width(Screen.All, Column.Is2)]
                           [
                             viewControlMenu model dispatch
+                            viewDisplayMenu model dispatch
                           ]
                       ]
 

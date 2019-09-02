@@ -22,7 +22,6 @@ open Thoth.Json
 open System.Collections.Generic
 
 
-
 let init() =
   { Positions = []
     Animate = false
@@ -37,6 +36,7 @@ let init() =
     SeparationDistance = None
     SimulationSpeed = 1.0
     SimulationTime = System.TimeSpan.FromSeconds(0.0)
+    SectorDisplay = TopDown
    },
   Cmd.batch [
     Cmd.ofMsg Init
