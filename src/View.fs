@@ -426,6 +426,8 @@ let viewControlMenu model dispatch =
       ]
 
 let viewDisplayMenu model dispatch =
+  div [] [
+  hr []
   Menu.menu [ ]
     [ Menu.label [ ] [ str "Display controls" ]
       Field.div [ Field.HasAddons ]
@@ -448,7 +450,7 @@ let viewDisplayMenu model dispatch =
               [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV ][] ]] 
           ]
         ]
-    ]
+    ]]
 
 let view model dispatch =
     Hero.hero [  ]
