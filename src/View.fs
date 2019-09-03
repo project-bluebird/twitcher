@@ -47,7 +47,17 @@ let topDownSimulationView model dispatch =
             sectorCoordinates 
             |> List.map (fun (x,y,_) -> string x + "," + string y)
             |> String.concat " "
-        | LateralNorthSouth | LateralEastWest -> ""
+        | LateralNorthSouth ->
+            let minX = sectorCoordinates |> List.minBy (fun (x,y,z) -> x)
+            let maxX = sectorCoordinates |> List.maxBy (fun (x,y,z) -> x)
+            
+            // Get vertical bounds of the sector space
+            ""
+
+        | LateralEastWest -> 
+            let minY = sectorCoordinates |> List.minBy (fun (x,y,z) -> y)
+            let maxY = sectorCoordinates |> List.maxBy (fun (x,y,z) -> y)        
+            ""
 
 
       [ polygon
