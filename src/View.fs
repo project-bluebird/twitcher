@@ -26,21 +26,149 @@ let basicNavbar model dispatch =
                 [ Icon.icon [ ] [
                   Fa.i [Fa.Solid.Binoculars] [] ]
                   Heading.p [ Heading.Is5 ] [ str "Twitcher" ]  ]]
-          // Navbar.Item.div [ Navbar.Item.HasDropdown
-          //                   Navbar.Item.IsHoverable ]
-          //   [ Navbar.Link.a [ ]
-          //       [ str "Docs" ]
-          //     Navbar.Dropdown.div [ ]
-          //       [ Navbar.Item.a [ ]
-          //           [ str "Overwiew" ]
-          //         Navbar.Item.a [ ]
-          //           [ str "Something" ]
-          //         Navbar.divider [ ] [ ]
-          //         Navbar.Item.a [ ]
-          //           [ str "Something else" ] ] ]
           Navbar.End.div [ ]
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
+
+let topDownSimulationView model dispatch =
+  [
+  // 1. Plot the sector outline  
+  yield!
+    match model.Sector with
+    | Some(points) ->
+      let coordinates =
+        points
+        |> List.map (fun coord ->
+          let x,y, _ = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize
+          string x + "," + string y )
+        |> String.concat " "
+
+      [ polygon
+          [
+            Points coordinates
+            Style
+              [ Fill "white" ]
+          ] []]
+    | None -> []
+
+
+  // 2. Plot loss of separation distance circle around all aircraft that are "in conflict (lost separation)"
+  yield!
+    model.Positions
+    |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
+    |> List.map (fun aircraft ->
+        let position = aircraft.Position
+        let x,y,z = CoordinateSystem.rescaleCollege (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+
+        circle [
+          Cx (string x)
+          Cy (string y)
+          R (string (model.SeparationDistance.Value) + "px")
+          Style
+              [
+                Fill "orange"
+                Opacity "0.25"
+              ]
+        ] []
+    )
+
+  // 3. Plot the actual aircraft as points
+  yield!
+    model.Positions
+    |> List.collect (fun aircraft ->
+        let position = aircraft.Position
+        let x,y,z = CoordinateSystem.rescaleCollege (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+        let past =
+          if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
+            (snd model.PositionHistory).[aircraft.AircraftID]
+            |> Array.map (fun pastPosition -> // TODO - precompute this?
+              CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SimulationViewSize)
+          else [||]
+        let selected = model.ViewDetails = Some(aircraft.AircraftID)
+        let conflict = model.InConflict |> Array.contains aircraft.AircraftID
+
+        [
+          // plot current position and past path
+          if past.Length > 0 then
+            let path =
+              Array.append past [|x,y,z|]
+              |> fun a -> if selected then a else Array.skip (a.Length - 11) a
+              |> Array.map (fun (lon, lat, alt) -> string lon + "," + string lat)
+              |> String.concat " "
+            yield
+              polyline [
+                Points path
+                Style [
+                  Stroke "grey"
+                  Opacity (if selected then "0.5" else "0.25")
+                  StrokeWidth (if selected then "3" else "2")
+                  Fill "none"
+                ]
+              ] []
+
+          if conflict then
+            yield
+              circle [
+                Cx (string x)
+                Cy (string y)
+                R (if selected then "7" else "5")
+                Style
+                    [ Stroke (if selected then "black" else "black")
+                      StrokeWidth (if selected then "1" else "1")
+                      Fill (if selected then "orange" else "grey") ]
+                OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+              ] []
+
+          else
+            yield
+              circle [
+                Cx (string x)
+                Cy (string y)
+                R (if selected then "7" else "5")
+                Style
+                    [ Stroke (if selected then "turquoise" else "black")
+                      StrokeWidth (if selected then "5" else "1")
+                      Fill (if selected then "black" else "grey") ]
+                OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+              ] []
+        ]
+        )
+        ]
+
+// let northSouthSimulationView model dispatch =
+//   [
+//     // Sector boundaries - the sector limits in the East and West
+//     match model.Sector with
+//     | Some(points) ->
+//       let xCoordinates =
+//         points
+//         |> List.map (fun coord ->
+//           let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
+//           x )
+//       let minX = xCoordinates |> List.min
+//       let maxX = xCoordinates |> List.max
+//       let points = 
+//         // y is the altitude -> Rescale altitudes as well
+
+//       yield!
+//         [ polygon [
+//             Points ""
+//             Style [ Fill "white" ]
+//         ] []]
+
+//       //     string x + "," + string y )
+//       //   |> String.concat " "
+
+//       // [ polygon
+//       //     [
+//       //       Points coordinates
+//       //       Style
+//       //         [ Fill "white" ]
+//       //     ] []]
+//     | None -> 
+//         yield! []
+
+//   ]        
 
 // TODO: implement lateral views
 let viewSimulation model dispatch =
@@ -53,103 +181,13 @@ let viewSimulation model dispatch =
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
             ]
-            [
-              yield!
-                match model.Sector with
-                | Some(points) ->
-                  let coordinates =
-                    points
-                    |> List.map (fun coord ->
-                      let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
-                      string x + "," + string y )
-                    |> String.concat " "
+            (
+              match model.SectorDisplay with
+              | LateralNorthSouth -> []
+              | LateralEastWest -> []
+              | TopDown -> topDownSimulationView model dispatch
 
-                  [ polygon
-                      [
-                        Points coordinates
-                        Style
-                          [ Fill "white" ]
-                      ] []]
-                | None -> []
-
-              yield!
-                model.Positions
-                |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
-                |> List.map (fun aircraft ->
-                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-
-                    circle [
-                      Cx (string x)
-                      Cy (string y)
-                      R (string (model.SeparationDistance.Value) + "px")
-                      Style
-                          [
-                            Fill "orange"
-                            Opacity "0.25"
-                          ]
-                    ] []
-                )
-
-              yield!
-                model.Positions
-                |> List.collect (fun aircraft ->
-                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-                    let past =
-                      if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
-                        (snd model.PositionHistory).[aircraft.AircraftID]
-                        |> Array.map (fun pastPosition -> // TODO - precompute this?
-                          CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude) model.SimulationViewSize)
-                      else [||]
-                    let selected = model.ViewDetails = Some(aircraft.AircraftID)
-                    let conflict = model.InConflict |> Array.contains aircraft.AircraftID
-
-                    [
-                      // plot current position and past path
-                      if past.Length > 0 then
-                        let path =
-                          Array.append past [|x,y|]
-                          |> fun a -> if selected then a else Array.skip (a.Length - 11) a
-                          |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
-                          |> String.concat " "
-                        yield
-                          polyline [
-                            Points path
-                            Style [
-                              Stroke "grey"
-                              Opacity (if selected then "0.5" else "0.25")
-                              StrokeWidth (if selected then "3" else "2")
-                              Fill "none"
-                            ]
-                          ] []
-
-                      if conflict then
-                        yield
-                          circle [
-                            Cx (string x)
-                            Cy (string y)
-                            R (if selected then "7" else "5")
-                            Style
-                                [ Stroke (if selected then "black" else "black")
-                                  StrokeWidth (if selected then "1" else "1")
-                                  Fill (if selected then "orange" else "grey") ]
-                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                          ] []
-
-                      else
-                        yield
-                          circle [
-                            Cx (string x)
-                            Cy (string y)
-                            R (if selected then "7" else "5")
-                            Style
-                                [ Stroke (if selected then "turquoise" else "black")
-                                  StrokeWidth (if selected then "5" else "1")
-                                  Fill (if selected then "black" else "grey") ]
-                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                          ] []
-                    ]
-                    )
-            ]
+            )
         ]
       ]
     ]
@@ -279,7 +317,7 @@ let viewPositionTable model dispatch =
                   | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then
+                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SimulationViewSize then
                    yield  ""
                 else
                    yield "is-greyed-out" ] |> String.concat " "

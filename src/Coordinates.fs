@@ -29,6 +29,8 @@ let lonlatToMercator longitude latitude =
 
   (lonToX longitude, latToY latitude)
 
+let (minAltitude: Altitude), (maxAltitude: Altitude) = 0.0<ft>, 45000.0<ft>   
+
 
 // Entire Earth area
 let rangeXMin, rangeYMin = lonlatToMercator -180.0 -89.5
@@ -52,10 +54,11 @@ let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
   scale rangeYMin rangeYMax 0. yWidth latitude
 
 /// Mercator coordinates to visualization coordinates, college airspace
-let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>) (xWidth, yWidth) =
+let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>, altitude: Altitude) (xWidth, yWidth) =
   let x,y = lonlatToMercator (float longitude) (float latitude)
   scale sectorXMin sectorXMax 0.0 xWidth x,
-  yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y)
+  yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y),
+  scale (float minAltitude) (float maxAltitude) 0.0 yWidth (float altitude)
 
 /// Mercator coordinates to visualization coordinates, area around Equator
 let rescaleTest (longitude, latitude) (xWidth, yWidth) =
@@ -63,7 +66,7 @@ let rescaleTest (longitude, latitude) (xWidth, yWidth) =
   scale testYMin testYMax 0. yWidth latitude
 
 let isInViewCollege coordinates (xWidth, yWidth) =
-  let x,y = rescaleCollege coordinates (xWidth, yWidth)
+  let x,y,z = rescaleCollege coordinates (xWidth, yWidth)
   x >= 0. && x <= xWidth && y >= 0. && y <= yWidth
 
 
@@ -90,8 +93,8 @@ let clockwiseAngle (point1: Position) (point2: Position) =
 
 
 // For visualisation purposes, these two points are in the centre of the training sector and 5 nautical miles from each other
-let calibrationPoint1 = (-0.5<longitude>, 51.<latitude>)
-let calibrationPoint2 = (-0.5<longitude>, 51.08323664811<latitude>)
+let calibrationPoint1 = (-0.5<longitude>, 51.<latitude>, 0.0<ft>)
+let calibrationPoint2 = (-0.5<longitude>, 51.08323664811<latitude>, 0.0<ft>)
 
 //=======================================================    
 

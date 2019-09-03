@@ -81,7 +81,11 @@ let estimateHeading (model: Model) (aircraftID: AircraftID) =
 let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
   let onScreen =
     positionInfo
-    |> Array.filter (fun pos -> CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) viewSize)
+    |> Array.filter (fun pos -> 
+        CoordinateSystem.isInViewCollege 
+          (pos.Position.Coordinates.Longitude, 
+           pos.Position.Coordinates.Latitude,
+           pos.Position.Altitude) viewSize)
 
   [| for i1 in 0..onScreen.Length-1 do
       for i2 in i1+1..onScreen.Length-1 do
@@ -125,8 +129,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         { model with
             SimulationViewSize = viewSize
             SeparationDistance =
-              let x1, y1 = rescaleCollege calibrationPoint1 viewSize
-              let x2, y2 = rescaleCollege calibrationPoint2 viewSize
+              let x1, y1, z1 = rescaleCollege calibrationPoint1 viewSize
+              let x2, y2, z2 = rescaleCollege calibrationPoint2 viewSize
               Some(y1 - y2)
           },
         Cmd.none
