@@ -36,16 +36,23 @@ let topDownSimulationView model dispatch =
   yield!
     match model.Sector with
     | Some(points) ->
-      let coordinates =
+      let sectorCoordinates =
         points
         |> List.map (fun coord ->
-          let x,y, _ = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize
-          string x + "," + string y )
-        |> String.concat " "
+          CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
+      
+      let visualCoordinates = 
+        match model.SectorDisplay with
+        | TopDown -> 
+            sectorCoordinates 
+            |> List.map (fun (x,y,_) -> string x + "," + string y)
+            |> String.concat " "
+        | LateralNorthSouth | LateralEastWest -> ""
+
 
       [ polygon
           [
-            Points coordinates
+            Points visualCoordinates
             Style
               [ Fill "white" ]
           ] []]
