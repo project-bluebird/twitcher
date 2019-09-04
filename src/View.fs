@@ -30,7 +30,7 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
-let topDownSimulationView model dispatch =
+let simulationView model dispatch =
   [
   // 1. Plot the sector outline  
   yield!
@@ -47,18 +47,36 @@ let topDownSimulationView model dispatch =
             sectorCoordinates 
             |> List.map (fun (x,y,_) -> string x + "," + string y)
             |> String.concat " "
+
         | LateralNorthSouth ->
-            let minX = sectorCoordinates |> List.minBy (fun (x,y,z) -> x)
-            let maxX = sectorCoordinates |> List.maxBy (fun (x,y,z) -> x)
+            let minX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+            let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
             // Get vertical bounds of the sector space
-            ""
+            let _, _, minAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+            let _, _, maxAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            
+            [ string minX + "," + string maxAlt
+              string maxX + "," + string maxAlt
+              string maxX + "," + string minAlt
+              string minX + "," + string minAlt ]
+            |> String.concat " "
 
         | LateralEastWest -> 
-            let minY = sectorCoordinates |> List.minBy (fun (x,y,z) -> y)
-            let maxY = sectorCoordinates |> List.maxBy (fun (x,y,z) -> y)        
-            ""
+            let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+            let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
+            
+            // Get vertical bounds of the sector space
+            let _, _, minAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+            let _, _, maxAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            
+            [ string minY + "," + string maxAlt
+              string maxY + "," + string maxAlt
+              string maxY + "," + string minAlt
+              string minY + "," + string minAlt ]
+            |> String.concat " "
 
+      printfn "%s" visualCoordinates
 
       [ polygon
           [
@@ -199,10 +217,7 @@ let viewSimulation model dispatch =
             Id "simulation-viewer"
             ]
             (
-              match model.SectorDisplay with
-              | LateralNorthSouth -> []
-              | LateralEastWest -> []
-              | TopDown -> topDownSimulationView model dispatch
+              simulationView model dispatch
 
             )
         ]
