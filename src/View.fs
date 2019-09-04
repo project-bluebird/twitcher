@@ -76,8 +76,6 @@ let simulationView model dispatch =
               string minY + "," + string minAlt ]
             |> String.concat " "
 
-      printfn "%s" visualCoordinates
-
       [ polygon
           [
             Points visualCoordinates
@@ -141,31 +139,18 @@ let simulationView model dispatch =
                 ]
               ] []
 
-          if conflict then
-            yield
+          yield
               circle [
                 Cx (string x)
                 Cy (string y)
-                R (if selected then "7" else "5")
+                R (if selected then "7" else "3")
                 Style
-                    [ Stroke (if selected then "black" else "black")
-                      StrokeWidth (if selected then "1" else "1")
-                      Fill (if selected then "orange" else "grey") ]
+                    [ Stroke (if selected && not conflict then "turquoise" else "black")
+                      StrokeWidth (if selected || conflict then "5" else "1")
+                      Fill (if selected then (if conflict then "orange" else "black") else "grey") ]
                 OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
               ] []
 
-          else
-            yield
-              circle [
-                Cx (string x)
-                Cy (string y)
-                R (if selected then "7" else "5")
-                Style
-                    [ Stroke (if selected then "turquoise" else "black")
-                      StrokeWidth (if selected then "5" else "1")
-                      Fill (if selected then "black" else "grey") ]
-                OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-              ] []
         ]
         )
         ]
