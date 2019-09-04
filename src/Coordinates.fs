@@ -58,7 +58,7 @@ let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>, alti
   let x,y = lonlatToMercator (float longitude) (float latitude)
   scale sectorXMin sectorXMax 0.0 xWidth x,
   yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y),
-  scale (float minAltitude) (float maxAltitude) 0.0 yWidth (float altitude)
+  yWidth - (scale (float minAltitude) (float maxAltitude) 0.0 yWidth (float altitude))
 
 /// Mercator coordinates to visualization coordinates, area around Equator
 let rescaleTest (longitude, latitude) (xWidth, yWidth) =

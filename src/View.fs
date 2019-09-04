@@ -94,8 +94,16 @@ let simulationView model dispatch =
         let x,y,z = CoordinateSystem.rescaleCollege (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
 
         circle [
-          Cx (string x)
-          Cy (string y)
+          Cx (
+            match model.SectorDisplay with
+            | TopDown -> string x
+            | LateralNorthSouth -> string x
+            | LateralEastWest -> string y)
+          Cy (
+            match model.SectorDisplay with
+            | TopDown -> string y
+            | LateralNorthSouth | LateralEastWest -> string z
+            )
           R (string (model.SeparationDistance.Value) + "px")
           Style
               [
@@ -126,7 +134,15 @@ let simulationView model dispatch =
             let path =
               Array.append past [|x,y,z|]
               |> fun a -> if selected then a else Array.skip (a.Length - 11) a
-              |> Array.map (fun (lon, lat, alt) -> string lon + "," + string lat)
+              |> Array.map (fun (lon, lat, alt) -> 
+                  match model.SectorDisplay with
+                  | TopDown ->
+                      string lon + "," + string lat
+                  | LateralNorthSouth ->
+                      string lon + "," + string alt
+                  | LateralEastWest ->
+                      string lat + "," + string alt
+                  )
               |> String.concat " "
             yield
               polyline [
@@ -141,8 +157,16 @@ let simulationView model dispatch =
 
           yield
               circle [
-                Cx (string x)
-                Cy (string y)
+                Cx (
+                  match model.SectorDisplay with
+                  | TopDown -> string x
+                  | LateralNorthSouth -> string x
+                  | LateralEastWest -> string y)
+                Cy (
+                  match model.SectorDisplay with
+                  | TopDown -> string y
+                  | LateralNorthSouth | LateralEastWest -> string z
+                  )
                 R (if selected then "7" else "3")
                 Style
                     [ Stroke (if selected && not conflict then "turquoise" else "black")
@@ -155,42 +179,7 @@ let simulationView model dispatch =
         )
         ]
 
-// let northSouthSimulationView model dispatch =
-//   [
-//     // Sector boundaries - the sector limits in the East and West
-//     match model.Sector with
-//     | Some(points) ->
-//       let xCoordinates =
-//         points
-//         |> List.map (fun coord ->
-//           let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
-//           x )
-//       let minX = xCoordinates |> List.min
-//       let maxX = xCoordinates |> List.max
-//       let points = 
-//         // y is the altitude -> Rescale altitudes as well
 
-//       yield!
-//         [ polygon [
-//             Points ""
-//             Style [ Fill "white" ]
-//         ] []]
-
-//       //     string x + "," + string y )
-//       //   |> String.concat " "
-
-//       // [ polygon
-//       //     [
-//       //       Points coordinates
-//       //       Style
-//       //         [ Fill "white" ]
-//       //     ] []]
-//     | None -> 
-//         yield! []
-
-//   ]        
-
-// TODO: implement lateral views
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
     [
