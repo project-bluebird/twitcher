@@ -63,6 +63,7 @@ let simulationView model dispatch =
             |> String.concat " "
 
         | LateralEastWest -> 
+            // TODO rescale latitude correctly to "x" in svg element, right now it's still rescaled to y
             let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
             let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
