@@ -37,6 +37,8 @@ let init() =
     SimulationSpeed = 1.0
     SimulationTime = System.TimeSpan.FromSeconds(0.0)
     SectorDisplay = TopDown
+    TeamCount = 0
+    TeamScores = [||]
    },
   Cmd.batch [
     Cmd.ofMsg Init

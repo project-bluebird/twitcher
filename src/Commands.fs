@@ -78,19 +78,19 @@ let getConfigCmd () =
   Cmd.OfPromise.either getConfig () Config ConnectionError
 
 
-let urlBase config =
-  ["http://" + config.Host + ":" + config.Port;
+let urlBase config port =
+  ["http://" + config.Host + ":" + (match port with | Some p -> p | None -> config.Port);
    config.Api_path
    config.Api_version ] |> String.concat "/"
 
-let urlAircraftPosition (config: Configuration) =
-  [urlBase config
+let urlAircraftPosition (config: Configuration) port =
+  [urlBase config port
    config.Endpoint_aircraft_position ]
   |> String.concat "/"
 
-let pingBluebird config =
+let pingBluebird (config, port) =
   promise {
-      let url = urlAircraftPosition config + "?acid=all"
+      let url = urlAircraftPosition config port + "?acid=all"
 
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
@@ -105,7 +105,14 @@ let pingBluebird config =
   }
 
 let pingBluebirdCmd config =
-  Cmd.OfPromise.either pingBluebird config ConnectionActive ConnectionError
+  Cmd.OfPromise.either pingBluebird (config, None) ConnectionActive ConnectionError
+
+
+// ===============================================================
+
+let countTeams (config: Configuration) = 
+    // TODO: Determine automatically based on open ports
+    2
 
 // ===============================================================
 // Aircraft position
@@ -149,7 +156,7 @@ let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
 let getAllPositions config =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=all"
+        urlAircraftPosition config None + "?acid=all"
       let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
       match res.Status with
@@ -186,7 +193,7 @@ let getAllPositionsCmd config  =
 let getAircraftPosition (config, aircraftID) =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=" + aircraftID
+        urlAircraftPosition config None + "?acid=" + aircraftID
 
       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       let! txt = res.text()
@@ -202,7 +209,7 @@ let getAircraftPositionCmd config aircraftID =
 // Load scenario
 
 let urlLoadScenario (config: Configuration) =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_load_scenario ]
   |> String.concat "/"
 
@@ -231,7 +238,7 @@ let loadScenarioCmd config path =
 // Reset simulator
 
 let urlReset config =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_reset_simulation ]
   |> String.concat "/"
 
@@ -250,7 +257,7 @@ let resetSimulatorCmd config =
 // ===============================================================
 // Pause simulation
 
-let urlPause config = [ urlBase config; config.Endpoint_pause_simulation ] |> String.concat "/"
+let urlPause config = [ urlBase config None; config.Endpoint_pause_simulation ] |> String.concat "/"
 
 let pauseSimulation config =
   promise {
@@ -268,7 +275,7 @@ let pauseSimulationCmd config =
 // ===============================================================
 // Resume simulation
 
-let urlResume config = [ urlBase config; config.Endpoint_resume_simulation ] |> String.concat "/"
+let urlResume config = [ urlBase config None; config.Endpoint_resume_simulation ] |> String.concat "/"
 
 let resumeSimulation config =
   promise {
@@ -287,7 +294,7 @@ let resumeSimulationCmd config =
 
 let changeSimulationSpeed (config, rate) =
   promise {
-      let url = [ urlBase config; config.Endpoint_set_simulation_rate_multiplier ] |> String.concat "/"
+      let url = [ urlBase config None; config.Endpoint_set_simulation_rate_multiplier ] |> String.concat "/"
       let body =
         Encode.object [ yield! ["multiplier", Encode.float rate] ]
         |> Encode.toString 0
@@ -317,7 +324,7 @@ let changeSimulationRateMultiplierCmd config rate =
 // Create aircraft
 
 let urlCreateAircraft (config: Configuration) =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_create_aircraft ]
   |> String.concat "/"
 
@@ -364,7 +371,7 @@ let createAircraftCmd config aircraftData =
 // Change altitude
 
 let urlChangeAltitude (config: Configuration) =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_change_altitude ]
   |> String.concat "/"
 
@@ -408,7 +415,7 @@ let changeAltitudeCmd config aircraftID (requestedAltitude: Altitude) verticalSp
 // Change speed
 
 let urlChangeSpeed (config: Configuration) =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_change_speed ]
   |> String.concat "/"
 
@@ -447,7 +454,7 @@ let changeSpeedCmd config aircraftID calibratedAirSpeed =
 // Change heading
 
 let urlChangeHeading (config: Configuration) =
-  [ urlBase config
+  [ urlBase config None 
     config.Endpoint_change_heading ]
   |> String.concat "/"
 

@@ -104,11 +104,18 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Cmd.batch [
           getConfigCmd()
           Cmd.ofMsg GetSimulationViewSize
+          Cmd.ofMsg GetTeamCount
         ]
 
     | LoadSector ->
         model,
         getSectorOutlineCmd()
+
+    | GetTeamCount ->
+        let nTeams = 2
+
+        { model with TeamCount = nTeams; TeamScores = Array.zeroCreate nTeams }, 
+        Cmd.none
 
     | SectorOutline outline ->
         { model with Sector = outline},
@@ -307,7 +314,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
 
     | ConnectionError exn | ErrorMessage exn ->
+
         Fable.Core.JS.console.error(exn)
+  
         model,
         Cmd.none
 

@@ -45,6 +45,9 @@ type Model = {
   SimulationSpeed : float
   SimulationTime: ElapsedTime
   SectorDisplay : SectorDisplay
+
+  TeamCount : int
+  TeamScores : int []
 }
 
 
@@ -52,6 +55,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
+  | GetTeamCount
   | SectorOutline of Coordinates list option
   | ConnectionActive of bool
   | ConnectionError of exn

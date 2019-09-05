@@ -44,11 +44,6 @@ Target.create "YarnInstall" (fun _ ->
 
 Target.create "Build" (fun _ ->
 
-    // download API config yaml file
-    let configFile = "https://raw.githubusercontent.com/alan-turing-institute/dodo/master/config.yml"
-    let wc = new System.Net.WebClient()
-    wc.DownloadFile(configFile, localConfig)
-
     Yarn.exec "webpack" id
 )
 

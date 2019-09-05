@@ -356,6 +356,23 @@ let viewTimer model dispatch =
         ]
     ]
 
+let viewScore model dispatch =
+  Level.level [ ]
+    [ 
+      for team in 0..model.TeamCount-1 ->
+        Level.item [ Level.Item.HasTextCentered ]
+          [ div [] [
+              Level.heading [ ]
+                [ str ("Team " + string (team + 1))  ]
+              Level.title [ ]
+                [ str (
+                    string model.TeamScores.[team]
+                )]
+            ]
+
+        ]
+    ]
+
 let viewControlMenu model dispatch =
   Menu.menu [ ]
     [ Menu.label [ ] [ str "General controls" ]
@@ -513,28 +530,31 @@ let view model dispatch =
                   [
                     Columns.columns []
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is10)]
+                        Column.column [ Column.Width(Screen.All, Column.IsFull)]
                           [
                             viewSimulation model dispatch
                           ]
-                        Column.column [ Column.Width(Screen.All, Column.Is2)]
-                          [
-                            viewControlMenu model dispatch
-                            viewDisplayMenu model dispatch
-                          ]
                       ]
+
+                    viewScore model dispatch
 
                     viewTimer model dispatch
 
                     Columns.columns [
                       Columns.IsCentered  ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                        Column.column [ Column.Width(Screen.All, Column.Is2)]
+                          [
+                            viewControlMenu model dispatch
+                            viewDisplayMenu model dispatch
+                          ]
+
+                        Column.column [ Column.Width(Screen.All, Column.Is5) ] [
 
                             viewPositionTable model dispatch
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.IsHalf)] [
+                        Column.column [ Column.Width(Screen.All, Column.Is5)] [
                           viewAircraftDetails model dispatch
                         ]
 
