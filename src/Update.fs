@@ -327,7 +327,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
            getAllPositionsCmd model.Config.Value
            Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
-
+           Cmd.ofMsg GetScores
           ]
         else
           model,
@@ -496,3 +496,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       | None | Some _ ->
           Fable.Core.JS.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none
+
+    | GetScores ->
+        
+        model, Cmd.none

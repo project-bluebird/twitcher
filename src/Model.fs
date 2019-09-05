@@ -55,7 +55,6 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
-  | GetTeamCount
   | SectorOutline of Coordinates list option
   | ConnectionActive of bool
   | ConnectionError of exn
@@ -119,3 +118,6 @@ type Msg =
   | ChangeSpeedMsg of SpeedForm.Msg
   | ChangeHeadingMsg of HeadingForm.Msg
   | LoadScenarioMsg of ScenarioForm.Msg
+
+  | GetTeamCount
+  | GetScores
