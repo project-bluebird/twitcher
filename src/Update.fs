@@ -112,7 +112,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         getSectorOutlineCmd()
 
     | GetTeamCount ->
-        let nTeams = 2
+        let nTeams = 1
 
         { model with TeamCount = nTeams; TeamScores = Array.zeroCreate nTeams }, 
         Cmd.none
@@ -331,7 +331,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           ]
         else
           model,
-          Cmd.none
+          Cmd.ofMsg GetScores
 
     | StartAnimation ->
         { model with Animate = true }, Cmd.ofMsg (MakeStep())
@@ -498,5 +498,36 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           { model with FormModel = None }, Cmd.none
 
     | GetScores ->
-        
-        model, Cmd.none
+        let allAircraftPairs = 
+          let allAircraft =
+            model.Positions 
+            |> List.map (fun pos -> pos.AircraftID)
+          [ for a1 in 0..allAircraft.Length-1 do
+              for a2 in a1+1 .. allAircraft.Length-1 -> 
+                allAircraft.[a1], allAircraft.[a2] ]          
+
+        model,
+        [ for teamIdx in 0..model.TeamCount-1 do
+            yield! 
+              allAircraftPairs
+              |> List.map (fun (aircraft1, aircraft2) ->
+                pairwiseSeparationCmd model.Config.Value (Some teamIdx) aircraft1 aircraft2)
+             ]
+        |> Cmd.batch 
+
+    | AddScore result ->
+        match result with
+        | None -> 
+            printfn "No separation score"
+            model, Cmd.none
+        | Some (teamIdx, result) ->    
+            printfn "\n\n\nSeparation result: %A\n\n\n" result
+            let idx = match teamIdx with | Some(i) -> i | None -> 0
+            let updatedScores = model.TeamScores
+            updatedScores.[idx] <- (result |> float) // TODO
+            { model with TeamScores = updatedScores }, Cmd.none
+
+    | InvalidSeparation e ->
+      printfn "Invalid separation request: %s \n\n\n" e.Message
+      model, Cmd.none        
+            

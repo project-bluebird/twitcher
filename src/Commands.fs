@@ -62,6 +62,7 @@ let decodeConfig (alltext: string) =
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
+    Endpoint_metric = getYamlAttribute "endpoint_metric" text 
 }
 
 
@@ -525,3 +526,46 @@ let getSectorOutline() =
 /// Fetch sector outline
 let getSectorOutlineCmd() =
   Cmd.OfPromise.either getSectorOutline () SectorOutline ErrorMessage
+
+
+//============================================================
+// Evaluation metrics
+
+// Example request:
+// http://51.145.47.193:5001/api/v1/metric?name=aircraft_separation&args=BA1003,EJ9009
+
+
+let urlPairwiseSeparation (config: Configuration) teamIdx acid1 acid2 =
+  let port = 
+    match teamIdx with
+    | Some i -> (int config.Port + i) |> string 
+    | None -> config.Port
+
+  [ urlBase config (Some port)
+    config.Endpoint_metric ]
+  |> String.concat "/" 
+  |> fun url -> 
+      url + "?name=aircraft_separation&args=" + acid1 + "," + acid2
+
+let pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) =
+  promise {
+      let url = urlPairwiseSeparation config teamIdx aircraft1 aircraft2
+
+      try
+        let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+        match res.Status with
+          | 200 -> 
+            let! result = res.text()
+            return Some (teamIdx, result)
+          | 400 -> return None
+          | _ -> return None
+      with e ->
+          if e.Message.StartsWith("400") then
+            return None
+          else
+            return None
+
+  }
+
+let pairwiseSeparationCmd config teamIdx aircraft1 aircraft2 =
+  Cmd.OfPromise.either pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) AddScore InvalidSeparation

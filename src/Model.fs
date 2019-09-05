@@ -47,7 +47,7 @@ type Model = {
   SectorDisplay : SectorDisplay
 
   TeamCount : int
-  TeamScores : int []
+  TeamScores : float []
 }
 
 
@@ -121,3 +121,5 @@ type Msg =
 
   | GetTeamCount
   | GetScores
+  | AddScore of (int option *string) option
+  | InvalidSeparation of exn
