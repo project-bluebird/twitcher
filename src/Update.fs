@@ -82,7 +82,7 @@ let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
   let onScreen =
     positionInfo
     |> Array.filter (fun pos -> 
-        CoordinateSystem.isInViewCollege 
+        CoordinateSystem.isInViewSector 
           (pos.Position.Coordinates.Longitude, 
            pos.Position.Coordinates.Latitude,
            pos.Position.Altitude) viewSize)
@@ -112,7 +112,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         getSectorOutlineCmd()
 
     | GetTeamCount ->
-        let nTeams = 1
+        let nTeams = 3
 
         { model with TeamCount = nTeams; TeamScores = Array.zeroCreate nTeams }, 
         Cmd.none
@@ -136,8 +136,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         { model with
             SimulationViewSize = viewSize
             SeparationDistance =
-              let x1, y1, z1 = rescaleCollege calibrationPoint1 viewSize
-              let x2, y2, z2 = rescaleCollege calibrationPoint2 viewSize
+              let x1, y1, z1 = rescaleSectorToView calibrationPoint1 viewSize
+              let x2, y2, z2 = rescaleSectorToView calibrationPoint2 viewSize
               Some(y1 - y2)
           },
         Cmd.none

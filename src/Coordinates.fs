@@ -90,8 +90,8 @@ let rescaleViewToSector (x, y) (xWidth, yWidth) : float<longitude> * float<latit
   let yMercator = scale 0. yWidth sectorYMin sectorYMax y
 
   // Recompute from Mercator location to actual longitude and latitude
-
-  0.<longitude>, 0.<latitude>
+  let lon, lat = Mercator.xyToLonLat xMercator yMercator
+  lon * 1.<longitude>, lat * 1.<latitude>
 
 /// Mercator coordinates to visualization coordinates, area around Equator
 let rescaleTest (longitude, latitude) (xWidth, yWidth) =

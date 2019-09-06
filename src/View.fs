@@ -30,16 +30,15 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
-let simulationView model dispatch =
+let sectorOutlineView model dispatch =
   [
-  // 1. Plot the sector outline  
-  yield!
+      // 1. Plot the sector outline  
     match model.Sector with
     | Some(points) ->
       let sectorCoordinates =
         points
         |> List.map (fun coord ->
-          CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
+          CoordinateSystem.rescaleSectorToView (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
       
       let visualCoordinates = 
         match model.SectorDisplay with
@@ -53,8 +52,8 @@ let simulationView model dispatch =
             let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
             // Get vertical bounds of the sector space
-            let _, _, minAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-            let _, _, maxAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+            let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
             
             [ string minX + "," + string maxAlt
               string maxX + "," + string maxAlt
@@ -68,8 +67,8 @@ let simulationView model dispatch =
             let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
             // Get vertical bounds of the sector space
-            let _, _, minAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-            let _, _, maxAlt = CoordinateSystem.rescaleCollege (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+            let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
             
             [ string minY + "," + string maxAlt
               string maxY + "," + string maxAlt
@@ -77,22 +76,39 @@ let simulationView model dispatch =
               string minY + "," + string minAlt ]
             |> String.concat " "
 
-      [ polygon
+      yield! 
+        ([ polygon
           [
             Points visualCoordinates
             Style
               [ Fill "white" ]
-          ] []]
-    | None -> []
+          ] []])
+    | None -> yield! []
+  ]
+
+let areaLatitudesLongitudesView model dispatch =
+  [
+    yield! [
 
 
+    ]
+  ]
+
+let sectorView model dispatch =
+  [
+    yield! sectorOutlineView model dispatch
+    yield! areaLatitudesLongitudesView model dispatch
+  ]  
+
+let simulationView model dispatch =
+  [
   // 2. Plot loss of separation distance circle around all aircraft that are "in conflict (lost separation)"
   yield!
     model.Positions
     |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
     |> List.map (fun aircraft ->
         let position = aircraft.Position
-        let x,y,z = CoordinateSystem.rescaleCollege (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+        let x,y,z = CoordinateSystem.rescaleSectorToView (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
 
         circle [
           Cx (
@@ -119,12 +135,12 @@ let simulationView model dispatch =
     model.Positions
     |> List.collect (fun aircraft ->
         let position = aircraft.Position
-        let x,y,z = CoordinateSystem.rescaleCollege (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+        let x,y,z = CoordinateSystem.rescaleSectorToView (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
         let past =
           if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
             (snd model.PositionHistory).[aircraft.AircraftID]
             |> Array.map (fun pastPosition -> // TODO - precompute this?
-              CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SimulationViewSize)
+              CoordinateSystem.rescaleSectorToView (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SimulationViewSize)
           else [||]
         let selected = model.ViewDetails = Some(aircraft.AircraftID)
         let conflict = model.InConflict |> Array.contains aircraft.AircraftID
@@ -191,10 +207,10 @@ let viewSimulation model dispatch =
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
             ]
-            (
-              simulationView model dispatch
-
-            )
+            [
+              yield! sectorView model dispatch
+              yield! simulationView model dispatch
+            ]
         ]
       ]
     ]
@@ -324,7 +340,7 @@ let viewPositionTable model dispatch =
                   | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SimulationViewSize then
+                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SimulationViewSize then
                    yield  ""
                 else
                    yield "is-greyed-out" ] |> String.concat " "
@@ -489,7 +505,6 @@ let viewControlMenu model dispatch =
 
 let viewDisplayMenu model dispatch =
   div [] [
-  hr []
   Menu.menu [ ]
     [ Menu.label [ ] [ str "Display controls" ]
       Field.div [ Field.HasAddons ]
@@ -512,7 +527,9 @@ let viewDisplayMenu model dispatch =
               [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV ][] ]] 
           ]
         ]
-    ]]
+      ]
+  br []
+  ]
 
 let view model dispatch =
     Hero.hero [  ]
@@ -545,11 +562,11 @@ let view model dispatch =
                       [
                         Column.column [ Column.Width(Screen.All, Column.Is2)]
                           [
-                            viewControlMenu model dispatch
                             viewDisplayMenu model dispatch
+                            viewControlMenu model dispatch
                           ]
 
-                        Column.column [ Column.Width(Screen.All, Column.Is5) ] [
+                        Column.column [ Column.Width(Screen.All, Column.Is4) ] [
 
                             viewPositionTable model dispatch
                         ]
