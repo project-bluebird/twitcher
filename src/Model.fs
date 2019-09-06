@@ -123,3 +123,5 @@ type Msg =
   | GetScores
   | AddScore of (int option *string) option
   | InvalidSeparation of exn
+
+  | FetchedSectorInformation of Sectors option

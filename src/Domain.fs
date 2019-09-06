@@ -59,6 +59,20 @@ type AircraftInfo = {
     VerticalSpeed : float<ft/minute> option
 }
 
+type SectorInfo = {
+  max_alt : float
+  max_lat : float
+  max_lon : float
+  min_alt : float
+  min_lat : float
+  min_lon : float
+  name : string
+}
+
+type Sectors = {
+  sectors : SectorInfo []
+}
+
 type Configuration = {
     Host: string
     Port: string

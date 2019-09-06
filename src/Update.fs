@@ -106,10 +106,15 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetSimulationViewSize
           Cmd.ofMsg GetTeamCount
         ]
-
+        
     | LoadSector ->
-        model,
-        getSectorOutlineCmd()
+        match model.Config with
+        | None ->
+            Fable.Core.JS.console.log("No configuration found")
+            model, Cmd.none
+        | Some config ->
+            model,
+            getSectorInformationCmd model.Config.Value
 
     | GetTeamCount ->
         let nTeams = 3
@@ -129,7 +134,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | Config config ->
        { model with Config = Some config },
-       pingBluebirdCmd config
+       Cmd.batch [
+          pingBluebirdCmd config
+          getSectorInformationCmd  config 
+       ]
 
     | GetSimulationViewSize ->
         let viewSize = simulationViewSize()
@@ -530,4 +538,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | InvalidSeparation e ->
       printfn "Invalid separation request: %s \n\n\n" e.Message
       model, Cmd.none        
+
+    | FetchedSectorInformation sector ->
+      match sector with
+      | Some(s) ->
+          // TODO: deal with sectors
+          model, Cmd.none
+      | None -> 
+          model, Cmd.none
             

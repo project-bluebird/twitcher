@@ -494,7 +494,7 @@ let changeHeadingCmd config aircraftID heading =
 //=================================================================
 
 
-let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
+let sectorOutlineDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 
 let getSectorOutline() =
@@ -503,7 +503,7 @@ let getSectorOutline() =
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
-      match Decode.fromString sectorDecoder txt with
+      match Decode.fromString sectorOutlineDecoder txt with
       | Ok value -> return Some(value)
       | Error err ->
           Fable.Core.JS.console.log(err)
@@ -515,7 +515,7 @@ let getSectorOutline() =
       let urlDefault = "assets/default-sector.json"
       let! resDefault = Fetch.fetch urlDefault []
       let! txt = resDefault.text()
-      match Decode.fromString sectorDecoder txt with
+      match Decode.fromString sectorOutlineDecoder txt with
       | Ok value -> return Some(value)
       | Error err ->
           Fable.Core.JS.console.log(err)
@@ -569,3 +569,27 @@ let pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) =
 
 let pairwiseSeparationCmd config teamIdx aircraft1 aircraft2 =
   Cmd.OfPromise.either pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) AddScore InvalidSeparation
+
+// ===============================================================
+// Get sector information
+
+let sectorDecoder = Decode.Auto.generateDecoder<Domain.Sectors>()
+
+let getSectorInformation config =
+  promise {
+      let url =
+        [ urlBase config None
+          "sectors" ]
+        |> String.concat "/" 
+
+      let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.GET]
+      let! txt = res.text()
+      match Decode.fromString sectorDecoder txt with
+      | Ok value -> 
+          return Some(value)
+      | Error err -> return None
+  }
+
+let getSectorInformationCmd config =
+  Cmd.OfPromise.either getSectorInformation config FetchedSectorInformation ConnectionError
+  
