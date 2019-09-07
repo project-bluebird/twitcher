@@ -123,7 +123,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Cmd.none
 
     | SectorOutline outline ->
-        { model with Sector = outline},
+        // TODO: fix this
+        // { model with Sector = outline},
+        model,
         Cmd.none
 
     | ConnectionActive result ->
@@ -543,7 +545,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       match sector with
       | Some(s) ->
           // TODO: deal with sectors
-          model, Cmd.none
+          { model with Sector = Some s}, 
+          Cmd.none
       | None -> 
           model, Cmd.none
             

@@ -30,9 +30,21 @@ type SectorDisplay =
   | LateralNorthSouth
   | LateralEastWest
 
+// Alternatively - store this already in Mercator projection!!!
+type SectorDisplayAreaMercator = {
+  BottomLeft : float * float
+  TopRight : float * float
+  BottomAltitude : float<ft>
+  TopAltitude : float<ft>
+}  
+
 type Model = {
   Animate : bool
-  Sector : (Coordinates list) option
+
+  Sector : Sectors option
+  SectorDisplay : SectorDisplay
+  SectorDisplayArea : SectorDisplayAreaMercator  // This is the entire area that on visual display
+
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
   InConflict : AircraftID[]
@@ -44,8 +56,7 @@ type Model = {
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
-  SectorDisplay : SectorDisplay
-
+  
   TeamCount : int
   TeamScores : float []
 }

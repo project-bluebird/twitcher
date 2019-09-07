@@ -70,7 +70,7 @@ type SectorInfo = {
 }
 
 type Sectors = {
-  sectors : SectorInfo []
+  sectors : SectorInfo list
 }
 
 type Configuration = {

@@ -30,66 +30,102 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
+let plotRectangularSector model (sectorInfo: SectorInfo) =
+  [
+    let visualCoordinates =
+      match model.SectorDisplay with
+      | TopDown -> 
+          [ sectorInfo.min_lon, sectorInfo.max_lat
+            sectorInfo.max_lon, sectorInfo.max_lat
+            sectorInfo.max_lon, sectorInfo.min_lat
+            sectorInfo.min_lon, sectorInfo.min_lat ]
+          |> List.map (fun (x,y) -> 
+              // TODO: projection
+              let x' = x
+              let y' = y
+
+              string x' + "," + string y')
+          |> String.concat " "
+
+    yield! 
+      ([ polygon
+        [
+          Points visualCoordinates
+          Style
+            [ Fill "white" ]
+        ] []])
+
+  ]
+
 let sectorOutlineView model dispatch =
   [
       // 1. Plot the sector outline  
     match model.Sector with
-    | Some(points) ->
-      let sectorCoordinates =
-        points
-        |> List.map (fun coord ->
-          CoordinateSystem.rescaleSectorToView (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
+    | Some(sectors) -> 
+        let sectorsToPlot = 
+          sectors.sectors
+          |> List.collect (plotRectangularSector model)
+        
+        yield! sectorsToPlot
+
+      // let points = sectors.sectors.[0]
+      // let sectorCoordinates =
+
+      //   points
+      //   |> Array.map (fun coord ->
+      //     CoordinateSystem.rescaleSectorToView (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
       
-      let visualCoordinates = 
-        match model.SectorDisplay with
-        | TopDown -> 
-            sectorCoordinates 
-            |> List.map (fun (x,y,_) -> string x + "," + string y)
-            |> String.concat " "
+      // let visualCoordinates = 
+      //   match model.SectorDisplay with
+      //   | TopDown -> 
+      //       sectorCoordinates 
+      //       |> List.map (fun (x,y,_) -> string x + "," + string y)
+      //       |> String.concat " "
 
-        | LateralNorthSouth ->
-            let minX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
-            let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
+      //   | LateralNorthSouth ->
+      //       let minX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+      //       let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
-            // Get vertical bounds of the sector space
-            let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-            let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+      //       // Get vertical bounds of the sector space
+      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
             
-            [ string minX + "," + string maxAlt
-              string maxX + "," + string maxAlt
-              string maxX + "," + string minAlt
-              string minX + "," + string minAlt ]
-            |> String.concat " "
+      //       [ string minX + "," + string maxAlt
+      //         string maxX + "," + string maxAlt
+      //         string maxX + "," + string minAlt
+      //         string minX + "," + string minAlt ]
+      //       |> String.concat " "
 
-        | LateralEastWest -> 
-            // TODO rescale latitude correctly to "x" in svg element, right now it's still rescaled to y
-            let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
-            let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
+      //   | LateralEastWest -> 
+      //       // TODO rescale latitude correctly to "x" in svg element, right now it's still rescaled to y
+      //       let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+      //       let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
             
-            // Get vertical bounds of the sector space
-            let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-            let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+      //       // Get vertical bounds of the sector space
+      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
             
-            [ string minY + "," + string maxAlt
-              string maxY + "," + string maxAlt
-              string maxY + "," + string minAlt
-              string minY + "," + string minAlt ]
-            |> String.concat " "
+      //       [ string minY + "," + string maxAlt
+      //         string maxY + "," + string maxAlt
+      //         string maxY + "," + string minAlt
+      //         string minY + "," + string minAlt ]
+      //       |> String.concat " "
 
-      yield! 
-        ([ polygon
-          [
-            Points visualCoordinates
-            Style
-              [ Fill "white" ]
-          ] []])
+      // yield! 
+      //   ([ polygon
+      //     [
+      //       Points visualCoordinates
+      //       Style
+      //         [ Fill "white" ]
+      //     ] []])
+
     | None -> yield! []
   ]
 
 let areaLatitudesLongitudesView model dispatch =
   [
     yield! [
-
+      // TODO
 
     ]
   ]
