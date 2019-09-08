@@ -43,16 +43,36 @@ let plotRectangularSector model (sectorInfo: SectorInfo) =
                 // TODO: projection
                 let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.SectorView
                 string x' + "," + string y')
-          |> String.concat " "
+            |> String.concat " "
+        | LateralNorthSouth ->
+            [ sectorInfo.min_lon, sectorInfo.min_alt
+              sectorInfo.min_lon, sectorInfo.max_alt
+              sectorInfo.max_lon, sectorInfo.max_alt
+              sectorInfo.max_lon, sectorInfo.min_alt ]
+            |> List.map (fun (x,alt) -> 
+                // TODO: projection
+                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt * 1.<ft>) model.SectorView
+                string x' + "," + string alt')
+            |> String.concat " "
+        | LateralEastWest ->
+            [ sectorInfo.min_lat, sectorInfo.min_alt
+              sectorInfo.min_lat, sectorInfo.max_alt
+              sectorInfo.max_lat, sectorInfo.max_alt
+              sectorInfo.max_lat, sectorInfo.min_alt ]
+            |> List.map (fun (y,alt) -> 
+                // TODO: projection
+                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt * 1.<ft>) model.SectorView
+                string y' + "," + string alt')
+            |> String.concat " "            
 
     yield! 
       ([ polygon
         [
           Points visualCoordinates
           Style
-            [ Fill "white"
-              Stroke "grey"
-              StrokeDasharray "5" ]
+            [ Fill "#F6F6F6"
+              Stroke "lightgrey"
+               ]
         ] []])
 
   ]
