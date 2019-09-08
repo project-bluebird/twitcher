@@ -144,10 +144,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | GetSimulationViewSize ->
         let viewSize = simulationViewSize()
         { model with
-            SimulationViewSize = viewSize
+            SectorView = { model.SectorView with VisualisationViewSize = viewSize }
             SeparationDistance =
-              let x1, y1, z1 = rescaleSectorToView calibrationPoint1 viewSize
-              let x2, y2, z2 = rescaleSectorToView calibrationPoint2 viewSize
+              let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.SectorView
+              let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.SectorView
               Some(y1 - y2)
           },
         Cmd.none
@@ -189,7 +189,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               |> List.map (fun ac ->
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory positionInfo
-            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo
+            InConflict = checkLossOfSeparation model.SectorView positionInfo
             SimulationTime = elapsed } ,
         Cmd.none
 
@@ -544,8 +544,56 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | FetchedSectorInformation sector ->
       match sector with
       | Some(s) ->
-          // TODO: deal with sectors
-          { model with Sector = Some s}, 
+
+          // TODO - make the view slightly larger than the sector
+
+          let bottomLeft = 
+             (s.sectors
+               |> List.map (fun subsector -> subsector.min_lon)
+               |> List.min
+               |> fun x -> x - 0.25,
+              s.sectors
+               |> List.map (fun subsector -> subsector.min_lat)
+               |> List.min
+               |> fun x -> x - 0.25)
+             ||> Mercator.lonLatToXY
+          
+          let topRight =
+             (s.sectors
+               |> List.map (fun subsector -> subsector.max_lon)
+               |> List.max
+               |> fun x -> x + 0.25,
+              s.sectors
+               |> List.map (fun subsector -> subsector.max_lat)
+               |> List.max
+               |> fun x -> x + 0.25)
+             ||> Mercator.lonLatToXY     
+
+          let bottomAltitude =
+            s.sectors
+            |> List.map (fun subsector -> subsector.min_alt)
+            |> List.min
+            |> fun x -> x * 1.0<ft> - 1000.<ft>
+          
+          let topAltitude =
+            s.sectors
+            |> List.map (fun subsector -> subsector.max_alt)
+            |> List.max
+            |> fun x -> x * 1.0<ft> + 1000.<ft>
+          
+          let sv = { 
+            model.SectorView with
+               SectorDisplayArea = {
+                 BottomLeft = bottomLeft
+                 TopRight = topRight
+                 BottomAltitude = bottomAltitude
+                 TopAltitude = topAltitude
+               }
+          }
+
+          { model with 
+              Sector = Some s
+              SectorView = sv}, 
           Cmd.none
       | None -> 
           model, Cmd.none

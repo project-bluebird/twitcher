@@ -33,18 +33,16 @@ let basicNavbar model dispatch =
 let plotRectangularSector model (sectorInfo: SectorInfo) =
   [
     let visualCoordinates =
-      match model.SectorDisplay with
-      | TopDown -> 
-          [ sectorInfo.min_lon, sectorInfo.max_lat
-            sectorInfo.max_lon, sectorInfo.max_lat
-            sectorInfo.max_lon, sectorInfo.min_lat
-            sectorInfo.min_lon, sectorInfo.min_lat ]
-          |> List.map (fun (x,y) -> 
-              // TODO: projection
-              let x' = x
-              let y' = y
-
-              string x' + "," + string y')
+        match model.SectorDisplay with        
+        | TopDown -> 
+            [ sectorInfo.min_lon, sectorInfo.max_lat
+              sectorInfo.max_lon, sectorInfo.max_lat
+              sectorInfo.max_lon, sectorInfo.min_lat
+              sectorInfo.min_lon, sectorInfo.min_lat ]
+            |> List.map (fun (x,y) -> 
+                // TODO: projection
+                let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.SectorView
+                string x' + "," + string y')
           |> String.concat " "
 
     yield! 
@@ -52,7 +50,9 @@ let plotRectangularSector model (sectorInfo: SectorInfo) =
         [
           Points visualCoordinates
           Style
-            [ Fill "white" ]
+            [ Fill "white"
+              Stroke "grey"
+              StrokeDasharray "5" ]
         ] []])
 
   ]
@@ -144,19 +144,11 @@ let simulationView model dispatch =
     |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
     |> List.map (fun aircraft ->
         let position = aircraft.Position
-        let x,y,z = CoordinateSystem.rescaleSectorToView (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
 
         circle [
-          Cx (
-            match model.SectorDisplay with
-            | TopDown -> string x
-            | LateralNorthSouth -> string x
-            | LateralEastWest -> string y)
-          Cy (
-            match model.SectorDisplay with
-            | TopDown -> string y
-            | LateralNorthSouth | LateralEastWest -> string z
-            )
+          Cx (string x)
+          Cy (string y)
           R (string (model.SeparationDistance.Value) + "px")
           Style
               [
@@ -171,12 +163,12 @@ let simulationView model dispatch =
     model.Positions
     |> List.collect (fun aircraft ->
         let position = aircraft.Position
-        let x,y,z = CoordinateSystem.rescaleSectorToView (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SimulationViewSize
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
         let past =
           if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
             (snd model.PositionHistory).[aircraft.AircraftID]
             |> Array.map (fun pastPosition -> // TODO - precompute this?
-              CoordinateSystem.rescaleSectorToView (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SimulationViewSize)
+              CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SectorView)
           else [||]
         let selected = model.ViewDetails = Some(aircraft.AircraftID)
         let conflict = model.InConflict |> Array.contains aircraft.AircraftID
@@ -185,17 +177,9 @@ let simulationView model dispatch =
           // plot current position and past path
           if past.Length > 0 then
             let path =
-              Array.append past [|x,y,z|]
+              Array.append past [|x,y|]
               |> fun a -> if selected then a else Array.skip (a.Length - 11) a
-              |> Array.map (fun (lon, lat, alt) -> 
-                  match model.SectorDisplay with
-                  | TopDown ->
-                      string lon + "," + string lat
-                  | LateralNorthSouth ->
-                      string lon + "," + string alt
-                  | LateralEastWest ->
-                      string lat + "," + string alt
-                  )
+              |> Array.map (fun (x,y) -> string x + "," + string y)
               |> String.concat " "
             yield
               polyline [
@@ -210,16 +194,8 @@ let simulationView model dispatch =
 
           yield
               circle [
-                Cx (
-                  match model.SectorDisplay with
-                  | TopDown -> string x
-                  | LateralNorthSouth -> string x
-                  | LateralEastWest -> string y)
-                Cy (
-                  match model.SectorDisplay with
-                  | TopDown -> string y
-                  | LateralNorthSouth | LateralEastWest -> string z
-                  )
+                Cx (string x)
+                Cy (string y)
                 R (if selected then "7" else "3")
                 Style
                     [ Stroke (if selected && not conflict then "turquoise" else "black")
@@ -376,7 +352,7 @@ let viewPositionTable model dispatch =
                   | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SimulationViewSize then
+                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SectorView then
                    yield  ""
                 else
                    yield "is-greyed-out" ] |> String.concat " "

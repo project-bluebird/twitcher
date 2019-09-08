@@ -38,12 +38,17 @@ type SectorDisplayAreaMercator = {
   TopAltitude : float<ft>
 }  
 
+type SectorView = {
+  VisualisationViewSize : float * float // width, height on screen
+  SectorDisplayArea : SectorDisplayAreaMercator
+}
+
 type Model = {
   Animate : bool
 
   Sector : Sectors option
   SectorDisplay : SectorDisplay
-  SectorDisplayArea : SectorDisplayAreaMercator  // This is the entire area that on visual display
+  SectorView : SectorView   // TODO
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
@@ -51,7 +56,9 @@ type Model = {
   Config : Configuration option
   State: TwitcherState
   FormModel : CommandForm option
-  SimulationViewSize : float * float // width, height
+  
+  //SimulationViewSize : float * float // width, height
+  
   ViewDetails : AircraftID option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float

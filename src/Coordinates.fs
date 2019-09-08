@@ -52,54 +52,77 @@ module Mercator =
     xToLon x, yToLat y
 
 
-let (minAltitude: Altitude), (maxAltitude: Altitude) = 0.0<ft>, 45000.0<ft>   
+// let (minAltitude: Altitude), (maxAltitude: Altitude) = 0.0<ft>, 45000.0<ft>   
 
 
-// Entire Earth area
-let rangeXMin, rangeYMin = Mercator.lonLatToXY -180.0 -89.5
-let rangeXMax, rangeYMax = Mercator.lonLatToXY 180.0 89.5
+// // Entire Earth area
+// let rangeXMin, rangeYMin = Mercator.lonLatToXY -180.0 -89.5
+// let rangeXMax, rangeYMax = Mercator.lonLatToXY 180.0 89.5
 
-// Hard-coded college airspace area
-// TODO Load from some config file
-let sectorXMin, sectorYMin = Mercator.lonLatToXY -2.5 50.3 //-3.974833333 49.0675 
-let sectorXMax, sectorYMax = Mercator.lonLatToXY 1.4 52.0 //5.090666667 53.80883333
+// // Hard-coded college airspace area
+// // TODO Load from some config file
+// let sectorXMin, sectorYMin = Mercator.lonLatToXY -2.5 50.3 //-3.974833333 49.0675 
+// let sectorXMax, sectorYMax = Mercator.lonLatToXY 1.4 52.0 //5.090666667 53.80883333
 
-// Around Equator for testing purposes
-let testXMin, testYMin = Mercator.lonLatToXY -2.0 -1.0
-let testXMax, testYMax = Mercator.lonLatToXY 2.0 1.0
+// // Around Equator for testing purposes
+// let testXMin, testYMin = Mercator.lonLatToXY -2.0 -1.0
+// let testXMax, testYMax = Mercator.lonLatToXY 2.0 1.0
 
 /// Linear rescaling
 let scale rMin rMax tMin tMax value =
   (value - rMin)/(rMax - rMin) * (tMax - tMin) + tMin
 
 /// Mercator coordinates to visualization coordinates, whole Earth
-let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
-  scale rangeXMin rangeXMax 0. xWidth longitude,
-  scale rangeYMin rangeYMax 0. yWidth latitude
+// let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
+//   scale rangeXMin rangeXMax 0. xWidth longitude,
+//   scale rangeYMin rangeYMax 0. yWidth latitude
 
-/// Mercator coordinates to visualization coordinates, Sector airspace
-let rescaleSectorToView (longitude: float<longitude>, latitude: float<latitude>, altitude: Altitude) (xWidth, yWidth) =
-  let x,y = Mercator.lonLatToXY (float longitude) (float latitude)
-  scale sectorXMin sectorXMax 0.0 xWidth x,
-  yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y),
-  yWidth - (scale (float minAltitude) (float maxAltitude) 0.0 yWidth (float altitude))
+/// Mercator coordinates to visualization coordinates
+/// Rescales 
+let rescaleSectorToView (sectorDisplay: Model.SectorDisplay) 
+      (longitude: float<longitude>, latitude: float<latitude>, altitude: Altitude) 
+      (sectorView: Model.SectorView) =
+  let xMercator,yMercator = Mercator.lonLatToXY (float longitude) (float latitude)
+  let sectorXMin, sectorYMin = sectorView.SectorDisplayArea.BottomLeft
+  let sectorXMax, sectorYMax = sectorView.SectorDisplayArea.TopRight
+  let xWidth, yWidth = sectorView.VisualisationViewSize
 
-let rescaleViewToSector (x, y) (xWidth, yWidth) : float<longitude> * float<latitude> =
-  // rescale from display coordinates to Mercator values
-  let xMercator = scale 0. xWidth sectorXMin sectorXMax x 
-  let yMercator = scale 0. yWidth sectorYMin sectorYMax y
+  match sectorDisplay with
+  | Model.SectorDisplay.TopDown ->
+      // map longitude and latitude to x and y
+      scale sectorXMin sectorXMax 0.0 xWidth xMercator,
+      yWidth - (scale sectorYMin sectorYMax 0.0 yWidth yMercator)
+  
+  | Model.SectorDisplay.LateralNorthSouth ->
+      // map longitude to x and altitude to y
+      scale sectorXMin sectorXMax 0.0 xWidth xMercator,
+      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
 
-  // Recompute from Mercator location to actual longitude and latitude
-  let lon, lat = Mercator.xyToLonLat xMercator yMercator
-  lon * 1.<longitude>, lat * 1.<latitude>
+  | Model.SectorDisplay.LateralEastWest ->
+      // map latitude to x and altitude to y
+      scale sectorYMin sectorYMax 0.0 xWidth yMercator,
+      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
+
+
+
+// let rescaleViewToSector (x, y) (xWidth, yWidth) : float<longitude> * float<latitude> =
+//   // rescale from display coordinates to Mercator values
+//   let xMercator = scale 0. xWidth sectorXMin sectorXMax x 
+//   let yMercator = scale 0. yWidth sectorYMin sectorYMax y
+
+//   // Recompute from Mercator location to actual longitude and latitude
+//   let lon, lat = Mercator.xyToLonLat xMercator yMercator
+//   lon * 1.<longitude>, lat * 1.<latitude>
+
 
 /// Mercator coordinates to visualization coordinates, area around Equator
-let rescaleTest (longitude, latitude) (xWidth, yWidth) =
-  scale testXMin testXMax 0. xWidth longitude,
-  scale testYMin testYMax 0. yWidth latitude
+// let rescaleTest (longitude, latitude) (xWidth, yWidth) =
+//   scale testXMin testXMax 0. xWidth longitude,
+//   scale testYMin testYMax 0. yWidth latitude
 
-let isInViewSector coordinates (xWidth, yWidth) =
-  let x,y,z = rescaleSectorToView coordinates (xWidth, yWidth)
+let isInViewSector coordinates sectorView =
+  let x,y = rescaleSectorToView Model.SectorDisplay.TopDown coordinates sectorView
+  let xWidth, yWidth = sectorView.VisualisationViewSize
   x >= 0. && x <= xWidth && y >= 0. && y <= yWidth
 
 

@@ -30,14 +30,17 @@ let init() =
     BottomAltitude = 0.0<ft>
     TopAltitude = 45000.<ft>
   }
+
   { Positions = []
     Animate = false
     Config = None
     Sector = None
-    SectorDisplayArea = sectorDisplayArea
     State = NotConnected
     FormModel = None
-    SimulationViewSize = 0.,0.
+    SectorView = {
+      VisualisationViewSize = 0.,0.
+      SectorDisplayArea = sectorDisplayArea
+    }
     ViewDetails = None
     PositionHistory = 0, (Dictionary<AircraftID, Position []>())
     InConflict = [||]
