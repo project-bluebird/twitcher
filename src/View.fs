@@ -188,7 +188,28 @@ let areaLatitudesLongitudesView model dispatch =
           ] []
           ])
       
-
+    yield! 
+      yTicks 
+      |> List.collect (fun (y, y') -> 
+          [
+          text [
+              X "0.5%"
+              Y (string y')
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string y) ]
+          text [
+              X ("98%")
+              Y (string y')
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string y) ]  
+          line [
+            X1 (string 0)
+            Y1 (string y')
+            X2 ((string "100%"))
+            Y2 (string y')
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+          ] []
+          ])
     
   ]
 
