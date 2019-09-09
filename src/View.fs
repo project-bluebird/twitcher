@@ -537,6 +537,27 @@ let viewControlMenu model dispatch =
               Text.span [] [ str "Create aircraft"]
             ]
           ]
+
+      br[]
+      br[]
+
+      form [] [
+                Field.div [ ]
+                  [ File.file [ File.HasName ]
+                      [ File.label [ ]
+                          [ File.input [ ]
+                            File.cta [ ]
+                              [ File.icon [ ]
+                                  [ Icon.icon [ ]
+                                      [ Fa.i [ Fa.Solid.Upload ]
+                                          [ ] ] ]
+                                File.label [ ]
+                                  [ str "Load scenario" ] ]
+                            File.name [ ]
+                              [ str "*.scn" ] ] ] ]
+            ]
+          
+
       ]
 
 let viewDisplayMenu model dispatch =
