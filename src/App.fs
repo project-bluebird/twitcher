@@ -38,7 +38,7 @@ let init() =
     State = NotConnected
     FormModel = None
     SectorView = {
-      VisualisationViewSize = 0.,0.
+      VisualisationViewSize = 0., 0.
       SectorDisplayArea = sectorDisplayArea
     }
     ViewDetails = None

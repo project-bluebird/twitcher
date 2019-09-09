@@ -233,11 +233,15 @@ let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
     [
       Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
-        div [ ClassName "svg-box" ] [
+        div [ 
+          //ClassName "svg-box" 
+          ] [
           svg [
-            ClassName "svg-box-content"
+            //ClassName "svg-box-content"
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
+            SVGAttr.Width "100%"
+            SVGAttr.Height (model.SectorView.VisualisationViewSize |> snd |> string)
             ]
             [
               yield! sectorView model dispatch

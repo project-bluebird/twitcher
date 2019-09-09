@@ -26,9 +26,8 @@ let delayMsg _ =
   }
 
 
-let simulationViewSize() =
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth,
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientHeight
+let simulationViewWidth() =
+  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
 let historyLength = 10000
 let historyInterval = 10
@@ -96,6 +95,19 @@ let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
           yield  onScreen.[i1].AircraftID
           yield onScreen.[i2].AircraftID |]
 
+let rescaleVisualisationToSector sv =
+  let sectorViewRatio = 
+    let width = abs(fst sv.SectorDisplayArea.BottomLeft - fst sv.SectorDisplayArea.TopRight)
+    let height = abs(snd sv.SectorDisplayArea.BottomLeft - snd sv.SectorDisplayArea.TopRight)
+    height/width
+
+  printfn "Sector view ratio: %f" sectorViewRatio
+
+  let sv' = 
+    let x,y = sv.VisualisationViewSize
+    { sv with VisualisationViewSize = x, x*sectorViewRatio }
+  sv'
+
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
@@ -117,7 +129,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getSectorInformationCmd model.Config.Value
 
     | GetTeamCount ->
-        let nTeams = 3
+        let nTeams = 2
 
         { model with TeamCount = nTeams; TeamScores = Array.zeroCreate nTeams }, 
         Cmd.none
@@ -142,9 +154,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        ]
 
     | GetSimulationViewSize ->
-        let viewSize = simulationViewSize()
+        let viewWidth = simulationViewWidth()
+        let x,y = model.SectorView.VisualisationViewSize
+        printfn "Here\n\n\n"
+
         { model with
-            SectorView = { model.SectorView with VisualisationViewSize = viewSize }
+            SectorView = { model.SectorView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
             SeparationDistance =
               let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.SectorView
               let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.SectorView
@@ -544,42 +559,42 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | FetchedSectorInformation sector ->
       match sector with
       | Some(s) ->
-
+          let subsectors = s.sectors.[0..model.TeamCount-1]
           // TODO - make the view slightly larger than the sector
 
           let bottomLeft = 
-             (s.sectors
+             (subsectors
                |> List.map (fun subsector -> subsector.min_lon)
                |> List.min
                |> fun x -> x - 0.25,
-              s.sectors
+              subsectors
                |> List.map (fun subsector -> subsector.min_lat)
                |> List.min
                |> fun x -> x - 0.25)
              ||> Mercator.lonLatToXY
           
           let topRight =
-             (s.sectors
+             (subsectors
                |> List.map (fun subsector -> subsector.max_lon)
                |> List.max
                |> fun x -> x + 0.25,
-              s.sectors
+              subsectors
                |> List.map (fun subsector -> subsector.max_lat)
                |> List.max
                |> fun x -> x + 0.25)
              ||> Mercator.lonLatToXY     
 
           let bottomAltitude =
-            s.sectors
+            subsectors
             |> List.map (fun subsector -> subsector.min_alt)
             |> List.min
-            |> fun x -> x * 1.0<ft> - 1000.<ft>
+            |> fun x -> x * 1.0<ft> - 5000.<ft>
           
           let topAltitude =
-            s.sectors
+            subsectors
             |> List.map (fun subsector -> subsector.max_alt)
             |> List.max
-            |> fun x -> x * 1.0<ft> + 1000.<ft>
+            |> fun x -> x * 1.0<ft> + 5000.<ft>
           
           let sv = { 
             model.SectorView with
@@ -593,7 +608,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
           { model with 
               Sector = Some s
-              SectorView = sv}, 
+              SectorView = rescaleVisualisationToSector sv
+              }, 
           Cmd.none
       | None -> 
           model, Cmd.none
