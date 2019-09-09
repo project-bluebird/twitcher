@@ -224,6 +224,14 @@ let simulationView model dispatch =
                 OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
               ] []
 
+          // Callsign
+          yield
+            text [
+              X (string (x + 7.))
+              Y (string (y + 7.))
+              Style [ Fill "black" ]
+            ] [ str aircraft.AircraftID ]
+
         ]
         )
         ]
@@ -537,26 +545,6 @@ let viewControlMenu model dispatch =
               Text.span [] [ str "Create aircraft"]
             ]
           ]
-
-      br[]
-      br[]
-
-      form [] [
-                Field.div [ ]
-                  [ File.file [ File.HasName ]
-                      [ File.label [ ]
-                          [ File.input [ ]
-                            File.cta [ ]
-                              [ File.icon [ ]
-                                  [ Icon.icon [ ]
-                                      [ Fa.i [ Fa.Solid.Upload ]
-                                          [ ] ] ]
-                                File.label [ ]
-                                  [ str "Load scenario" ] ]
-                            File.name [ ]
-                              [ str "*.scn" ] ] ] ]
-            ]
-          
 
       ]
 
