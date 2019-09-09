@@ -152,17 +152,34 @@ let areaLatitudesLongitudesView model dispatch =
   let x1, y1 = 
     model.SectorView.SectorDisplayArea.TopRight
     ||> CoordinateSystem.Mercator.xyToLonLat  
+  let a0, a1 =
+    float model.SectorView.SectorDisplayArea.BottomAltitude, float model.SectorView.SectorDisplayArea.TopAltitude
 
   let xTicks = 
-    [roundToHalf x0 .. 0.5 .. roundToHalf x1] 
-    |> List.map (fun x -> 
-        let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
-        x, x')
+    match model.SectorDisplay with
+    | TopDown | LateralNorthSouth ->
+      [roundToHalf x0 .. 0.5 .. roundToHalf x1] 
+      |> List.map (fun x -> 
+          let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
+          x, x')
+    | LateralEastWest ->
+      [roundToHalf y0 .. 0.5 .. roundToHalf y1] 
+      |> List.map (fun y -> 
+          let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          y, x')    
+
   let yTicks =
-    [ roundToHalf y0 .. 0.5 .. roundToHalf y1] 
-    |> List.map (fun y -> 
-        let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
-        y, y')
+    match model.SectorDisplay with
+    | TopDown ->
+      [ roundToHalf y0 .. 0.5 .. roundToHalf y1] 
+      |> List.map (fun y -> 
+          let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          y, y')
+    | LateralEastWest | LateralNorthSouth ->
+      [ a0 .. 5000. .. a1] 
+      |> List.map (fun a -> 
+          let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.SectorView
+          a, y)     
 
   [
     yield! 
@@ -197,11 +214,11 @@ let areaLatitudesLongitudesView model dispatch =
               Y (string y')
               Style [ Fill "#636363"; FontSize "12" ]
             ] [ str (string y) ]
-          text [
-              X ("98%")
-              Y (string y')
-              Style [ Fill "#636363"; FontSize "12" ]
-            ] [ str (string y) ]  
+          // text [
+          //     X ("98%")
+          //     Y (string y')
+          //     Style [ Fill "#636363"; FontSize "12" ]
+          //   ] [ str (string y) ]  
           line [
             X1 (string 0)
             Y1 (string y')
