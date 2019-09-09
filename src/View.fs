@@ -142,12 +142,54 @@ let sectorOutlineView model dispatch =
     | None -> yield! []
   ]
 
-let areaLatitudesLongitudesView model dispatch =
-  [
-    yield! [
-      // TODO
+let roundToHalf value =
+  System.Math.Round(value * 2.0, System.MidpointRounding.ToEven) / 2.0
 
-    ]
+let areaLatitudesLongitudesView model dispatch =
+  let x0, y0 = 
+    model.SectorView.SectorDisplayArea.BottomLeft
+    ||> CoordinateSystem.Mercator.xyToLonLat
+  let x1, y1 = 
+    model.SectorView.SectorDisplayArea.TopRight
+    ||> CoordinateSystem.Mercator.xyToLonLat  
+
+  let xTicks = 
+    [roundToHalf x0 .. 0.5 .. roundToHalf x1] 
+    |> List.map (fun x -> 
+        let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
+        x, x')
+  let yTicks =
+    [ roundToHalf y0 .. 0.5 .. roundToHalf y1] 
+    |> List.map (fun y -> 
+        let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+        y, y')
+
+  [
+    yield! 
+      xTicks 
+      |> List.collect (fun (x, x') -> 
+          [
+          text [
+              X (string x')
+              Y (string 15)
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string x) ]
+          text [
+              X (string x')
+              Y (string (snd model.SectorView.VisualisationViewSize - 10.))
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string x) ]  
+          line [
+            X1 (string x')
+            Y1 (string 0)
+            X2 (string x')
+            Y2 ((string (snd model.SectorView.VisualisationViewSize)))
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+          ] []
+          ])
+      
+
+    
   ]
 
 let sectorView model dispatch =
