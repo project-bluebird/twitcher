@@ -139,7 +139,7 @@ type Msg =
 
   | GetTeamCount
   | GetScores
-  | AddScore of (int option *string) option
+  | AddScore of (int option * float) option
   | InvalidSeparation of exn
 
   | FetchedSectorInformation of Sectors option

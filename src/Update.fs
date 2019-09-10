@@ -546,10 +546,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             printfn "No separation score"
             model, Cmd.none
         | Some (teamIdx, result) ->    
-            printfn "\n\n\nSeparation result: %A\n\n\n" result
             let idx = match teamIdx with | Some(i) -> i | None -> 0
             let updatedScores = model.TeamScores
-            updatedScores.[idx] <- (result |> float) // TODO
+            updatedScores.[idx] <- updatedScores.[idx] + result // TODO
             { model with TeamScores = updatedScores }, Cmd.none
 
     | InvalidSeparation e ->
@@ -559,8 +558,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | FetchedSectorInformation sector ->
       match sector with
       | Some(s) ->
-          let subsectors = s.sectors.[0..model.TeamCount-1]
-          // TODO - make the view slightly larger than the sector
+          let subsectors = s.sectors.[1..1+model.TeamCount-1]
+            // s.sectors.[0..model.TeamCount-1]
+            // TODO: Change when the Docker image crashing issue is fixed in Bluebird
 
           let bottomLeft = 
              (subsectors

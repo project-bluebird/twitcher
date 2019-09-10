@@ -70,8 +70,9 @@ let plotRectangularSector model (sectorInfo: SectorInfo) =
         [
           Points visualCoordinates
           Style
-            [ Fill "#F6F6F6"
-              Stroke "lightgrey"
+            [ Fill "#f9f9f9"
+              Stroke "#4f4f4f"
+              StrokeWidth "2"
                ]
         ] []])
 
@@ -506,7 +507,7 @@ let viewScore model dispatch =
                 [ str ("Team " + string (team + 1))  ]
               Level.title [ ]
                 [ str (
-                    string model.TeamScores.[team]
+                    sprintf "%.1f" model.TeamScores.[team]
                 )]
             ]
 

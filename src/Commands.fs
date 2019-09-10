@@ -534,6 +534,8 @@ let getSectorOutlineCmd() =
 // Example request:
 // http://51.145.47.193:5001/api/v1/metric?name=aircraft_separation&args=BA1003,EJ9009
 
+type SeparationMetric = { aircraft_separation : float}
+let separationMetricDecoder = Decode.Auto.generateDecoder<SeparationMetric>()
 
 let urlPairwiseSeparation (config: Configuration) teamIdx acid1 acid2 =
   let port = 
@@ -554,9 +556,15 @@ let pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) =
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
         match res.Status with
-          | 200 -> 
+          | _ -> 
             let! result = res.text()
-            return Some (teamIdx, result)
+            match Decode.fromString separationMetricDecoder result with
+            | Ok value -> 
+              printfn "Parsed value: %A" value
+              return Some(teamIdx, value.aircraft_separation)
+            | Error err ->
+                Fable.Core.JS.console.log(err)
+                return None
           | 400 -> return None
           | _ -> return None
       with e ->
