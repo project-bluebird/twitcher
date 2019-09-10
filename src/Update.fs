@@ -129,7 +129,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getSectorInformationCmd model.Config.Value
 
     | GetTeamCount ->
-        let nTeams = 2
+        let nTeams = 3
 
         { model with TeamCount = nTeams; TeamScores = Array.zeroCreate nTeams }, 
         Cmd.none
@@ -548,7 +548,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         | Some (teamIdx, result) ->    
             let idx = match teamIdx with | Some(i) -> i | None -> 0
             let updatedScores = model.TeamScores
-            updatedScores.[idx] <- updatedScores.[idx] + result // TODO
+            updatedScores.[idx] <- updatedScores.[idx] + result 
             { model with TeamScores = updatedScores }, Cmd.none
 
     | InvalidSeparation e ->
@@ -607,7 +607,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           }
 
           { model with 
-              Sector = Some s
+              Sector = Some { sectors = s.sectors.[1.. ]} // TODO: Don't skip the first sector when bluebird is fixed 
               SectorView = rescaleVisualisationToSector sv
               }, 
           Cmd.none
