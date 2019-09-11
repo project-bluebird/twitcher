@@ -555,18 +555,13 @@ let pairwiseSeparation (config, teamIdx, aircraft1, aircraft2) =
 
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
-        match res.Status with
-          | _ -> 
-            let! result = res.text()
-            match Decode.fromString separationMetricDecoder result with
-            | Ok value -> 
-              printfn "Parsed value: %A" value
-              return Some(teamIdx, value.aircraft_separation)
-            | Error err ->
-                Fable.Core.JS.console.log(err)
-                return None
-          | 400 -> return None
-          | _ -> return None
+        let! result = res.text()
+        match Decode.fromString separationMetricDecoder result with
+        | Ok value -> 
+          return Some(teamIdx, value.aircraft_separation)
+        | Error err ->
+            //Fable.Core.JS.console.log(err)
+            return None
       with e ->
           if e.Message.StartsWith("400") then
             return None

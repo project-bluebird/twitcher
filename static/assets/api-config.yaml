@@ -1,5 +1,6 @@
 default:
-  host: "localhost"
+  host: "51.145.47.193"
+  #host: "localhost"
   port: "5001"
   api_path: "api"
   api_version: "v1"

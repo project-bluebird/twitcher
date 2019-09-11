@@ -29,7 +29,7 @@ let delayMsg _ =
 let simulationViewWidth() =
   Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
-let historyLength = 10000
+let historyLength = 10
 let historyInterval = 10
 
 let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) =
@@ -40,6 +40,7 @@ let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (
           Array.append
             positionHistory.[aircraft.AircraftID]
             [|aircraft.Position|]
+          |> fun a -> if a.Length >= historyLength then a.[a.Length-10+1..] else a
         else
           Array.append
             positionHistory.[aircraft.AircraftID].[1..]
@@ -108,6 +109,12 @@ let rescaleVisualisationToSector sv =
     { sv with VisualisationViewSize = x, x*sectorViewRatio }
   sv'
 
+let inSector (sector : SectorDisplayAreaMercator) (position: Position) =
+  let x,y = CoordinateSystem.Mercator.lonLatToXY (float position.Coordinates.Longitude) (float position.Coordinates.Latitude)
+  let x1,y1 = sector.BottomLeft
+  let x2,y2 = sector.TopRight
+  x >= x1 && x <= x2 && y >= y1 && y <= y2
+
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     match msg with
@@ -156,7 +163,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | GetSimulationViewSize ->
         let viewWidth = simulationViewWidth()
         let x,y = model.SectorView.VisualisationViewSize
-        printfn "Here\n\n\n"
 
         { model with
             SectorView = { model.SectorView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
@@ -196,15 +202,23 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions (positionInfo, elapsed) ->
+
+        let aircraftInView = 
+          positionInfo
+          |> Array.filter (fun ac ->
+              inSector model.SectorView.SectorDisplayArea ac.Position 
+          )
+
         let newModel =
-          { model with Positions = positionInfo |> List.ofArray }
+          { model with Positions = aircraftInView |> List.ofArray }
+
         { newModel with
             Positions =
               newModel.Positions
               |> List.map (fun ac ->
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
-            PositionHistory = updateHistory model.PositionHistory positionInfo
-            InConflict = checkLossOfSeparation model.SectorView positionInfo
+            PositionHistory = updateHistory model.PositionHistory aircraftInView
+            InConflict = checkLossOfSeparation model.SectorView aircraftInView
             SimulationTime = elapsed } ,
         Cmd.none
 
@@ -351,7 +365,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.batch [
            getAllPositionsCmd model.Config.Value
            Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
-           Cmd.ofMsg GetSimulationViewSize
+           //Cmd.ofMsg GetSimulationViewSize
            Cmd.ofMsg GetScores
           ]
         else
@@ -359,7 +373,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetScores
 
     | StartAnimation ->
-        { model with Animate = true }, Cmd.ofMsg (MakeStep())
+        { model with Animate = true }, Cmd.batch [ Cmd.ofMsg (MakeStep()); Cmd.ofMsg GetSimulationViewSize ]
 
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
@@ -543,7 +557,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | AddScore result ->
         match result with
         | None -> 
-            printfn "No separation score"
             model, Cmd.none
         | Some (teamIdx, result) ->    
             let idx = match teamIdx with | Some(i) -> i | None -> 0
@@ -563,26 +576,33 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             // TODO: Change when the Docker image crashing issue is fixed in Bluebird
 
           let bottomLeft = 
-             (subsectors
+             ((subsectors
                |> List.map (fun subsector -> subsector.min_lon)
-               |> List.min
-               |> fun x -> x - 0.25,
-              subsectors
+               |> List.min),
+              // |> fun x -> x - 0.25,
+              (subsectors
                |> List.map (fun subsector -> subsector.min_lat)
-               |> List.min
-               |> fun x -> x - 0.25)
+               |> List.min))
+              // |> fun x -> x - 0.25)
              ||> Mercator.lonLatToXY
           
           let topRight =
              (subsectors
                |> List.map (fun subsector -> subsector.max_lon)
-               |> List.max
-               |> fun x -> x + 0.25,
+               |> List.max,
+              //  |> fun x -> x + 0.25,
               subsectors
                |> List.map (fun subsector -> subsector.max_lat)
-               |> List.max
-               |> fun x -> x + 0.25)
+               |> List.max)
+              //  |> fun x -> x + 0.25)
              ||> Mercator.lonLatToXY     
+
+          let xMargin, yMargin =
+            0.1 * abs(fst topRight - fst bottomLeft), 0.1 * abs(snd topRight - snd bottomLeft)
+          let bottomLeft' =
+            fst bottomLeft - xMargin, snd bottomLeft - yMargin
+          let topRight' =
+            fst topRight + xMargin, snd topRight + yMargin
 
           let bottomAltitude =
             subsectors
@@ -599,8 +619,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let sv = { 
             model.SectorView with
                SectorDisplayArea = {
-                 BottomLeft = bottomLeft
-                 TopRight = topRight
+                 BottomLeft = bottomLeft'
+                 TopRight = topRight'
                  BottomAltitude = bottomAltitude
                  TopAltitude = topAltitude
                }

@@ -156,28 +156,28 @@ let areaLatitudesLongitudesView model dispatch =
   let xTicks = 
     match model.SectorDisplay with
     | TopDown | LateralNorthSouth ->
-      [roundToHalf x0 .. 0.5 .. roundToHalf x1] 
+      [roundToHalf x0 .. 0.1 .. roundToHalf x1] 
       |> List.map (fun x -> 
           let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
-          x, x')
+          string (System.Math.Round(x,2)) , x')
     | LateralEastWest ->
-      [roundToHalf y0 .. 0.5 .. roundToHalf y1] 
+      [roundToHalf y0 .. 0.1 .. roundToHalf y1] 
       |> List.map (fun y -> 
           let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
-          y, x')    
+          string (System.Math.Round(y,2)), x')  
 
-  let yTicks =
+  let yTicks = 
     match model.SectorDisplay with
     | TopDown ->
-      [ roundToHalf y0 .. 0.5 .. roundToHalf y1] 
+      [ roundToHalf y0 .. 0.1 .. roundToHalf y1] 
       |> List.map (fun y -> 
           let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
-          y, y')
+          string (System.Math.Round(y,2)), y')
     | LateralEastWest | LateralNorthSouth ->
       [ a0 .. 5000. .. a1] 
       |> List.map (fun a -> 
           let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.SectorView
-          a, y)     
+          "FL" + string (a/1000.), y)     
 
   [
     yield! 
@@ -691,7 +691,7 @@ let view model dispatch =
 
                         Column.column [ Column.Width(Screen.All, Column.Is4) ] [
 
-                            viewPositionTable model dispatch
+                            //viewPositionTable model dispatch
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.Is5)] [
