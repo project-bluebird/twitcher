@@ -177,7 +177,7 @@ let areaLatitudesLongitudesView model dispatch =
       [ a0 .. 5000. .. a1] 
       |> List.map (fun a -> 
           let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.SectorView
-          "FL" + string (a/1000.), y)     
+          "FL" + string (a/100.), y)     
 
   [
     yield! 
@@ -187,19 +187,19 @@ let areaLatitudesLongitudesView model dispatch =
           text [
               X (string x')
               Y (string 15)
-              Style [ Fill "#636363"; FontSize "12" ]
+              Style [ Fill "black"; FontSize "16" ]
             ] [ str (string x) ]
           text [
               X (string x')
               Y (string (snd model.SectorView.VisualisationViewSize - 10.))
-              Style [ Fill "#636363"; FontSize "12" ]
+              Style [ Fill "black"; FontSize "16" ]
             ] [ str (string x) ]  
           line [
             X1 (string x')
             Y1 (string 0)
             X2 (string x')
             Y2 ((string (snd model.SectorView.VisualisationViewSize)))
-            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+            Style [ Stroke "black"; StrokeWidth "0.3" ]
           ] []
           ])
       
@@ -210,7 +210,7 @@ let areaLatitudesLongitudesView model dispatch =
           text [
               X "0.5%"
               Y (string y')
-              Style [ Fill "#636363"; FontSize "12" ]
+              Style [ Fill "black"; FontSize "16" ]
             ] [ str (string y) ]
           // text [
           //     X ("98%")
@@ -222,7 +222,7 @@ let areaLatitudesLongitudesView model dispatch =
             Y1 (string y')
             X2 ((string "100%"))
             Y2 (string y')
-            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+            Style [ Stroke "black"; StrokeWidth "0.3" ]
           ] []
           ])
     
@@ -250,7 +250,7 @@ let simulationView model dispatch =
           R (string (model.SeparationDistance.Value) + "px")
           Style
               [
-                Fill "orange"
+                Fill "red"
                 Opacity "0.25"
               ]
         ] []
@@ -265,6 +265,7 @@ let simulationView model dispatch =
         let past =
           if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
             (snd model.PositionHistory).[aircraft.AircraftID]
+            |> fun a -> a.[0..min a.Length 5]
             |> Array.map (fun pastPosition -> // TODO - precompute this?
               CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SectorView)
           else [||]
@@ -283,8 +284,8 @@ let simulationView model dispatch =
               polyline [
                 Points path
                 Style [
-                  Stroke "grey"
-                  Opacity (if selected then "0.5" else "0.25")
+                  Stroke "black"
+                  //Opacity (if selected then "0.5" else "0.25")
                   StrokeWidth (if selected then "3" else "2")
                   Fill "none"
                 ]
@@ -294,11 +295,11 @@ let simulationView model dispatch =
               circle [
                 Cx (string x)
                 Cy (string y)
-                R (if selected then "7" else "3")
+                R (if selected then "7" else if conflict then "8" else "3")
                 Style
-                    [ Stroke (if selected && not conflict then "turquoise" else "black")
+                    [ Stroke (if selected && not conflict then "turquoise" else if conflict then "red" else "black")
                       StrokeWidth (if selected || conflict then "5" else "1")
-                      Fill (if selected then (if conflict then "orange" else "black") else "grey") ]
+                      Fill (if selected then (if conflict then "orange" else "black") else if conflict then "red" else "grey") ]
                 OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
               ] []
 
@@ -306,8 +307,8 @@ let simulationView model dispatch =
           yield
             text [
               X (string (x + 7.))
-              Y (string (y + 7.))
-              Style [ Fill "black" ]
+              Y (string (y + 18.))
+              Style [ Fill "black"; FontSize "20" ]
             ] [ str aircraft.AircraftID ]
 
         ]

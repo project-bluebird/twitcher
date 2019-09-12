@@ -29,7 +29,7 @@ let delayMsg _ =
 let simulationViewWidth() =
   Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
-let historyLength = 10
+let historyLength = 5
 let historyInterval = 10
 
 let updateSingleHistory (positionHistory: Dictionary<AircraftID, Position []>) (aircraft: AircraftInfo) =
