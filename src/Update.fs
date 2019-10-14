@@ -131,6 +131,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           },
         Cmd.none
 
+    | ChangeDisplay sectorDisplay ->
+        { model with SectorDisplay = sectorDisplay },
+        Cmd.none        
+
     | ViewAircraftDetails aircraftID ->
         { model with ViewDetails = Some(aircraftID) }, Cmd.none
 

@@ -25,9 +25,16 @@ type CommandForm =
 
 type ElapsedTime = System.TimeSpan
 
+type SectorDisplay =
+  | TopDown
+  | LateralNorthSouth
+  | LateralEastWest
+
 type Model = {
   Animate : bool
   Sector : (Coordinates list) option
+  SectorDisplay : SectorDisplay
+
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
   InConflict : AircraftID[]
@@ -50,6 +57,7 @@ type Msg =
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
+  | ChangeDisplay of SectorDisplay
 
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails

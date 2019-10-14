@@ -28,6 +28,7 @@ let init() =
     Animate = false
     Config = None
     Sector = None
+    SectorDisplay = TopDown
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
