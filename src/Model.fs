@@ -30,10 +30,24 @@ type SectorDisplay =
   | LateralNorthSouth
   | LateralEastWest
 
+type SectorDisplayAreaMercator = {
+  BottomLeft : float * float
+  TopRight : float * float
+  BottomAltitude : float<ft>
+  TopAltitude : float<ft>
+}  
+
+type SectorView = {
+  VisualisationViewSize : float * float // width, height on screen
+  SectorDisplayArea : SectorDisplayAreaMercator
+}  
+
 type Model = {
   Animate : bool
-  Sector : (Coordinates list) option
+
+  Sector : Sectors option
   SectorDisplay : SectorDisplay
+  SectorView : SectorView   // TODO
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
@@ -46,6 +60,8 @@ type Model = {
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
+
+  Score : float
 }
 
 

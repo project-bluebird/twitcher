@@ -25,10 +25,8 @@ let delayMsg _ =
     return ()
   }
 
-
-let simulationViewSize() =
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth,
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientHeight
+let simulationViewWidth() =
+  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
 let historyLength = 10000
 let historyInterval = 10
@@ -81,7 +79,11 @@ let estimateHeading (model: Model) (aircraftID: AircraftID) =
 let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
   let onScreen =
     positionInfo
-    |> Array.filter (fun pos -> CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) viewSize)
+    |> Array.filter (fun pos -> 
+        CoordinateSystem.isInViewSector 
+          (pos.Position.Coordinates.Longitude, 
+           pos.Position.Coordinates.Latitude,
+           pos.Position.Altitude) viewSize)
 
   [| for i1 in 0..onScreen.Length-1 do
       for i2 in i1+1..onScreen.Length-1 do
@@ -91,6 +93,25 @@ let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
         then
           yield  onScreen.[i1].AircraftID
           yield onScreen.[i2].AircraftID |]
+
+let rescaleVisualisationToSector sv =
+  let sectorViewRatio = 
+    let width = abs(fst sv.SectorDisplayArea.BottomLeft - fst sv.SectorDisplayArea.TopRight)
+    let height = abs(snd sv.SectorDisplayArea.BottomLeft - snd sv.SectorDisplayArea.TopRight)
+    height/width
+
+  printfn "Sector view ratio: %f" sectorViewRatio
+
+  let sv' = 
+    let x,y = sv.VisualisationViewSize
+    { sv with VisualisationViewSize = x, x*sectorViewRatio }
+  sv'
+
+let inSector (sector : SectorDisplayAreaMercator) (position: Position) =
+  let x,y = CoordinateSystem.Mercator.lonLatToXY (float position.Coordinates.Longitude) (float position.Coordinates.Latitude)
+  let x1,y1 = sector.BottomLeft
+  let x2,y2 = sector.TopRight
+  x >= x1 && x <= x2 && y >= y1 && y <= y2          
 
 
 let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
@@ -107,7 +128,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         getSectorOutlineCmd()
 
     | SectorOutline outline ->
-        { model with Sector = outline},
+        // TODO: fix this
+        //{ model with Sector = outline},
+        model,
         Cmd.none
 
     | ConnectionActive result ->
@@ -121,12 +144,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        pingBluebirdCmd config
 
     | GetSimulationViewSize ->
-        let viewSize = simulationViewSize()
+        let viewWidth = simulationViewWidth()
+        let x,y = model.SectorView.VisualisationViewSize
+
         { model with
-            SimulationViewSize = viewSize
+            SectorView = { model.SectorView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
             SeparationDistance =
-              let x1, y1 = rescaleCollege calibrationPoint1 viewSize
-              let x2, y2 = rescaleCollege calibrationPoint2 viewSize
+              let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.SectorView
+              let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.SectorView
               Some(y1 - y2)
           },
         Cmd.none
@@ -160,15 +185,22 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             getAircraftPositionCmd config aircraftID
 
     | FetchedAllPositions (positionInfo, elapsed) ->
+        let aircraftInView = 
+          positionInfo
+          |> Array.filter (fun ac ->
+              inSector model.SectorView.SectorDisplayArea ac.Position 
+          )
+
         let newModel =
-          { model with Positions = positionInfo |> List.ofArray }
+          { model with Positions = aircraftInView |> List.ofArray }
+
         { newModel with
             Positions =
               newModel.Positions
               |> List.map (fun ac ->
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
-            PositionHistory = updateHistory model.PositionHistory positionInfo
-            InConflict = checkLossOfSeparation model.SimulationViewSize positionInfo
+            PositionHistory = updateHistory model.PositionHistory aircraftInView
+            InConflict = checkLossOfSeparation model.SectorView aircraftInView
             SimulationTime = elapsed } ,
         Cmd.none
 

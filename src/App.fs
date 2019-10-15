@@ -24,11 +24,24 @@ open System.Collections.Generic
 
 
 let init() =
-  { Positions = []
+  // default sector display area is the college airspace
+  let sectorDisplayArea = {
+    BottomLeft = CoordinateSystem.Mercator.lonLatToXY -2.5 50.3 //-3.974833333 49.0675 
+    TopRight = CoordinateSystem.Mercator.lonLatToXY 1.4 52.0 //5.090666667 53.80883333
+    BottomAltitude = 0.0<ft>
+    TopAltitude = 45000.<ft>
+  }
+
+  {     
+    Positions = []
     Animate = false
     Config = None
     Sector = None
     SectorDisplay = TopDown
+    SectorView = {
+      VisualisationViewSize = 0., 0.
+      SectorDisplayArea = sectorDisplayArea
+    }
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
@@ -38,6 +51,8 @@ let init() =
     SeparationDistance = None
     SimulationSpeed = 1.0
     SimulationTime = System.TimeSpan.FromSeconds(0.0)
+
+    Score = 0.
    },
   Cmd.batch [
     Cmd.ofMsg Init

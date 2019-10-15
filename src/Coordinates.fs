@@ -4,8 +4,7 @@ open Twitcher.Domain
 
 // https://wiki.openstreetmap.org/wiki/Mercator#C.23_implementation
 
-/// Translate latitude and longitude to [x,y] pixel coordinates on a map with Mercator projection
-let lonlatToMercator longitude latitude = 
+module Mercator =
   let rMajor = 6378137.0
   let rMinor = 6356752.3142
   let ratio = rMinor / rMajor
@@ -15,55 +14,115 @@ let lonlatToMercator longitude latitude =
   let deg2rad = System.Math.PI / 180.0
 
   let degToRad deg = deg * deg2rad
+  let radToDeg rad = rad / deg2rad
 
-  let lonToX lon = rMajor * (lon * deg2rad)
-
-  let latToY lat =
-    let lat' = min 89.5 (max lat -89.5)
+  let lonToX longitude = rMajor * (longitude * deg2rad)
+  
+  let latToY latitude =
+    let lat' = min 89.5 (max latitude -89.5)
     let phi = lat' * deg2rad
     let sinphi = sin phi
     let con = eccent * sinphi
     let con' = ((1.0 - con) / (1.0 + con))**com
     let ts = tan(0.5 * ((System.Math.PI * 0.5) - phi)) / con'
-    - rMajor * log ts
+    - rMajor * log ts  
 
-  (lonToX longitude, latToY latitude)
+  let lonLatToXY longitude latitude =
+    (lonToX longitude, latToY latitude)
+
+  let xToLon x =
+    (radToDeg x)/rMajor
+
+  let yToLat y =
+    let ts = System.Math.Exp(-y / rMajor)
+    let initialPhi = System.Math.PI/2. - 2. * System.Math.Atan(ts)
+
+    let rec compute phi dphi iter =
+      if iter >= 15 || abs(dphi) <= 0.000000001 then
+        phi
+      else 
+        let con = eccent * System.Math.Sin(phi)
+        let dphi' = System.Math.PI/2.0 - 2. * System.Math.Atan(ts * System.Math.Pow((1.0 - con) / (1.0 + con), com)) - phi
+        compute (phi + dphi') dphi' (iter + 1)
+
+    let phi = compute initialPhi 1.0 0
+    radToDeg(phi)    
+
+  let xyToLonLat x y =
+    xToLon x, yToLat y
 
 
-// Entire Earth area
-let rangeXMin, rangeYMin = lonlatToMercator -180.0 -89.5
-let rangeXMax, rangeYMax = lonlatToMercator 180.0 89.5
+// let (minAltitude: Altitude), (maxAltitude: Altitude) = 0.0<ft>, 45000.0<ft>   
 
-// College airspace area
-let sectorXMin, sectorYMin = lonlatToMercator -2.5 50.3 //-3.974833333 49.0675 
-let sectorXMax, sectorYMax = lonlatToMercator 1.4 52.0 //5.090666667 53.80883333
 
-// Around Equator for testing purposes
-let testXMin, testYMin = lonlatToMercator -2.0 -1.0
-let testXMax, testYMax = lonlatToMercator 2.0 1.0
+// // Entire Earth area
+// let rangeXMin, rangeYMin = Mercator.lonLatToXY -180.0 -89.5
+// let rangeXMax, rangeYMax = Mercator.lonLatToXY 180.0 89.5
+
+// // Hard-coded college airspace area
+// // TODO Load from some config file
+// let sectorXMin, sectorYMin = Mercator.lonLatToXY -2.5 50.3 //-3.974833333 49.0675 
+// let sectorXMax, sectorYMax = Mercator.lonLatToXY 1.4 52.0 //5.090666667 53.80883333
+
+// // Around Equator for testing purposes
+// let testXMin, testYMin = Mercator.lonLatToXY -2.0 -1.0
+// let testXMax, testYMax = Mercator.lonLatToXY 2.0 1.0
 
 /// Linear rescaling
 let scale rMin rMax tMin tMax value =
   (value - rMin)/(rMax - rMin) * (tMax - tMin) + tMin
 
 /// Mercator coordinates to visualization coordinates, whole Earth
-let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
-  scale rangeXMin rangeXMax 0. xWidth longitude,
-  scale rangeYMin rangeYMax 0. yWidth latitude
+// let rescaleEarth (longitude, latitude) (xWidth, yWidth) =
+//   scale rangeXMin rangeXMax 0. xWidth longitude,
+//   scale rangeYMin rangeYMax 0. yWidth latitude
 
-/// Mercator coordinates to visualization coordinates, college airspace
-let rescaleCollege (longitude: float<longitude>, latitude: float<latitude>) (xWidth, yWidth) =
-  let x,y = lonlatToMercator (float longitude) (float latitude)
-  scale sectorXMin sectorXMax 0.0 xWidth x,
-  yWidth - (scale sectorYMin sectorYMax 0.0 yWidth y)
+/// Mercator coordinates to visualization coordinates
+/// Rescales 
+let rescaleSectorToView (sectorDisplay: Model.SectorDisplay) 
+      (longitude: float<longitude>, latitude: float<latitude>, altitude: Altitude) 
+      (sectorView: Model.SectorView) =
+  let xMercator,yMercator = Mercator.lonLatToXY (float longitude) (float latitude)
+  let sectorXMin, sectorYMin = sectorView.SectorDisplayArea.BottomLeft
+  let sectorXMax, sectorYMax = sectorView.SectorDisplayArea.TopRight
+  let xWidth, yWidth = sectorView.VisualisationViewSize
+
+  match sectorDisplay with
+  | Model.SectorDisplay.TopDown ->
+      // map longitude and latitude to x and y
+      scale sectorXMin sectorXMax 0.0 xWidth xMercator,
+      yWidth - (scale sectorYMin sectorYMax 0.0 yWidth yMercator)
+  
+  | Model.SectorDisplay.LateralNorthSouth ->
+      // map longitude to x and altitude to y
+      scale sectorXMin sectorXMax 0.0 xWidth xMercator,
+      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
+
+  | Model.SectorDisplay.LateralEastWest ->
+      // map latitude to x and altitude to y
+      scale sectorYMin sectorYMax 0.0 xWidth yMercator,
+      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
+
+
+
+// let rescaleViewToSector (x, y) (xWidth, yWidth) : float<longitude> * float<latitude> =
+//   // rescale from display coordinates to Mercator values
+//   let xMercator = scale 0. xWidth sectorXMin sectorXMax x 
+//   let yMercator = scale 0. yWidth sectorYMin sectorYMax y
+
+//   // Recompute from Mercator location to actual longitude and latitude
+//   let lon, lat = Mercator.xyToLonLat xMercator yMercator
+//   lon * 1.<longitude>, lat * 1.<latitude>
+
 
 /// Mercator coordinates to visualization coordinates, area around Equator
-let rescaleTest (longitude, latitude) (xWidth, yWidth) =
-  scale testXMin testXMax 0. xWidth longitude,
-  scale testYMin testYMax 0. yWidth latitude
+// let rescaleTest (longitude, latitude) (xWidth, yWidth) =
+//   scale testXMin testXMax 0. xWidth longitude,
+//   scale testYMin testYMax 0. yWidth latitude
 
-let isInViewCollege coordinates (xWidth, yWidth) =
-  let x,y = rescaleCollege coordinates (xWidth, yWidth)
+let isInViewSector coordinates sectorView =
+  let x,y = rescaleSectorToView Model.SectorDisplay.TopDown coordinates sectorView
+  let xWidth, yWidth = sectorView.VisualisationViewSize
   x >= 0. && x <= xWidth && y >= 0. && y <= yWidth
 
 
@@ -90,8 +149,8 @@ let clockwiseAngle (point1: Position) (point2: Position) =
 
 
 // For visualisation purposes, these two points are in the centre of the training sector and 5 nautical miles from each other
-let calibrationPoint1 = (-0.5<longitude>, 51.<latitude>)
-let calibrationPoint2 = (-0.5<longitude>, 51.08323664811<latitude>)
+let calibrationPoint1 = (-0.5<longitude>, 51.<latitude>, 0.0<ft>)
+let calibrationPoint2 = (-0.5<longitude>, 51.08323664811<latitude>, 0.0<ft>)
 
 //=======================================================    
 
