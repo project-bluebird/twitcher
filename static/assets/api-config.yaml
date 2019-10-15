@@ -33,6 +33,7 @@ default:
   endpoint_episode_log: "eplog"
   endpoint_simulation_time: "time"
   endpoint_shutdown: "shutdown"
+  endpoint_metrics: "metric"
   query_aircraft_id: "acid"
 
   # Column/element/attribute names
@@ -47,3 +48,4 @@ default:
   # Physical
   feet_altitude_upper_limit: 6000
   flight_level_lower_limit: 60
+  flight_level_upper_limit: 400

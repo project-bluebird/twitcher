@@ -25,9 +25,30 @@ type CommandForm =
 
 type ElapsedTime = System.TimeSpan
 
+type SectorDisplay =
+  | TopDown
+  | LateralNorthSouth
+  | LateralEastWest
+
+type SectorDisplayAreaMercator = {
+  BottomLeft : float * float
+  TopRight : float * float
+  BottomAltitude : float<ft>
+  TopAltitude : float<ft>
+}  
+
+type SectorView = {
+  VisualisationViewSize : float * float // width, height on screen
+  SectorDisplayArea : SectorDisplayAreaMercator
+}  
+
 type Model = {
   Animate : bool
-  Sector : (Coordinates list) option
+
+  Sector : SectorInfo option
+  SectorDisplay : SectorDisplay
+  SectorView : SectorView   // TODO
+
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
   InConflict : AircraftID[]
@@ -39,6 +60,8 @@ type Model = {
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
+
+  Score : float
 }
 
 
@@ -50,6 +73,7 @@ type Msg =
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
+  | ChangeDisplay of SectorDisplay
 
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails
