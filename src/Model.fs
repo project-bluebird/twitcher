@@ -45,7 +45,7 @@ type SectorView = {
 type Model = {
   Animate : bool
 
-  Sector : Sectors option
+  Sector : SectorInfo option
   SectorDisplay : SectorDisplay
   SectorView : SectorView   // TODO
 

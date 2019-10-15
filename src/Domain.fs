@@ -59,6 +59,7 @@ type AircraftInfo = {
     VerticalSpeed : float<ft/minute> option
 }
 
+// Structure for sector info obtained from Bluebird
 type SectorInfo = {
   max_alt : float
   max_lat : float
@@ -67,10 +68,6 @@ type SectorInfo = {
   min_lat : float
   min_lon : float
   name : string
-}
-
-type Sectors = {
-  sectors : SectorInfo list
 }
 
 type Configuration = {

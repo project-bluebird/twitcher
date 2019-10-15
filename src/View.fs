@@ -30,35 +30,38 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
-let plotRectangularSector model (sectorInfo: SectorInfo) =
+let plotRectangularSector model =
+  let sectorInfo = model.SectorView.SectorDisplayArea
+  let minLon, minLat = sectorInfo.BottomLeft ||> CoordinateSystem.Mercator.xyToLonLat 
+  let maxLon, maxLat = sectorInfo.TopRight ||> CoordinateSystem.Mercator.xyToLonLat 
   [
     let visualCoordinates =
         match model.SectorDisplay with        
         | TopDown -> 
-            [ sectorInfo.min_lon, sectorInfo.max_lat
-              sectorInfo.max_lon, sectorInfo.max_lat
-              sectorInfo.max_lon, sectorInfo.min_lat
-              sectorInfo.min_lon, sectorInfo.min_lat ]
+            [ minLon, maxLat
+              maxLon, maxLat
+              maxLon, minLat
+              minLon, minLat ]
             |> List.map (fun (x,y) -> 
                 let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.SectorView
                 string x' + "," + string y')
             |> String.concat " "
         | LateralNorthSouth ->
-            [ sectorInfo.min_lon, sectorInfo.min_alt
-              sectorInfo.min_lon, sectorInfo.max_alt
-              sectorInfo.max_lon, sectorInfo.max_alt
-              sectorInfo.max_lon, sectorInfo.min_alt ]
+            [ minLon, sectorInfo.BottomAltitude
+              minLon, sectorInfo.TopAltitude
+              maxLon, sectorInfo.TopAltitude
+              maxLon, sectorInfo.BottomAltitude ]
             |> List.map (fun (x,alt) -> 
-                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt * 1.<ft>) model.SectorView
+                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt) model.SectorView
                 string x' + "," + string alt')
             |> String.concat " "
         | LateralEastWest ->
-            [ sectorInfo.min_lat, sectorInfo.min_alt
-              sectorInfo.min_lat, sectorInfo.max_alt
-              sectorInfo.max_lat, sectorInfo.max_alt
-              sectorInfo.max_lat, sectorInfo.min_alt ]
+            [ minLat, sectorInfo.BottomAltitude
+              minLat, sectorInfo.TopAltitude
+              maxLat, sectorInfo.TopAltitude
+              maxLat, sectorInfo.BottomAltitude ]
             |> List.map (fun (y,alt) -> 
-                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt * 1.<ft>) model.SectorView
+                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt) model.SectorView
                 string y' + "," + string alt')
             |> String.concat " "            
 
@@ -78,13 +81,9 @@ let plotRectangularSector model (sectorInfo: SectorInfo) =
 let sectorOutlineView model dispatch =
   [
       // 1. Plot the sector outline  
-    match model.Sector with
-    | Some(sectors) -> 
-        let sectorsToPlot = 
-          sectors.sectors
-          |> List.collect (plotRectangularSector model)
-        
-        yield! sectorsToPlot
+      // TODO: plot the full outline - this plots only the rectangle
+
+      yield! plotRectangularSector model 
 
       // let points = sectors.sectors.[0]
       // let sectorCoordinates =
@@ -137,7 +136,6 @@ let sectorOutlineView model dispatch =
       //         [ Fill "white" ]
       //     ] []])
 
-    | None -> yield! []
   ]
 
 let roundToHalf value =
@@ -187,19 +185,19 @@ let areaLatitudesLongitudesView model dispatch =
           text [
               X (string x')
               Y (string 15)
-              Style [ Fill "black"; FontSize "16" ]
+              Style [ Fill "#636363"; FontSize "12" ]
             ] [ str (string x) ]
           text [
               X (string x')
               Y (string (snd model.SectorView.VisualisationViewSize - 10.))
-              Style [ Fill "black"; FontSize "16" ]
+              Style [ Fill "#636363"; FontSize "12" ]
             ] [ str (string x) ]  
           line [
             X1 (string x')
             Y1 (string 0)
             X2 (string x')
             Y2 ((string (snd model.SectorView.VisualisationViewSize)))
-            Style [ Stroke "black"; StrokeWidth "0.3" ]
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
           ] []
           ])
       
@@ -210,7 +208,7 @@ let areaLatitudesLongitudesView model dispatch =
           text [
               X "0.5%"
               Y (string y')
-              Style [ Fill "black"; FontSize "16" ]
+              Style [ Fill "#636363"; FontSize "12" ]
             ] [ str (string y) ]
           // text [
           //     X ("98%")
@@ -222,7 +220,7 @@ let areaLatitudesLongitudesView model dispatch =
             Y1 (string y')
             X2 ((string "100%"))
             Y2 (string y')
-            Style [ Stroke "black"; StrokeWidth "0.3" ]
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
           ] []
           ])
     
@@ -284,8 +282,8 @@ let simulationView model dispatch =
               polyline [
                 Points path
                 Style [
-                  Stroke "black"
-                  //Opacity (if selected then "0.5" else "0.25")
+                  Stroke "grey"
+                  Opacity (if selected then "0.5" else "0.25")
                   StrokeWidth (if selected then "3" else "2")
                   Fill "none"
                 ]
@@ -297,9 +295,9 @@ let simulationView model dispatch =
                 Cy (string y)
                 R (if selected then "7" else if conflict then "8" else "3")
                 Style
-                    [ Stroke (if selected && not conflict then "turquoise" else if conflict then "red" else "black")
+                    [ Stroke (if selected && not conflict then "turquoise" else if conflict then "orange" else "black")
                       StrokeWidth (if selected || conflict then "5" else "1")
-                      Fill (if selected then (if conflict then "orange" else "black") else if conflict then "red" else "grey") ]
+                      Fill (if selected then (if conflict then "orange" else "black") else if conflict then "orange" else "grey") ]
                 OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
               ] []
 
