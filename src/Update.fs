@@ -130,6 +130,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | SectorOutline outline ->
         // TODO: fix this
         //{ model with Sector = outline},
+
+        // outline should contain the fetched GeoJSON with all test sectors
+        printfn "%A" outline
+
         model,
         Cmd.none
 

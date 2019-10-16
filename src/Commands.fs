@@ -488,29 +488,30 @@ let changeHeadingCmd config aircraftID heading =
 
 let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
+let sectorGeoJSONDecoder = Decode.Auto.generateDecoder<TestSector.FeatureCollection>()
 
 let getSectorOutline() =
   promise {
-    let url = "assets/nats-sector.json"
+    let url = "assets/test_airspace_xyi.json"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
-      match Decode.fromString sectorDecoder txt with
+      match Decode.fromString sectorGeoJSONDecoder txt with
       | Ok value -> return Some(value)
       | Error err ->
           Fable.Core.JS.console.log(err)
           return None
     with ex ->
-      Fable.Core.JS.console.log(ex)
+      // Fable.Core.JS.console.log(ex)
 
-      // get a default sector
-      let urlDefault = "assets/default-sector.json"
-      let! resDefault = Fetch.fetch urlDefault []
-      let! txt = resDefault.text()
-      match Decode.fromString sectorDecoder txt with
-      | Ok value -> return Some(value)
-      | Error err ->
-          Fable.Core.JS.console.log(err)
+      // // get a default sector
+      // let urlDefault = "assets/default-sector.json"
+      // let! resDefault = Fetch.fetch urlDefault []
+      // let! txt = resDefault.text()
+      // match Decode.fromString sectorDecoder txt with
+      // | Ok value -> return Some(value)
+      // | Error err ->
+          Fable.Core.JS.console.log(ex)
           return None
   }
 

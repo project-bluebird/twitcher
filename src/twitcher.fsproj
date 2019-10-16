@@ -5,6 +5,7 @@
   <ItemGroup>
     <Compile Include="Domain.fs" />
     <Compile Include="Conversions.fs" />
+    <Compile Include="TestSector.fs" />
     <Compile Include="forms/Form.fs" />
     <Compile Include="forms/LoadScenario.fs" />
     <Compile Include="forms/CreateAircraft.fs" />

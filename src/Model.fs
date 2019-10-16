@@ -69,7 +69,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
-  | SectorOutline of Coordinates list option
+  | SectorOutline of TestSector.FeatureCollection option
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize

@@ -6,63 +6,67 @@ open System.Collections.Generic
 
 type PointGeometry = {
   Type : string
-  Coordinates : float []
+  coordinates : float []
 }
 
 type PointProperties = {
-  AltitudeUnit : string
-  Name : string
-  Latitude : float
-  Longitude : float
+  altitudeUnit : string
+  name : string
+  latitude : float
+  longitude : float
   Type : string
 }
 
-type Point = {
+type MultiPolygon = {
   Type : string
-  Geometry : PointGeometry
-  Properties : PointProperties
+  coordinates : float [][][][]
 }
 
 type GeometryCollectionGeometry = {
   Type : string
-  Coordinates : float [][][][]
+  geometries : MultiPolygon []
 }
 
 type GeometryCollectionProperties = {
-  Name : string
+  name : string
   Type : string
-  Lower_limit : int []
-  Upper_limit : int []
-  Routes : Dictionary<string, string[]>
-}
-
-type GeometryCollection = {
-  Type : string
-  Geometries : GeometryCollectionGeometry
-  Properties : GeometryCollectionProperties
+  lower_limit : int []
+  upper_limit : int []
+  routes : Dictionary<string, string[]>
 }
 
 type LineStringGeometry = {
   Type : string
-  Coordinates : float [][]
+  coordinates : float [][]
 }
 
 type LineStringProperties = {
-  Points : string []
-  Latitudes : float []
-  Longitudes : float []
-  Altitudes : float []
-  Name : string
+  points : string []
+  latitudes : float []
+  longitudes : float []
+  altitudes : float []
+  name : string
   Type : string
 }
 
-type LineString = {
+
+type FeatureGeometry = 
+  | LineStringGeometry
+  | GeometryCollectionGeometry
+  | PointGeometry
+
+type FeatureProperties = 
+  | LineStringProperties
+  | GeometryCollectionProperties
+  | PointProperties
+
+type Feature = {
   Type : string
-  Geometry : LineStringGeometry
-  Properties : LineStringProperties
+  geometry : FeatureGeometry
+  properties : FeatureProperties
 }
 
-type Feature = 
-  | Point of Point
-  | GeometryCollection of GeometryCollection
-  | LineString of LineString
+type FeatureCollection = {
+  Type : string
+  features : Feature []
+}
