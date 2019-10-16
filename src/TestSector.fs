@@ -166,31 +166,3 @@ let decodeFeatureCollection : Decoder<FeatureCollection> =
       Type = get.Required.Field "type" Decode.string
       features = get.Required.Field "features" (Decode.array decodeFeature)
     })
-
-
-
-// let decodeAddress : Decoder<Address> =
-//     Decode.object
-//         (fun get ->
-//             { City = get.Required.Field "City" Decode.string
-//               State = get.Required.Field "State" Decode.string })
-
-// let decodePerson : Decoder<Person> =
-//     Decode.object
-//         (fun get ->
-//             { Age = get.Required.Field "Age" Decode.int
-//               Address = get.Required.Field "Address" decodeAddress})
-
-// let decodeMap jsonString =
-//     Decode.fromString (Decode.keyValuePairs decodePerson) jsonString
-//     |> Result.map (fun namePersonList ->
-//         namePersonList
-//         |> Map.ofList)
-
-// [<EntryPoint>]
-// let main argv =
-//     match decodeMap testString with
-//     | Ok res -> printfn "%A" res
-//     | Error e -> printfn "%s" e
-//     0
-// shareimprove this answer
