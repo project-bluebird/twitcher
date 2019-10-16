@@ -488,15 +488,15 @@ let changeHeadingCmd config aircraftID heading =
 
 let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
-let sectorGeoJSONDecoder = Decode.Auto.generateDecoder<TestSector.FeatureCollection>()
+
 
 let getSectorOutline() =
   promise {
-    let url = "assets/test_airspace_xyi.json"
+    let url = "assets/hell_demo_airspace.json"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
-      match Decode.fromString sectorGeoJSONDecoder txt with
+      match Decode.fromString TestSector.decodeFeatureCollection txt with
       | Ok value -> return Some(value)
       | Error err ->
           Fable.Core.JS.console.log(err)
