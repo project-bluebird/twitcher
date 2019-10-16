@@ -497,7 +497,8 @@ let getSectorOutline() =
       let! res = Fetch.fetch url []
       let! txt = res.text()
       match Decode.fromString TestSector.decodeFeatureCollection txt with
-      | Ok value -> return Some(value)
+      | Ok value -> 
+          return Some(TestSector.getOutline value)
       | Error err ->
           Fable.Core.JS.console.log(err)
           return None

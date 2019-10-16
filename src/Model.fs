@@ -42,6 +42,12 @@ type SectorView = {
   SectorDisplayArea : SectorDisplayAreaMercator
 }  
 
+type SectorOutline = {
+  Coordinates : Coordinates [] // outline coordinates
+  BottomAltitude : int<FL>
+  TopAltitude : int<FL>
+}
+
 type Model = {
   Animate : bool
 
@@ -69,7 +75,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
-  | SectorOutline of TestSector.FeatureCollection option
+  | SectorOutline of SectorOutline option
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
