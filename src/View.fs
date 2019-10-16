@@ -26,128 +26,311 @@ let basicNavbar model dispatch =
                 [ Icon.icon [ ] [
                   Fa.i [Fa.Solid.Binoculars] [] ]
                   Heading.p [ Heading.Is5 ] [ str "Twitcher" ]  ]]
-          // Navbar.Item.div [ Navbar.Item.HasDropdown
-          //                   Navbar.Item.IsHoverable ]
-          //   [ Navbar.Link.a [ ]
-          //       [ str "Docs" ]
-          //     Navbar.Dropdown.div [ ]
-          //       [ Navbar.Item.a [ ]
-          //           [ str "Overwiew" ]
-          //         Navbar.Item.a [ ]
-          //           [ str "Something" ]
-          //         Navbar.divider [ ] [ ]
-          //         Navbar.Item.a [ ]
-          //           [ str "Something else" ] ] ]
           Navbar.End.div [ ]
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
+
+let plotRectangularSector model =
+  let sectorInfo = model.SectorView.SectorDisplayArea
+  let minLon, minLat = sectorInfo.BottomLeft ||> CoordinateSystem.Mercator.xyToLonLat 
+  let maxLon, maxLat = sectorInfo.TopRight ||> CoordinateSystem.Mercator.xyToLonLat 
+  [
+    let visualCoordinates =
+        match model.SectorDisplay with        
+        | TopDown -> 
+            [ minLon, maxLat
+              maxLon, maxLat
+              maxLon, minLat
+              minLon, minLat ]
+            |> List.map (fun (x,y) -> 
+                let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.SectorView
+                string x' + "," + string y')
+            |> String.concat " "
+        | LateralNorthSouth ->
+            [ minLon, sectorInfo.BottomAltitude
+              minLon, sectorInfo.TopAltitude
+              maxLon, sectorInfo.TopAltitude
+              maxLon, sectorInfo.BottomAltitude ]
+            |> List.map (fun (x,alt) -> 
+                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt) model.SectorView
+                string x' + "," + string alt')
+            |> String.concat " "
+        | LateralEastWest ->
+            [ minLat, sectorInfo.BottomAltitude
+              minLat, sectorInfo.TopAltitude
+              maxLat, sectorInfo.TopAltitude
+              maxLat, sectorInfo.BottomAltitude ]
+            |> List.map (fun (y,alt) -> 
+                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt) model.SectorView
+                string y' + "," + string alt')
+            |> String.concat " "            
+
+    yield! 
+      ([ polygon
+        [
+          Points visualCoordinates
+          Style
+            [ Fill "#f9f9f9"
+              Stroke "#4f4f4f"
+              StrokeWidth "2"
+               ]
+        ] []])
+
+  ]
+
+let sectorOutlineView model dispatch =
+  [
+      // 1. Plot the sector outline  
+      // TODO: plot the full outline - this plots only the rectangle
+
+      yield! plotRectangularSector model 
+
+      // let points = sectors.sectors.[0]
+      // let sectorCoordinates =
+
+      //   points
+      //   |> Array.map (fun coord ->
+      //     CoordinateSystem.rescaleSectorToView (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
+      
+      // let visualCoordinates = 
+      //   match model.SectorDisplay with
+      //   | TopDown -> 
+      //       sectorCoordinates 
+      //       |> List.map (fun (x,y,_) -> string x + "," + string y)
+      //       |> String.concat " "
+
+      //   | LateralNorthSouth ->
+      //       let minX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+      //       let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
+            
+      //       // Get vertical bounds of the sector space
+      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            
+      //       [ string minX + "," + string maxAlt
+      //         string maxX + "," + string maxAlt
+      //         string maxX + "," + string minAlt
+      //         string minX + "," + string minAlt ]
+      //       |> String.concat " "
+
+      //   | LateralEastWest -> 
+      //       // TODO rescale latitude correctly to "x" in svg element, right now it's still rescaled to y
+      //       let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
+      //       let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
+            
+      //       // Get vertical bounds of the sector space
+      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
+      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
+            
+      //       [ string minY + "," + string maxAlt
+      //         string maxY + "," + string maxAlt
+      //         string maxY + "," + string minAlt
+      //         string minY + "," + string minAlt ]
+      //       |> String.concat " "
+
+      // yield! 
+      //   ([ polygon
+      //     [
+      //       Points visualCoordinates
+      //       Style
+      //         [ Fill "white" ]
+      //     ] []])
+
+  ]
+
+let roundToHalf value =
+  System.Math.Round(value * 2.0, System.MidpointRounding.ToEven) / 2.0
+
+let areaLatitudesLongitudesView model dispatch =
+  let x0, y0 = 
+    model.SectorView.SectorDisplayArea.BottomLeft
+    ||> CoordinateSystem.Mercator.xyToLonLat
+  let x1, y1 = 
+    model.SectorView.SectorDisplayArea.TopRight
+    ||> CoordinateSystem.Mercator.xyToLonLat  
+  let a0, a1 =
+    float model.SectorView.SectorDisplayArea.BottomAltitude, float model.SectorView.SectorDisplayArea.TopAltitude
+
+  let xTicks = 
+    match model.SectorDisplay with
+    | TopDown | LateralNorthSouth ->
+      [roundToHalf x0 .. 0.1 .. roundToHalf x1] 
+      |> List.map (fun x -> 
+          let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
+          string (System.Math.Round(x,2)) , x')
+    | LateralEastWest ->
+      [roundToHalf y0 .. 0.1 .. roundToHalf y1] 
+      |> List.map (fun y -> 
+          let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          string (System.Math.Round(y,2)), x')  
+
+  let yTicks = 
+    match model.SectorDisplay with
+    | TopDown ->
+      [ roundToHalf y0 .. 0.1 .. roundToHalf y1] 
+      |> List.map (fun y -> 
+          let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          string (System.Math.Round(y,2)), y')
+    | LateralEastWest | LateralNorthSouth ->
+      [ a0 .. 5000. .. a1] 
+      |> List.map (fun a -> 
+          let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.SectorView
+          "FL" + string (a/100.), y)     
+
+  [
+    yield! 
+      xTicks 
+      |> List.collect (fun (x, x') -> 
+          [
+          text [
+              X (string x')
+              Y (string 15)
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string x) ]
+          text [
+              X (string x')
+              Y (string (snd model.SectorView.VisualisationViewSize - 10.))
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string x) ]  
+          line [
+            X1 (string x')
+            Y1 (string 0)
+            X2 (string x')
+            Y2 ((string (snd model.SectorView.VisualisationViewSize)))
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+          ] []
+          ])
+      
+    yield! 
+      yTicks 
+      |> List.collect (fun (y, y') -> 
+          [
+          text [
+              X "0.5%"
+              Y (string y')
+              Style [ Fill "#636363"; FontSize "12" ]
+            ] [ str (string y) ]
+          // text [
+          //     X ("98%")
+          //     Y (string y')
+          //     Style [ Fill "#636363"; FontSize "12" ]
+          //   ] [ str (string y) ]  
+          line [
+            X1 (string 0)
+            Y1 (string y')
+            X2 ((string "100%"))
+            Y2 (string y')
+            Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
+          ] []
+          ])
+    
+  ]
+
+let sectorView model dispatch =
+  [
+    yield! sectorOutlineView model dispatch
+    yield! areaLatitudesLongitudesView model dispatch
+  ]  
+
+let simulationView model dispatch =
+  [
+  // 2. Plot loss of separation distance circle around all aircraft that are "in conflict (lost separation)"
+  yield!
+    model.Positions
+    |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
+    |> List.map (fun aircraft ->
+        let position = aircraft.Position
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
+
+        circle [
+          Cx (string x)
+          Cy (string y)
+          R (string (model.SeparationDistance.Value) + "px")
+          Style
+              [
+                Fill "red"
+                Opacity "0.25"
+              ]
+        ] []
+    )
+
+  // 3. Plot the actual aircraft as points
+  yield!
+    model.Positions
+    |> List.collect (fun aircraft ->
+        let position = aircraft.Position
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
+        let past =
+          if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
+            (snd model.PositionHistory).[aircraft.AircraftID]
+            |> fun a -> a.[0..min a.Length 5]
+            |> Array.map (fun pastPosition -> // TODO - precompute this?
+              CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SectorView)
+          else [||]
+        let selected = model.ViewDetails = Some(aircraft.AircraftID)
+        let conflict = model.InConflict |> Array.contains aircraft.AircraftID
+
+        [
+          // plot current position and past path
+          if past.Length > 0 then
+            let path =
+              Array.append past [|x,y|]
+              |> fun a -> if selected then a else Array.skip (a.Length - 11) a
+              |> Array.map (fun (x,y) -> string x + "," + string y)
+              |> String.concat " "
+            yield
+              polyline [
+                Points path
+                Style [
+                  Stroke "grey"
+                  Opacity (if selected then "0.5" else "0.25")
+                  StrokeWidth (if selected then "3" else "2")
+                  Fill "none"
+                ]
+              ] []
+
+          yield
+              circle [
+                Cx (string x)
+                Cy (string y)
+                R (if selected then "7" else if conflict then "8" else "3")
+                Style
+                    [ Stroke (if selected && not conflict then "turquoise" else if conflict then "orange" else "black")
+                      StrokeWidth (if selected || conflict then "5" else "1")
+                      Fill (if selected then (if conflict then "orange" else "black") else if conflict then "orange" else "grey") ]
+                OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
+              ] []
+
+          // Callsign
+          yield
+            text [
+              X (string (x + 7.))
+              Y (string (y + 18.))
+              Style [ Fill "black"; FontSize "20" ]
+            ] [ str aircraft.AircraftID ]
+
+        ]
+        )
+        ]
+
 
 let viewSimulation model dispatch =
   Columns.columns [ Columns.IsCentered  ]
     [
       Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
-        div [ ClassName "svg-box" ] [
+        div [ 
+          //ClassName "svg-box" 
+          ] [
           svg [
-            ClassName "svg-box-content"
+            //ClassName "svg-box-content"
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
+            SVGAttr.Width "100%"
+            SVGAttr.Height (model.SectorView.VisualisationViewSize |> snd |> string)
             ]
             [
-              yield!
-                match model.Sector with
-                | Some(points) ->
-                  let coordinates =
-                    points
-                    |> List.map (fun coord ->
-                      let x,y = CoordinateSystem.rescaleCollege (coord.Longitude, coord.Latitude) model.SimulationViewSize
-                      string x + "," + string y )
-                    |> String.concat " "
-
-                  [ polygon
-                      [
-                        Points coordinates
-                        Style
-                          [ Fill "white" ]
-                      ] []]
-                | None -> []
-
-              yield!
-                model.Positions
-                |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
-                |> List.map (fun aircraft ->
-                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-
-                    circle [
-                      Cx (string x)
-                      Cy (string y)
-                      R (string (model.SeparationDistance.Value) + "px")
-                      Style
-                          [
-                            Fill "orange"
-                            Opacity "0.25"
-                          ]
-                    ] []
-                )
-
-              yield!
-                model.Positions
-                |> List.collect (fun aircraft ->
-                    let x,y = CoordinateSystem.rescaleCollege (aircraft.Position.Coordinates.Longitude, aircraft.Position.Coordinates.Latitude) model.SimulationViewSize
-                    let past =
-                      if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
-                        (snd model.PositionHistory).[aircraft.AircraftID]
-                        |> Array.map (fun pastPosition -> // TODO - precompute this?
-                          CoordinateSystem.rescaleCollege (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude) model.SimulationViewSize)
-                      else [||]
-                    let selected = model.ViewDetails = Some(aircraft.AircraftID)
-                    let conflict = model.InConflict |> Array.contains aircraft.AircraftID
-
-                    [
-                      // plot current position and past path
-                      if past.Length > 0 then
-                        let path =
-                          Array.append past [|x,y|]
-                          |> fun a -> if selected then a else Array.skip (a.Length - 11) a
-                          |> Array.map (fun (lon, lat) -> string lon + "," + string lat)
-                          |> String.concat " "
-                        yield
-                          polyline [
-                            Points path
-                            Style [
-                              Stroke "grey"
-                              Opacity (if selected then "0.5" else "0.25")
-                              StrokeWidth (if selected then "3" else "2")
-                              Fill "none"
-                            ]
-                          ] []
-
-                      if conflict then
-                        yield
-                          circle [
-                            Cx (string x)
-                            Cy (string y)
-                            R (if selected then "7" else "5")
-                            Style
-                                [ Stroke (if selected then "black" else "black")
-                                  StrokeWidth (if selected then "1" else "1")
-                                  Fill (if selected then "orange" else "grey") ]
-                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                          ] []
-
-                      else
-                        yield
-                          circle [
-                            Cx (string x)
-                            Cy (string y)
-                            R (if selected then "7" else "5")
-                            Style
-                                [ Stroke (if selected then "turquoise" else "black")
-                                  StrokeWidth (if selected then "5" else "1")
-                                  Fill (if selected then "black" else "grey") ]
-                            OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
-                          ] []
-                    ]
-                    )
+              yield! sectorView model dispatch
+              yield! simulationView model dispatch
             ]
         ]
       ]
@@ -278,7 +461,7 @@ let viewPositionTable model dispatch =
                   | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewCollege (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude) model.SimulationViewSize then
+                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SectorView then
                    yield  ""
                 else
                    yield "is-greyed-out" ] |> String.concat " "
@@ -308,6 +491,21 @@ let viewTimer model dispatch =
                 )]
             ]
         ]
+    ]
+
+let viewScore model dispatch =
+  Level.level [ ]
+    [ 
+        Level.item [ Level.Item.HasTextCentered ]
+          [ div [] [
+              Level.heading [ ]
+                [ str "Score"  ]
+              Level.title [ ]
+                [ str (
+                    sprintf "%.1f" model.Score
+                )]
+            ]
+          ]
     ]
 
 let viewControlMenu model dispatch =
@@ -422,9 +620,36 @@ let viewControlMenu model dispatch =
               Text.span [] [ str "Create aircraft"]
             ]
           ]
+
       ]
 
-
+let viewDisplayMenu model dispatch =
+  div [] [
+  Menu.menu [ ]
+    [ Menu.label [ ] [ str "Display controls" ]
+      Field.div [ Field.HasAddons ]
+        [
+          Control.div [] [
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = TopDown then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.TopDown)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.Eye ][] ]] 
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = LateralEastWest then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.LateralEastWest)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltH ][] ]] 
+            Button.button
+              [ Button.Size IsMedium;
+                Button.Color (if model.SectorDisplay = LateralNorthSouth then IsLight else IsWhite)
+                Button.OnClick (fun _ -> dispatch (ChangeDisplay SectorDisplay.LateralNorthSouth)) ]
+              [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV ][] ]] 
+          ]
+        ]
+      ]
+  br []
+  ]
 
 let view model dispatch =
     Hero.hero [  ]
@@ -442,27 +667,31 @@ let view model dispatch =
                   [
                     Columns.columns []
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is10)]
+                        Column.column [ Column.Width(Screen.All, Column.IsFull)]
                           [
                             viewSimulation model dispatch
                           ]
-                        Column.column [ Column.Width(Screen.All, Column.Is2)]
-                          [
-                            viewControlMenu model dispatch
-                          ]
                       ]
+
+                    viewScore model dispatch
 
                     viewTimer model dispatch
 
                     Columns.columns [
                       Columns.IsCentered  ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.IsHalf) ] [
+                        Column.column [ Column.Width(Screen.All, Column.Is2)]
+                          [
+                            viewDisplayMenu model dispatch
+                            viewControlMenu model dispatch
+                          ]
 
-                            viewPositionTable model dispatch
+                        Column.column [ Column.Width(Screen.All, Column.Is4) ] [
+
+                            //viewPositionTable model dispatch
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.IsHalf)] [
+                        Column.column [ Column.Width(Screen.All, Column.Is5)] [
                           viewAircraftDetails model dispatch
                         ]
 
