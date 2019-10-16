@@ -197,3 +197,31 @@ let getOutline (fc: FeatureCollection) =
       | _ -> None)
   |> Array.exactlyOne
 
+let getFixes (fc: FeatureCollection) =
+  fc.features
+  |> Array.choose (fun f ->
+      match f.geometry with
+      | PointGeometry pg ->
+        match f.properties with
+        | PointProperties pp ->
+          if pp.Type = "FIX" then
+            {
+              Name = pp.name 
+              Position = {
+                Coordinates = {
+                  Latitude = pp.latitude * 1.<latitude>
+                  Longitude = pp.longitude * 1.<longitude>
+                }
+                Altitude = 
+                  match pp.altitude_unit with
+                  | "m" ->
+                    pg.coordinates.[2] * 1.<m> |> Conversions.Altitude.m2ft
+                  | "ft" | _ ->
+                    pg.coordinates.[2] * 1.<ft>
+              }
+            }
+            |> Some
+          else 
+            None
+        | _ -> None
+      | _ -> None)

@@ -59,6 +59,11 @@ type AircraftInfo = {
     VerticalSpeed : float<ft/minute> option
 }
 
+type FixInfo = {
+  Name : string
+  Position: Position
+}
+
 // Structure for sector info obtained from Bluebird
 type SectorInfo = {
   max_alt : float
