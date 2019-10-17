@@ -355,12 +355,58 @@ let simulationView model dispatch =
               ] []
 
           // Callsign
-          yield
-            text [
-              X (string (x + 7.))
-              Y (string (y + 18.))
-              Style [ Fill "black"; FontSize "20" ]
-            ] [ str aircraft.AircraftID ]
+          if model.ShowDataBlocks then
+
+            let callsign = aircraft.AircraftID
+            let currentFL = aircraft.Position.Altitude |> Conversions.Altitude.ft2fl |> int |> string
+            let clearedFL = match aircraft.ClearedFlightLevel with Some level -> level |> Conversions.Altitude.ft2fl |> int |> string | None -> "NA"
+            let exitFL = 
+              match aircraft.TargetFlightLevel with 
+              | Some level -> 
+                  level 
+                  |> Conversions.Altitude.ft2fl 
+                  |> int 
+                  |> fun x -> x/10
+                  |> string 
+              | None -> "NA"
+
+            
+
+            yield!
+              [
+                rect [
+                  X (string x)
+                  Y (string y)
+                  SVGAttr.Width "6em"
+                  SVGAttr.Height "4.1em"
+                  Style
+                    [ Fill "white"
+                      Stroke "#4f4f4f"
+                      StrokeWidth "1"
+                     ]
+                ] []
+                  
+                text [
+                    X (string (x + 7.))
+                    Y (string (y + 18.))
+                    Style [ Fill "black"; FontSize "17" ]
+                  ] [ 
+                    tspan [ X (string (x + 7.)); Dy "0" ] [ str callsign ]
+                    tspan [ X (string (x + 7.)); Dy "1em" ] [ str (currentFL + "\t" + clearedFL) ]
+                    tspan [ X (string (x + 7.)); Dy "1em" ] [ str exitFL ]
+                   ]
+
+              ]
+            else
+              yield!
+              // just callsign
+                [
+                  text [
+                    X (string (x + 7.))
+                    Y (string (y + 18.))
+                    Style [ Fill "black"; FontSize "17" ]
+                  ] [ str aircraft.AircraftID ]
+                ]
 
         ]
         )
@@ -706,7 +752,14 @@ let viewDisplayMenu model dispatch =
             Menu.Item.OnClick (fun _ -> if model.ShowWaypoints then dispatch (ShowWaypoints false) else dispatch (ShowWaypoints true))
             ] [
               Icon.icon [ ] [ Fa.i [Fa.Solid.MapMarkerAlt][] ]
-              Text.span [] [ str "Show waypoints"]
+              Text.span [] [ str (if model.ShowWaypoints then "Hide waypoints" else "Show waypoints")]
+            ]
+
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> if model.ShowDataBlocks then dispatch (ShowDataBlock false) else dispatch (ShowDataBlock true))
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.InfoCircle ][] ]
+              Text.span [] [ str (if model.ShowDataBlocks then "Hide data blocks" else "Show data blocks")]
             ]
           ]
       ]

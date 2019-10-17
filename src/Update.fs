@@ -159,6 +159,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         | None -> model, Cmd.none
 
     | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
+    | ShowDataBlock x -> { model with ShowDataBlocks = x }, Cmd.none
 
     | ConnectionActive result ->
         if result then

@@ -57,6 +57,8 @@ type AircraftInfo = {
     GroundSpeed : Speed option
     CalibratedAirSpeed : Speed option
     VerticalSpeed : float<ft/minute> option
+    TargetFlightLevel : Altitude option
+    ClearedFlightLevel : Altitude option
 }
 
 type FixInfo = {

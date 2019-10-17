@@ -154,6 +154,9 @@ let update msg model =
               | SpeedUnit.Kmh ->
                   float model.Speed * 1.<km/h> |> Conversions.Speed.kmh2knot |> Some
               | _ -> None
+            
+            TargetFlightLevel = None
+            ClearedFlightLevel = None
             }
         model, Cmd.none, ExternalMsg.Submit aircraftInfo
       else

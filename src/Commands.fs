@@ -138,6 +138,9 @@ let parseAircraftInfo id info =
       VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
       CalibratedAirSpeed = None
       Heading = None
+
+      TargetFlightLevel = None  // TODO
+      ClearedFlightLevel = None // TODO
     }
 
 let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =

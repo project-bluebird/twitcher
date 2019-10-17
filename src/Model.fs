@@ -56,6 +56,7 @@ type Model = {
   SectorDisplay : SectorDisplay
   DisplayView : DisplayView   
   ShowWaypoints : bool
+  ShowDataBlocks : bool
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
@@ -103,6 +104,7 @@ type Msg =
   | PausedSimulation of bool
 
   | ShowWaypoints of bool
+  | ShowDataBlock of bool
 
   | ResumeSimulation
   | ResumedSimulation of bool

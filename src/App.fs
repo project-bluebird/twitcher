@@ -43,6 +43,7 @@ let init() =
       DisplayArea = sectorDisplayArea
     }
     ShowWaypoints = false
+    ShowDataBlocks = false
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
