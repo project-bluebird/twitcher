@@ -30,7 +30,7 @@ let basicNavbar model dispatch =
             [ img [ Style [ Width "7.65em"; Height "3.465em"; Margin "1em" ] // 511 × 231
                     Src "assets/Turing-logo.png" ] ] ]
 
-let plotRectangularSector model =
+let plotRectangularDisplay model =
   let sectorInfo = model.DisplayView.DisplayArea
   let minLon, minLat = sectorInfo.BottomLeft ||> CoordinateSystem.Mercator.xyToLonLat 
   let maxLon, maxLat = sectorInfo.TopRight ||> CoordinateSystem.Mercator.xyToLonLat 
@@ -70,9 +70,9 @@ let plotRectangularSector model =
         [
           Points visualCoordinates
           Style
-            [ Fill "#f9f9f9"
-              Stroke "#4f4f4f"
-              StrokeWidth "2"
+            [ Fill "#e0e0e0"
+              //Stroke "#4f4f4f"
+              //StrokeWidth "2"
                ]
         ] []])
 
@@ -83,58 +83,60 @@ let sectorOutlineView model dispatch =
       // 1. Plot the sector outline  
       // TODO: plot the full outline - this plots only the rectangle
 
-      yield! plotRectangularSector model 
+      yield! plotRectangularDisplay model 
 
-      // let points = sectors.sectors.[0]
-      // let sectorCoordinates =
+      match model.SectorOutline with
+      | None -> yield! []
+      | Some outline ->
+        
+        let visualCoordinates = 
+          match model.SectorDisplay with
+          | TopDown -> 
+              outline.Coordinates
+              |> Array.map (fun coord ->
+                  CoordinateSystem.rescaleSectorToView TopDown (coord.Longitude, coord.Latitude, 0.<ft>) model.DisplayView
+                  )
+              |> Array.map (fun (x,y) -> string x + "," + string y)
+              |> String.concat " "
 
-      //   points
-      //   |> Array.map (fun coord ->
-      //     CoordinateSystem.rescaleSectorToView (coord.Longitude, coord.Latitude, 0.0<ft>) model.SimulationViewSize)
-      
-      // let visualCoordinates = 
-      //   match model.SectorDisplay with
-      //   | TopDown -> 
-      //       sectorCoordinates 
-      //       |> List.map (fun (x,y,_) -> string x + "," + string y)
-      //       |> String.concat " "
+          | LateralNorthSouth ->
+              let longitudes = outline.Coordinates |> Array.map (fun c -> c.Longitude)
+              let minLon = longitudes |> Array.min 
+              let maxLon = longitudes |> Array.max
+              
+              // Get vertical bounds of the sector space
+              let minX, minY = CoordinateSystem.rescaleSectorToView LateralNorthSouth (minLon, outline.Coordinates.[0].Latitude, outline.BottomAltitude |> Conversions.Altitude.fl2ft) model.DisplayView
+              let maxX, maxY = CoordinateSystem.rescaleSectorToView LateralNorthSouth (maxLon, outline.Coordinates.[0].Latitude, outline.TopAltitude |> Conversions.Altitude.fl2ft) model.DisplayView
+              
+              [ string minX + "," + string maxY
+                string maxX + "," + string maxY
+                string maxX + "," + string minY
+                string minX + "," + string minY ]
+              |> String.concat " "
 
-      //   | LateralNorthSouth ->
-      //       let minX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
-      //       let maxX = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
-            
-      //       // Get vertical bounds of the sector space
-      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
-            
-      //       [ string minX + "," + string maxAlt
-      //         string maxX + "," + string maxAlt
-      //         string maxX + "," + string minAlt
-      //         string minX + "," + string minAlt ]
-      //       |> String.concat " "
+          | LateralEastWest -> 
+              let latitudes = outline.Coordinates |> Array.map (fun c -> c.Latitude)
+              let minLat = latitudes |> Array.min
+              let maxLat = latitudes |> Array.max
+              
+              // Get vertical bounds of the sector space
+              let minX, minY = CoordinateSystem.rescaleSectorToView LateralEastWest (outline.Coordinates.[0].Longitude, minLat, outline.BottomAltitude |> Conversions.Altitude.fl2ft) model.DisplayView
+              let maxX, maxY = CoordinateSystem.rescaleSectorToView LateralEastWest (outline.Coordinates.[0].Longitude, maxLat, outline.TopAltitude |> Conversions.Altitude.fl2ft) model.DisplayView
+              
+              [ string minX + "," + string maxY
+                string maxX + "," + string maxY
+                string maxX + "," + string minY
+                string minX + "," + string minY ]
+              |> String.concat " "
 
-      //   | LateralEastWest -> 
-      //       // TODO rescale latitude correctly to "x" in svg element, right now it's still rescaled to y
-      //       let minY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.min
-      //       let maxY = sectorCoordinates |> List.map (fun (x,y,z) -> x) |> List.max
-            
-      //       // Get vertical bounds of the sector space
-      //       let _, _, minAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.minAltitude) model.SimulationViewSize
-      //       let _, _, maxAlt = CoordinateSystem.rescaleSectorToView (points.[0].Longitude, points.[0].Latitude, CoordinateSystem.maxAltitude) model.SimulationViewSize
-            
-      //       [ string minY + "," + string maxAlt
-      //         string maxY + "," + string maxAlt
-      //         string maxY + "," + string minAlt
-      //         string minY + "," + string minAlt ]
-      //       |> String.concat " "
 
-      // yield! 
-      //   ([ polygon
-      //     [
-      //       Points visualCoordinates
-      //       Style
-      //         [ Fill "white" ]
-      //     ] []])
+        yield! 
+          ([ polygon
+            [
+              Points visualCoordinates
+              Style
+                [ Fill "white" ]
+            ] []])
 
   ]
 
