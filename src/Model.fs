@@ -51,7 +51,7 @@ type SectorOutline = {
 type Model = {
   Animate : bool
 
-  Sector : SectorInfo option
+  SectorOutline : SectorOutline option
   SectorDisplay : SectorDisplay
   DisplayView : DisplayView   // TODO
 

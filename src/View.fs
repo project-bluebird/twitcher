@@ -667,10 +667,16 @@ let view model dispatch =
                   [
                     Columns.columns []
                       [
-                        Column.column [ Column.Width(Screen.All, Column.IsFull)]
+                        Column.column [ Column.Width(Screen.All, Column.Is10)]
                           [
                             viewSimulation model dispatch
                           ]
+                        Column.column [ Column.Width(Screen.All, Column.Is2)]
+                          [
+                            viewDisplayMenu model dispatch
+                            viewControlMenu model dispatch
+                          ]
+
                       ]
 
                     viewScore model dispatch
@@ -680,15 +686,10 @@ let view model dispatch =
                     Columns.columns [
                       Columns.IsCentered  ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is2)]
-                          [
-                            viewDisplayMenu model dispatch
-                            viewControlMenu model dispatch
-                          ]
 
                         Column.column [ Column.Width(Screen.All, Column.Is4) ] [
 
-                            //viewPositionTable model dispatch
+                            viewPositionTable model dispatch
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.Is5)] [

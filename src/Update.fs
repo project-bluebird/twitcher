@@ -127,15 +127,36 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         getSectorOutlineCmd()
 
-    | SectorOutline outline ->
-        // TODO: fix this
-        //{ model with Sector = outline},
+    | SectorOutline sectorOutline ->
 
-        // outline should contain the fetched GeoJSON with all test sectors
-        printfn "%A" outline
+        match sectorOutline with
+        | Some outline ->
 
-        model,
-        Cmd.none
+          let maxLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.max |> Mercator.latToY
+          let minLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.min |> Mercator.latToY
+          let maxLon = outline.Coordinates |> Array.map (fun c -> float c.Longitude) |> Array.max |> Mercator.lonToX
+          let minLon = outline.Coordinates |> Array.map (fun c -> float c.Longitude) |> Array.min |> Mercator.lonToX
+          let minAlt = outline.BottomAltitude |> Conversions.Altitude.fl2ft
+          let maxAlt = outline.TopAltitude |> Conversions.Altitude.fl2ft
+          let xwidth = maxLon - minLon |> abs
+          let ywidth = maxLat - minLat |> abs
+          let height = maxAlt - minAlt
+
+          let displayMargin = 0.2
+
+          let displayArea = {
+            BottomLeft = minLon - displayMargin*xwidth, minLat - displayMargin*ywidth
+            TopRight = maxLon + displayMargin*xwidth, maxLat + displayMargin*ywidth
+            BottomAltitude = minAlt - displayMargin * height
+            TopAltitude = maxAlt + displayMargin * height
+          }
+
+          { model with 
+              SectorOutline = Some outline; 
+              DisplayView = { model.DisplayView with DisplayArea = displayArea}},
+          Cmd.none
+        
+        | None -> model, Cmd.none
 
     | ConnectionActive result ->
         if result then
