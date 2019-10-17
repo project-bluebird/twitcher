@@ -495,7 +495,7 @@ let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 let getSectorOutline() =
   promise {
-    let url = "assets/hell_demo_airspace.json"
+    let url = "assets/x_sector_hell.json"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()

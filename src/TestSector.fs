@@ -13,28 +13,22 @@ type PointGeometry = {
 }
 
 type PointProperties = {
-  altitude_unit : string
   name : string
   latitude : float
   longitude : float
   Type : string
 }
 
-type MultiPolygon = {
+type PolygonGeometry = {
   Type : string
-  coordinates : float list list list list
-}
-
-type GeometryCollectionGeometry = {
-  Type : string
-  geometries : MultiPolygon list
+  coordinates : float list list list
 }
 
 type Routes = 
   (string * string[]) list
 
 
-type GeometryCollectionProperties = {
+type PolygonProperties = {
   name : string
   Type : string
   lower_limit : int []
@@ -51,19 +45,18 @@ type LineStringProperties = {
   points : string []
   latitudes : float []
   longitudes : float []
-  altitudes : float []
   name : string
   Type : string
 }
 
 type FeatureGeometry = 
   | LineStringGeometry of LineStringGeometry
-  | GeometryCollectionGeometry of GeometryCollectionGeometry
+  | PolygonGeometry of PolygonGeometry
   | PointGeometry of PointGeometry
 
 type FeatureProperties = 
   | LineStringProperties of LineStringProperties
-  | GeometryCollectionProperties of GeometryCollectionProperties
+  | PolygonProperties of PolygonProperties
   | PointProperties of PointProperties
 
 type Feature = {
@@ -73,24 +66,16 @@ type Feature = {
 }
 
 type FeatureCollection = {
-  Type : string
   features : Feature []
 }
 
-let decodeMultiPolygon : Decoder<MultiPolygon> =
-  Decode.object 
-    (fun get -> {
-      Type = get.Required.Field "type" Decode.string
-      coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float list list list list>())
-    }
-    )
 
-let decodeGeometryCollectionGeometry : Decoder<GeometryCollectionGeometry> =
+let decodePolygonGeometry : Decoder<PolygonGeometry> =
   Decode.object 
     (fun get ->
         {
           Type = get.Required.Field "type" (Decode.string)
-          geometries = get.Required.Field "geometries" (Decode.list decodeMultiPolygon) 
+          coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float list list list>())
         } 
      )
 
@@ -98,8 +83,8 @@ let decodeGeometry : Decoder<FeatureGeometry> =
   Decode.field "type" Decode.string
   |> Decode.andThen (
     function
-    | "GeometryCollection" ->
-      decodeGeometryCollectionGeometry |> Decode.map GeometryCollectionGeometry
+    | "Polygon" ->
+      decodePolygonGeometry |> Decode.map PolygonGeometry
     | "LineString" ->
       Decode.object (fun get ->
         {
@@ -118,7 +103,7 @@ let decodeGeometry : Decoder<FeatureGeometry> =
   )
 
 
-let decodeGeometryCollectionProperties : Decoder<GeometryCollectionProperties> =
+let decodePolygonProperties : Decoder<PolygonProperties> =
   Decode.object
     (fun get ->
       {
@@ -135,7 +120,6 @@ let decodePointProperties : Decoder<PointProperties> =
     (fun get ->
       {
         Type = get.Required.Field "type" Decode.string
-        altitude_unit = get.Required.Field "altitude_unit" Decode.string
         name = get.Required.Field "name" Decode.string
         latitude = get.Required.Field "latitude" Decode.float
         longitude = get.Required.Field "longitude" Decode.float
@@ -150,7 +134,6 @@ let decodeLineStringProperties : Decoder<LineStringProperties> =
         points = get.Required.Field "points" (Decode.Auto.generateDecoder<string []>())
         latitudes = get.Required.Field "latitudes" (Decode.Auto.generateDecoder<float []>())
         longitudes = get.Required.Field "longitudes" (Decode.Auto.generateDecoder<float []>())
-        altitudes = get.Required.Field "altitudes" (Decode.Auto.generateDecoder<float []>())
       }
   )
 
@@ -159,13 +142,12 @@ let decodeFeature : Decoder<Feature> =
     (fun get -> 
       { Type = get.Required.Field "type" Decode.string
         geometry = get.Required.Field "geometry" decodeGeometry //(Decode.oneOf [Decode.Auto.generateDecoder<PointGeometry>() |> Decode.map PointGeometry; decodeGeometryCollectionGeometry |> Decode.map GeometryCollectionGeometry; Decode.Auto.generateDecoder<LineStringGeometry>() |> Decode.map LineStringGeometry])
-        properties = get.Required.Field "properties" (Decode.oneOf [decodePointProperties |> Decode.map PointProperties; decodeGeometryCollectionProperties |> Decode.map GeometryCollectionProperties; decodeLineStringProperties |> Decode.map LineStringProperties]) })
+        properties = get.Required.Field "properties" (Decode.oneOf [decodePointProperties |> Decode.map PointProperties; decodePolygonProperties |> Decode.map PolygonProperties; decodeLineStringProperties |> Decode.map LineStringProperties]) })
 
 
 let decodeFeatureCollection : Decoder<FeatureCollection> =
   Decode.object
     (fun get -> {
-      Type = get.Required.Field "type" Decode.string
       features = get.Required.Field "features" (Decode.array decodeFeature)
     })
 
@@ -184,12 +166,7 @@ let getFixes (fc: FeatureCollection) =
                   Latitude = pp.latitude * 1.<latitude>
                   Longitude = pp.longitude * 1.<longitude>
                 }
-                Altitude = 
-                  match pp.altitude_unit with
-                  | "m" ->
-                    pg.coordinates.[2] * 1.<m> |> Conversions.Altitude.m2ft
-                  | "ft" | _ ->
-                    pg.coordinates.[2] * 1.<ft>
+                Altitude = 0.<ft>
               }
             }
             |> Some
@@ -202,21 +179,19 @@ let getOutline (fc: FeatureCollection) =
   fc.features
   |> Array.choose (fun f ->
       match f.geometry with 
-      | GeometryCollectionGeometry gm ->
+      | PolygonGeometry pg ->
           match f.properties with 
-          | GeometryCollectionProperties gp ->
-              if gp.Type = "SECTOR" then
-                let g = gm.geometries.[0]
+          | PolygonProperties pp ->
+              if pp.Type = "SECTOR" then
                 let coords = 
-                  g.coordinates
-                  |> List.concat 
+                  pg.coordinates
                   |> List.concat 
                   |> List.map (fun l -> { Longitude = l.[0] * 1.<longitude>; Latitude =  l.[1] * 1.<latitude> })   
                   |> Array.ofList          
                 {
                   Coordinates = coords
-                  TopAltitude = gp.upper_limit.[0] * 1<FL>
-                  BottomAltitude = gp.lower_limit.[0] * 1<FL>
+                  TopAltitude = pp.upper_limit.[0] * 1<FL>
+                  BottomAltitude = pp.lower_limit.[0] * 1<FL>
                   Waypoints = getFixes fc
                 }
                 |> Some
