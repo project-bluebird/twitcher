@@ -30,24 +30,32 @@ type SectorDisplay =
   | LateralNorthSouth
   | LateralEastWest
 
-type SectorDisplayAreaMercator = {
+type DisplayAreaMercator = {
   BottomLeft : float * float
   TopRight : float * float
   BottomAltitude : float<ft>
   TopAltitude : float<ft>
 }  
 
-type SectorView = {
+type DisplayView = {
   VisualisationViewSize : float * float // width, height on screen
-  SectorDisplayArea : SectorDisplayAreaMercator
+  DisplayArea : DisplayAreaMercator  // entire displayed area, not the same as the visualised sector
 }  
+
+type SectorInfo = {
+  Coordinates : Coordinates [] // outline coordinates
+  BottomAltitude : int<FL>
+  TopAltitude : int<FL>
+  Waypoints : FixInfo []
+}
 
 type Model = {
   Animate : bool
 
-  Sector : SectorInfo option
+  SectorInfo : SectorInfo option
   SectorDisplay : SectorDisplay
-  SectorView : SectorView   // TODO
+  DisplayView : DisplayView   
+  ShowWaypoints : bool
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
@@ -69,7 +77,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
-  | SectorOutline of Coordinates list option
+  | SectorOutline of SectorInfo option
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
@@ -93,6 +101,8 @@ type Msg =
 
   | PauseSimulation
   | PausedSimulation of bool
+
+  | ShowWaypoints of bool
 
   | ResumeSimulation
   | ResumedSimulation of bool

@@ -96,8 +96,8 @@ let checkLossOfSeparation viewSize (positionInfo: AircraftInfo []) =
 
 let rescaleVisualisationToSector sv =
   let sectorViewRatio = 
-    let width = abs(fst sv.SectorDisplayArea.BottomLeft - fst sv.SectorDisplayArea.TopRight)
-    let height = abs(snd sv.SectorDisplayArea.BottomLeft - snd sv.SectorDisplayArea.TopRight)
+    let width = abs(fst sv.DisplayArea.BottomLeft - fst sv.DisplayArea.TopRight)
+    let height = abs(snd sv.DisplayArea.BottomLeft - snd sv.DisplayArea.TopRight)
     height/width
 
   printfn "Sector view ratio: %f" sectorViewRatio
@@ -107,7 +107,7 @@ let rescaleVisualisationToSector sv =
     { sv with VisualisationViewSize = x, x*sectorViewRatio }
   sv'
 
-let inSector (sector : SectorDisplayAreaMercator) (position: Position) =
+let inSector (sector : DisplayAreaMercator) (position: Position) =
   let x,y = CoordinateSystem.Mercator.lonLatToXY (float position.Coordinates.Longitude) (float position.Coordinates.Latitude)
   let x1,y1 = sector.BottomLeft
   let x2,y2 = sector.TopRight
@@ -127,11 +127,38 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         getSectorOutlineCmd()
 
-    | SectorOutline outline ->
-        // TODO: fix this
-        //{ model with Sector = outline},
-        model,
-        Cmd.none
+    | SectorOutline sectorOutline ->
+
+        match sectorOutline with
+        | Some outline ->
+
+          let maxLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.max |> Mercator.latToY
+          let minLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.min |> Mercator.latToY
+          let maxLon = outline.Coordinates |> Array.map (fun c -> float c.Longitude) |> Array.max |> Mercator.lonToX
+          let minLon = outline.Coordinates |> Array.map (fun c -> float c.Longitude) |> Array.min |> Mercator.lonToX
+          let minAlt = outline.BottomAltitude |> Conversions.Altitude.fl2ft
+          let maxAlt = outline.TopAltitude |> Conversions.Altitude.fl2ft
+          let xwidth = maxLon - minLon |> abs
+          let ywidth = maxLat - minLat |> abs
+          let height = maxAlt - minAlt
+
+          let displayMargin = 0.25
+
+          let displayArea = {
+            BottomLeft = minLon - displayMargin*xwidth, minLat - displayMargin*ywidth
+            TopRight = maxLon + displayMargin*xwidth, maxLat + displayMargin*ywidth
+            BottomAltitude = minAlt - displayMargin * height
+            TopAltitude = maxAlt + displayMargin * height
+          }
+
+          { model with 
+              SectorInfo = Some outline; 
+              DisplayView = { model.DisplayView with DisplayArea = displayArea}},
+          Cmd.none
+        
+        | None -> model, Cmd.none
+
+    | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
 
     | ConnectionActive result ->
         if result then
@@ -145,13 +172,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | GetSimulationViewSize ->
         let viewWidth = simulationViewWidth()
-        let x,y = model.SectorView.VisualisationViewSize
+        let x,y = model.DisplayView.VisualisationViewSize
 
         { model with
-            SectorView = { model.SectorView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
+            DisplayView = { model.DisplayView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
             SeparationDistance =
-              let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.SectorView
-              let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.SectorView
+              let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.DisplayView
+              let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.DisplayView
               Some(y1 - y2)
           },
         Cmd.none
@@ -188,7 +215,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         let aircraftInView = 
           positionInfo
           |> Array.filter (fun ac ->
-              inSector model.SectorView.SectorDisplayArea ac.Position 
+              inSector model.DisplayView.DisplayArea ac.Position 
           )
 
         let newModel =
@@ -200,7 +227,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               |> List.map (fun ac ->
                   { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory aircraftInView
-            InConflict = checkLossOfSeparation model.SectorView aircraftInView
+            InConflict = checkLossOfSeparation model.DisplayView aircraftInView
             SimulationTime = elapsed } ,
         Cmd.none
 

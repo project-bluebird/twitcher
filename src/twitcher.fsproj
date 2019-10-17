@@ -12,7 +12,8 @@
     <Compile Include="forms/ChangeSpeed.fs" />
     <Compile Include="forms/ChangeHeading.fs" />
     <Compile Include="Model.fs" />
-    <Compile Include="Coordinates.fs" />
+    <Compile Include="Coordinates.fs" />    
+    <Compile Include="TestSector.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="View.fs" />
     <Compile Include="Update.fs" />
