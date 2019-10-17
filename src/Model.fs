@@ -30,16 +30,16 @@ type SectorDisplay =
   | LateralNorthSouth
   | LateralEastWest
 
-type SectorDisplayAreaMercator = {
+type DisplayAreaMercator = {
   BottomLeft : float * float
   TopRight : float * float
   BottomAltitude : float<ft>
   TopAltitude : float<ft>
 }  
 
-type SectorView = {
+type DisplayView = {
   VisualisationViewSize : float * float // width, height on screen
-  SectorDisplayArea : SectorDisplayAreaMercator
+  DisplayArea : DisplayAreaMercator  // entire displayed area, not the same as the visualised sector
 }  
 
 type SectorOutline = {
@@ -53,7 +53,7 @@ type Model = {
 
   Sector : SectorInfo option
   SectorDisplay : SectorDisplay
-  SectorView : SectorView   // TODO
+  DisplayView : DisplayView   // TODO
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>

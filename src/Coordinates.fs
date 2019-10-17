@@ -81,10 +81,10 @@ let scale rMin rMax tMin tMax value =
 /// Rescales 
 let rescaleSectorToView (sectorDisplay: Model.SectorDisplay) 
       (longitude: float<longitude>, latitude: float<latitude>, altitude: Altitude) 
-      (sectorView: Model.SectorView) =
+      (sectorView: Model.DisplayView) =
   let xMercator,yMercator = Mercator.lonLatToXY (float longitude) (float latitude)
-  let sectorXMin, sectorYMin = sectorView.SectorDisplayArea.BottomLeft
-  let sectorXMax, sectorYMax = sectorView.SectorDisplayArea.TopRight
+  let sectorXMin, sectorYMin = sectorView.DisplayArea.BottomLeft
+  let sectorXMax, sectorYMax = sectorView.DisplayArea.TopRight
   let xWidth, yWidth = sectorView.VisualisationViewSize
 
   match sectorDisplay with
@@ -96,12 +96,12 @@ let rescaleSectorToView (sectorDisplay: Model.SectorDisplay)
   | Model.SectorDisplay.LateralNorthSouth ->
       // map longitude to x and altitude to y
       scale sectorXMin sectorXMax 0.0 xWidth xMercator,
-      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
+      yWidth - (scale (float sectorView.DisplayArea.BottomAltitude) (float sectorView.DisplayArea.TopAltitude) 0.0 yWidth (float altitude))
 
   | Model.SectorDisplay.LateralEastWest ->
       // map latitude to x and altitude to y
       scale sectorYMin sectorYMax 0.0 xWidth yMercator,
-      yWidth - (scale (float sectorView.SectorDisplayArea.BottomAltitude) (float sectorView.SectorDisplayArea.TopAltitude) 0.0 yWidth (float altitude))
+      yWidth - (scale (float sectorView.DisplayArea.BottomAltitude) (float sectorView.DisplayArea.TopAltitude) 0.0 yWidth (float altitude))
 
 
 

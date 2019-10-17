@@ -38,9 +38,9 @@ let init() =
     Config = None
     Sector = None
     SectorDisplay = TopDown
-    SectorView = {
+    DisplayView = {
       VisualisationViewSize = 0., 0.
-      SectorDisplayArea = sectorDisplayArea
+      DisplayArea = sectorDisplayArea
     }
     State = NotConnected
     FormModel = None

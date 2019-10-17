@@ -31,7 +31,7 @@ let basicNavbar model dispatch =
                     Src "assets/Turing-logo.png" ] ] ]
 
 let plotRectangularSector model =
-  let sectorInfo = model.SectorView.SectorDisplayArea
+  let sectorInfo = model.DisplayView.DisplayArea
   let minLon, minLat = sectorInfo.BottomLeft ||> CoordinateSystem.Mercator.xyToLonLat 
   let maxLon, maxLat = sectorInfo.TopRight ||> CoordinateSystem.Mercator.xyToLonLat 
   [
@@ -43,7 +43,7 @@ let plotRectangularSector model =
               maxLon, minLat
               minLon, minLat ]
             |> List.map (fun (x,y) -> 
-                let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.SectorView
+                let x', y' = CoordinateSystem.rescaleSectorToView TopDown (x * 1.<longitude>,y * 1.<latitude>,0.<ft>) model.DisplayView
                 string x' + "," + string y')
             |> String.concat " "
         | LateralNorthSouth ->
@@ -52,7 +52,7 @@ let plotRectangularSector model =
               maxLon, sectorInfo.TopAltitude
               maxLon, sectorInfo.BottomAltitude ]
             |> List.map (fun (x,alt) -> 
-                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt) model.SectorView
+                let x', alt' = CoordinateSystem.rescaleSectorToView LateralNorthSouth (x * 1.<longitude>,51. * 1.<latitude>,alt) model.DisplayView
                 string x' + "," + string alt')
             |> String.concat " "
         | LateralEastWest ->
@@ -61,7 +61,7 @@ let plotRectangularSector model =
               maxLat, sectorInfo.TopAltitude
               maxLat, sectorInfo.BottomAltitude ]
             |> List.map (fun (y,alt) -> 
-                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt) model.SectorView
+                let y', alt' = CoordinateSystem.rescaleSectorToView LateralEastWest (0. * 1.<longitude>,y * 1.<latitude>,alt) model.DisplayView
                 string y' + "," + string alt')
             |> String.concat " "            
 
@@ -143,25 +143,25 @@ let roundToHalf value =
 
 let areaLatitudesLongitudesView model dispatch =
   let x0, y0 = 
-    model.SectorView.SectorDisplayArea.BottomLeft
+    model.DisplayView.DisplayArea.BottomLeft
     ||> CoordinateSystem.Mercator.xyToLonLat
   let x1, y1 = 
-    model.SectorView.SectorDisplayArea.TopRight
+    model.DisplayView.DisplayArea.TopRight
     ||> CoordinateSystem.Mercator.xyToLonLat  
   let a0, a1 =
-    float model.SectorView.SectorDisplayArea.BottomAltitude, float model.SectorView.SectorDisplayArea.TopAltitude
+    float model.DisplayView.DisplayArea.BottomAltitude, float model.DisplayView.DisplayArea.TopAltitude
 
   let xTicks = 
     match model.SectorDisplay with
     | TopDown | LateralNorthSouth ->
       [roundToHalf x0 .. 0.1 .. roundToHalf x1] 
       |> List.map (fun x -> 
-          let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.SectorView
+          let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(x,2)) , x')
     | LateralEastWest ->
       [roundToHalf y0 .. 0.1 .. roundToHalf y1] 
       |> List.map (fun y -> 
-          let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), x')  
 
   let yTicks = 
@@ -169,12 +169,12 @@ let areaLatitudesLongitudesView model dispatch =
     | TopDown ->
       [ roundToHalf y0 .. 0.1 .. roundToHalf y1] 
       |> List.map (fun y -> 
-          let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.SectorView
+          let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), y')
     | LateralEastWest | LateralNorthSouth ->
       [ a0 .. 5000. .. a1] 
       |> List.map (fun a -> 
-          let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.SectorView
+          let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.DisplayView
           "FL" + string (a/100.), y)     
 
   [
@@ -189,14 +189,14 @@ let areaLatitudesLongitudesView model dispatch =
             ] [ str (string x) ]
           text [
               X (string x')
-              Y (string (snd model.SectorView.VisualisationViewSize - 10.))
+              Y (string (snd model.DisplayView.VisualisationViewSize - 10.))
               Style [ Fill "#636363"; FontSize "12" ]
             ] [ str (string x) ]  
           line [
             X1 (string x')
             Y1 (string 0)
             X2 (string x')
-            Y2 ((string (snd model.SectorView.VisualisationViewSize)))
+            Y2 ((string (snd model.DisplayView.VisualisationViewSize)))
             Style [ Stroke "#b3b3b3"; StrokeWidth "0.3" ]
           ] []
           ])
@@ -240,7 +240,7 @@ let simulationView model dispatch =
     |> List.filter (fun aircraft -> model.InConflict |> Array.contains aircraft.AircraftID)
     |> List.map (fun aircraft ->
         let position = aircraft.Position
-        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.DisplayView
 
         circle [
           Cx (string x)
@@ -259,13 +259,13 @@ let simulationView model dispatch =
     model.Positions
     |> List.collect (fun aircraft ->
         let position = aircraft.Position
-        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.SectorView
+        let x,y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (position.Coordinates.Longitude, position.Coordinates.Latitude, position.Altitude) model.DisplayView
         let past =
           if (snd model.PositionHistory).ContainsKey aircraft.AircraftID then
             (snd model.PositionHistory).[aircraft.AircraftID]
             |> fun a -> a.[0..min a.Length 5]
             |> Array.map (fun pastPosition -> // TODO - precompute this?
-              CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.SectorView)
+              CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.DisplayView)
           else [||]
         let selected = model.ViewDetails = Some(aircraft.AircraftID)
         let conflict = model.InConflict |> Array.contains aircraft.AircraftID
@@ -326,7 +326,7 @@ let viewSimulation model dispatch =
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
             SVGAttr.Width "100%"
-            SVGAttr.Height (model.SectorView.VisualisationViewSize |> snd |> string)
+            SVGAttr.Height (model.DisplayView.VisualisationViewSize |> snd |> string)
             ]
             [
               yield! sectorView model dispatch
@@ -461,7 +461,7 @@ let viewPositionTable model dispatch =
                   | Some(acid) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
-                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.SectorView then
+                if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.DisplayView then
                    yield  ""
                 else
                    yield "is-greyed-out" ] |> String.concat " "
