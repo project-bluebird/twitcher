@@ -172,7 +172,11 @@ let areaLatitudesLongitudesView model dispatch =
           let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), y')
     | LateralEastWest | LateralNorthSouth ->
-      [ a0 .. 5000. .. a1] 
+      (match model.SectorOutline with
+       | None -> [ a0 .. 1000. .. a1] 
+       | Some outline ->
+        [ outline.BottomAltitude .. 10<FL> .. outline.TopAltitude]
+        |> List.map (Twitcher.Conversions.Altitude.fl2ft >> float) )
       |> List.map (fun a -> 
           let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.DisplayView
           "FL" + string (a/100.), y)     
