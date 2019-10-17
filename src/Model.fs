@@ -91,6 +91,7 @@ type Msg =
   | GetAllPositions
   | FetchedPosition of AircraftInfo option
   | FetchedAllPositions of AircraftInfo[] * ElapsedTime
+  | FetchedRequestedAltitude of (AircraftID * string) option
 
   | LoadScenario of string
   | LoadedScenario of string

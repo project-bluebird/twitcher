@@ -62,6 +62,7 @@ let decodeConfig (alltext: string) =
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
+    List_route = getYamlAttribute "endpoint_list_route" text 
 }
 
 
@@ -200,6 +201,44 @@ let getAircraftPosition (config, aircraftID) =
 
 let getAircraftPositionCmd config aircraftID =
   Cmd.OfPromise.either getAircraftPosition (config, aircraftID) FetchedPosition ConnectionError
+
+// ===============================================================
+// Get aircraft's route
+
+
+type RouteItem = {
+  is_current : bool
+  req_alt : string
+  req_spd : int
+  wpt_name : string
+}
+
+type Route = {
+  acid : string
+  route : RouteItem []
+  sim_t : int
+}
+
+let routeDecoder = Decode.Auto.generateDecoder<Route>()
+
+let getRequestedAltitude (config, aircraftID) =
+  promise {
+      let url =
+          [urlBase config
+           config.List_route ]
+          |> String.concat "/" 
+          |> fun s -> s + "?acid=" + aircraftID
+
+      let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.GET]
+      let! txt = res.text()
+      match Decode.fromString routeDecoder txt with
+      | Ok route -> return Some(aircraftID, route.route.[route.route.Length-1].req_alt)
+      | Error err -> return None
+  }
+
+let getRequestedAltitudeCmd config aircraftID =
+  Cmd.OfPromise.either getRequestedAltitude (config, aircraftID) FetchedRequestedAltitude ConnectionError
+
 
 // ===============================================================
 // Load scenario

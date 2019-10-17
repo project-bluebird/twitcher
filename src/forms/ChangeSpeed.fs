@@ -110,7 +110,7 @@ let view model (dispatch: Msg -> unit) =
                               Level.title [] [ str (sprintf "%.0f km/h" (gs |> Conversions.Speed.knot2kmh)) ]
                            | Mach ->
                               Level.title [] [ str (sprintf "Mach %.3f" (gs |> Conversions.Speed.knot2mach)) ]
-                           | FeetPerMinute | MetersPerSecond -> Level.title [] [ str "Error" ]
+                           | _ -> Level.title [] [ str "Error" ]
                            ) ]
                     ] ]
                  | None -> [])

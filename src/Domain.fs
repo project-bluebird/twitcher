@@ -26,7 +26,7 @@ type SpeedUnit =
   | Knots
   | Mach
   | FeetPerMinute
-  | MetersPerSecond  
+  | MCleetersPerSecond  
 
 type AircraftID = string
 
@@ -46,6 +46,12 @@ type Coordinates = {
 type Position = {
   Coordinates : Coordinates
   Altitude : Altitude
+}
+
+type RouteFix = {
+  Name : string
+  RequestedAltitude : int<FL> option
+  RequestedSpeed : int<knot> option
 }
 
 type AircraftInfo = {
@@ -96,4 +102,5 @@ type Configuration = {
     Simulator_time: string
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
+    List_route : string
 }

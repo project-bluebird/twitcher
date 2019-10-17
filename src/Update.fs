@@ -159,7 +159,15 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         | None -> model, Cmd.none
 
     | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
-    | ShowDataBlock x -> { model with ShowDataBlocks = x }, Cmd.none
+    | ShowDataBlock x -> 
+        match model.Config with
+        | Some config ->
+            { model with ShowDataBlocks = x },
+            Cmd.batch (
+              model.Positions 
+              |> List.map (fun pos -> getRequestedAltitudeCmd config pos.AircraftID )
+            ) 
+        | None -> { model with ShowDataBlocks = x }, Cmd.none
 
     | ConnectionActive result ->
         if result then
@@ -219,6 +227,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               inSector model.DisplayView.DisplayArea ac.Position 
           )
 
+        
+
         let newModel =
           { model with Positions = aircraftInView |> List.ofArray }
 
@@ -226,7 +236,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             Positions =
               newModel.Positions
               |> List.map (fun ac ->
-                  { ac with Heading = estimateHeading newModel ac.AircraftID})
+                  let info = model.Positions |> List.tryFind (fun i -> i.AircraftID = ac.AircraftID)
+
+                  { ac with Heading = estimateHeading newModel ac.AircraftID 
+                            TargetFlightLevel = if info.IsSome then info.Value.TargetFlightLevel else None
+                            ClearedFlightLevel = if info.IsSome then info.Value.ClearedFlightLevel else None
+                              })
             PositionHistory = updateHistory model.PositionHistory aircraftInView
             InConflict = checkLossOfSeparation model.DisplayView aircraftInView
             SimulationTime = elapsed } ,
@@ -241,6 +256,27 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
         model,
         Cmd.none
+
+    | FetchedRequestedAltitude value  ->
+      match value with
+      | Some (aircraftID, altitude) ->
+        let alt =
+          if altitude.[0..1] = "FL" then
+             (altitude.[2..] |> int |> fun x -> x * 1<FL> |> Conversions.Altitude.fl2ft)
+          else
+              (float altitude * 1.<ft>)
+        
+        let positions = 
+          model.Positions 
+          |> List.map (fun pos -> 
+            if pos.AircraftID = aircraftID then
+              { pos with TargetFlightLevel = Some alt }
+            else pos
+          )
+        
+        { model with Positions = positions }, Cmd.none
+
+      | None -> model, Cmd.none
 
     | ShowLoadScenarioForm ->
         let f, cmd = ScenarioForm.init()
@@ -339,7 +375,16 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model, Cmd.none
 
     | ChangeAltitude (aircraftID, requestedAltitude, verticalSpeed) ->
-        model, changeAltitudeCmd model.Config.Value aircraftID requestedAltitude verticalSpeed
+        let positions = 
+          model.Positions
+          |> List.map (fun info -> 
+              if info.AircraftID = aircraftID then
+                printfn "Here\n\n\n"
+                { info with ClearedFlightLevel = Some requestedAltitude }
+              else info)
+
+        { model with Positions = positions }, 
+        changeAltitudeCmd model.Config.Value aircraftID requestedAltitude verticalSpeed
 
     | ChangedAltitude result ->
         Fable.Core.JS.console.log(result)

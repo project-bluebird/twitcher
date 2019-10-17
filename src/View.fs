@@ -391,9 +391,10 @@ let simulationView model dispatch =
                     Y (string (y + 18.))
                     Style [ Fill "black"; FontSize "17" ]
                   ] [ 
-                    tspan [ X (string (x + 7.)); Dy "0" ] [ str callsign ]
-                    tspan [ X (string (x + 7.)); Dy "1em" ] [ str (currentFL + "\t" + clearedFL) ]
-                    tspan [ X (string (x + 7.)); Dy "1em" ] [ str exitFL ]
+                    tspan [ X (string (x + 7.)); Dy "0" ; Style [ Fill "gray" ]] [ str callsign ]
+                    tspan [ X (string (x + 7.)); Dy "1em" ] [ str (currentFL) ]
+                    tspan [ Dx "0.5em"; Dy "0"; Style [ Fill "#b36200" ] ] [ str (clearedFL) ]
+                    tspan [ X (string (x + 7.)); Dy "1em"; Style [ Fill "#315a7d" ] ] [ str exitFL ]
                    ]
 
               ]
@@ -617,7 +618,7 @@ let viewControlMenu model dispatch =
             str "Run as observer" ]
 
           Menu.Item.li
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "data/scenarios/x_sector_parsed_scenario.scn")) ] [
             //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [
             Icon.icon [ ] [ Fa.i [Fa.Solid.FileImport ][]]
             str "Load test scenario" ]
