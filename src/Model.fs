@@ -42,18 +42,20 @@ type DisplayView = {
   DisplayArea : DisplayAreaMercator  // entire displayed area, not the same as the visualised sector
 }  
 
-type SectorOutline = {
+type SectorInfo = {
   Coordinates : Coordinates [] // outline coordinates
   BottomAltitude : int<FL>
   TopAltitude : int<FL>
+  Waypoints : FixInfo []
 }
 
 type Model = {
   Animate : bool
 
-  SectorOutline : SectorOutline option
+  SectorInfo : SectorInfo option
   SectorDisplay : SectorDisplay
-  DisplayView : DisplayView   // TODO
+  DisplayView : DisplayView   
+  ShowWaypoints : bool
 
   Positions : AircraftInfo list    // TODO - this should contain full aircraft information, not just positions
   PositionHistory : int * Dictionary<AircraftID, Position []>
@@ -75,7 +77,7 @@ type Msg =
   | Init
   | Config of Configuration
   | LoadSector
-  | SectorOutline of SectorOutline option
+  | SectorOutline of SectorInfo option
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
@@ -99,6 +101,8 @@ type Msg =
 
   | PauseSimulation
   | PausedSimulation of bool
+
+  | ShowWaypoints of bool
 
   | ResumeSimulation
   | ResumedSimulation of bool

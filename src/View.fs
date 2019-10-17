@@ -78,6 +78,49 @@ let plotRectangularDisplay model =
 
   ]
 
+let waypointsView model =
+  [
+    match model.SectorInfo with
+    | None -> yield! []
+    | Some sector ->
+        let waypoints = sector.Waypoints
+
+        let toPlot =
+          waypoints 
+          |> List.ofArray
+          |> List.collect (fun fix ->
+            let x,y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (fix.Position.Coordinates.Longitude, fix.Position.Coordinates.Latitude, fix.Position.Altitude) model.DisplayView
+
+            let y =
+              let height = model.DisplayView.VisualisationViewSize |> snd
+              if y' <= height then 
+                y'
+              else
+                height * 0.9
+
+            [
+              circle [
+                Cx (string x)
+                Cy (string y)
+                R 3
+                Style
+                    [ Stroke "black"
+                      StrokeWidth "0.5"
+                      Fill "white" ]
+              ] []
+                      
+              text [
+                X (string (x + 7.))
+                Y (string (y + 10.))
+                Style [ Fill "black"; FontSize "12" ]
+              ] [ str fix.Name ]
+            ]
+            )
+        yield! toPlot 
+
+  ]
+
+
 let sectorOutlineView model dispatch =
   [
       // 1. Plot the sector outline  
@@ -85,7 +128,7 @@ let sectorOutlineView model dispatch =
 
       yield! plotRectangularDisplay model 
 
-      match model.SectorOutline with
+      match model.SectorInfo with
       | None -> yield! []
       | Some outline ->
         
@@ -138,6 +181,10 @@ let sectorOutlineView model dispatch =
                 [ Fill "white" ]
             ] []])
 
+
+        if model.ShowWaypoints then
+          yield! waypointsView model
+
   ]
 
 let roundToHalf value =
@@ -174,7 +221,7 @@ let areaLatitudesLongitudesView model dispatch =
           let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), y')
     | LateralEastWest | LateralNorthSouth ->
-      (match model.SectorOutline with
+      (match model.SectorInfo with
        | None -> [ a0 .. 1000. .. a1] 
        | Some outline ->
         [ outline.BottomAltitude .. 10<FL> .. outline.TopAltitude]
@@ -632,7 +679,7 @@ let viewControlMenu model dispatch =
 let viewDisplayMenu model dispatch =
   div [] [
   Menu.menu [ ]
-    [ Menu.label [ ] [ str "Display controls" ]
+    [ Menu.label [ ] [ str "Display controls" ] 
       Field.div [ Field.HasAddons ]
         [
           Control.div [] [
@@ -653,6 +700,15 @@ let viewDisplayMenu model dispatch =
               [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV ][] ]] 
           ]
         ]
+      Menu.list [ ]
+        [
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> if model.ShowWaypoints then dispatch (ShowWaypoints false) else dispatch (ShowWaypoints true))
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.MapMarkerAlt][] ]
+              Text.span [] [ str "Show waypoints"]
+            ]
+          ]
       ]
   br []
   ]

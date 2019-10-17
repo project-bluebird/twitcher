@@ -169,34 +169,6 @@ let decodeFeatureCollection : Decoder<FeatureCollection> =
       features = get.Required.Field "features" (Decode.array decodeFeature)
     })
 
-
-let getOutline (fc: FeatureCollection) =
-  fc.features
-  |> Array.choose (fun f ->
-      match f.geometry with 
-      | GeometryCollectionGeometry gm ->
-          match f.properties with 
-          | GeometryCollectionProperties gp ->
-              if gp.Type = "SECTOR" then
-                let g = gm.geometries.[0]
-                let coords = 
-                  g.coordinates
-                  |> List.concat 
-                  |> List.concat 
-                  |> List.map (fun l -> { Longitude = l.[0] * 1.<longitude>; Latitude =  l.[1] * 1.<latitude> })   
-                  |> Array.ofList          
-                {
-                  Coordinates = coords
-                  TopAltitude = gp.upper_limit.[0] * 1<FL>
-                  BottomAltitude = gp.lower_limit.[0] * 1<FL>
-                }
-                |> Some
-              else 
-                None
-          | _ -> None
-      | _ -> None)
-  |> Array.exactlyOne
-
 let getFixes (fc: FeatureCollection) =
   fc.features
   |> Array.choose (fun f ->
@@ -225,3 +197,32 @@ let getFixes (fc: FeatureCollection) =
             None
         | _ -> None
       | _ -> None)
+
+let getOutline (fc: FeatureCollection) =
+  fc.features
+  |> Array.choose (fun f ->
+      match f.geometry with 
+      | GeometryCollectionGeometry gm ->
+          match f.properties with 
+          | GeometryCollectionProperties gp ->
+              if gp.Type = "SECTOR" then
+                let g = gm.geometries.[0]
+                let coords = 
+                  g.coordinates
+                  |> List.concat 
+                  |> List.concat 
+                  |> List.map (fun l -> { Longitude = l.[0] * 1.<longitude>; Latitude =  l.[1] * 1.<latitude> })   
+                  |> Array.ofList          
+                {
+                  Coordinates = coords
+                  TopAltitude = gp.upper_limit.[0] * 1<FL>
+                  BottomAltitude = gp.lower_limit.[0] * 1<FL>
+                  Waypoints = getFixes fc
+                }
+                |> Some
+              else 
+                None
+          | _ -> None
+      | _ -> None)
+  |> Array.exactlyOne
+

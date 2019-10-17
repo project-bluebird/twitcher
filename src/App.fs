@@ -36,12 +36,13 @@ let init() =
     Positions = []
     Animate = false
     Config = None
-    SectorOutline = None
+    SectorInfo = None
     SectorDisplay = TopDown
     DisplayView = {
       VisualisationViewSize = 0., 0.
       DisplayArea = sectorDisplayArea
     }
+    ShowWaypoints = false
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.

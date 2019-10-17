@@ -142,7 +142,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let ywidth = maxLat - minLat |> abs
           let height = maxAlt - minAlt
 
-          let displayMargin = 0.2
+          let displayMargin = 0.25
 
           let displayArea = {
             BottomLeft = minLon - displayMargin*xwidth, minLat - displayMargin*ywidth
@@ -152,11 +152,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           }
 
           { model with 
-              SectorOutline = Some outline; 
+              SectorInfo = Some outline; 
               DisplayView = { model.DisplayView with DisplayArea = displayArea}},
           Cmd.none
         
         | None -> model, Cmd.none
+
+    | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
 
     | ConnectionActive result ->
         if result then
