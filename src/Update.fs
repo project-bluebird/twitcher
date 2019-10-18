@@ -219,7 +219,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         | Some config ->
             model,
             Cmd.batch [
-              getAircraftPositionCmd config aircraftID
+              yield getAircraftPositionCmd config aircraftID
 
               yield! 
                 model.Positions 
