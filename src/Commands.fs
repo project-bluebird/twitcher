@@ -140,8 +140,8 @@ let parseAircraftInfo id info =
       CalibratedAirSpeed = None
       Heading = None
 
-      TargetFlightLevel = None  // TODO
-      ClearedFlightLevel = None // TODO
+      TargetFlightLevel = None  
+      ClearedFlightLevel = None 
     }
 
 let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
@@ -206,38 +206,76 @@ let getAircraftPositionCmd config aircraftID =
 // Get aircraft's route
 
 
-type RouteItem = {
-  is_current : bool
-  req_alt : string
-  req_spd : int
-  wpt_name : string
+// type RouteItem = {
+//   is_current : bool
+//   req_alt : string
+//   req_spd : int
+//   wpt_name : string
+// }
+
+// type Route = {
+//   acid : string
+//   route : RouteItem []
+//   sim_t : int
+// }
+
+// let routeDecoder = Decode.Auto.generateDecoder<Route>()
+
+// let getRequestedAltitude (config, aircraftID) =
+//   promise {
+//       let url =
+//           [urlBase config
+//            config.List_route ]
+//           |> String.concat "/" 
+//           |> fun s -> s + "?acid=" + aircraftID
+
+//       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.GET]
+//       let! txt = res.text()
+//       match Decode.fromString routeDecoder txt with
+//       | Ok route -> return Some(aircraftID, route.route.[route.route.Length-1].req_alt)
+//       | Error err -> return None
+//   }
+
+// let getRequestedAltitudeCmd config aircraftID =
+//   Cmd.OfPromise.either getRequestedAltitude (config, aircraftID) FetchedRequestedAltitude ConnectionError
+
+// ===============================================================
+// Get aircraft's altitude
+
+// TODO - fix this
+type AltitudeData = {
+  fl_cleared : int 
 }
 
-type Route = {
-  acid : string
-  route : RouteItem []
-  sim_t : int
-}
+let altitudeDecoder = 
+  Decode.object 
+    (fun get ->
+        {
+          fl_cleared = get.Required.Field "fl_cleared" (Decode.int)
+        } 
+     )
 
-let routeDecoder = Decode.Auto.generateDecoder<Route>()
-
-let getRequestedAltitude (config, aircraftID) =
+let getAltitudeInfo (config, aircraftID) =
   promise {
       let url =
           [urlBase config
-           config.List_route ]
+           "alt" ]
           |> String.concat "/" 
           |> fun s -> s + "?acid=" + aircraftID
 
       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.GET]
       let! txt = res.text()
-      match Decode.fromString routeDecoder txt with
-      | Ok route -> return Some(aircraftID, route.route.[route.route.Length-1].req_alt)
+      printfn "%A" txt
+      match Decode.fromString altitudeDecoder txt with
+      | Ok ainfo -> 
+          printfn "%A" ainfo
+          return Some(aircraftID, 0, ainfo.fl_cleared, 0)
       | Error err -> return None
   }
 
-let getRequestedAltitudeCmd config aircraftID =
-  Cmd.OfPromise.either getRequestedAltitude (config, aircraftID) FetchedRequestedAltitude ConnectionError
+let getAltitudeInfoCmd config aircraftID =
+  Cmd.OfPromise.either getAltitudeInfo (config, aircraftID) FetchedAltitudeInfo ConnectionError
+
 
 
 // ===============================================================

@@ -301,8 +301,8 @@ let simulationView model dispatch =
           R (string (model.SeparationDistance.Value) + "px")
           Style
               [
-                Fill "red"
-                Opacity "0.25"
+                Fill "orange"
+                Opacity "0.15"
               ]
         ] []
     )
@@ -348,7 +348,7 @@ let simulationView model dispatch =
                 Cy (string y)
                 R (if selected then "7" else if conflict then "8" else "3")
                 Style
-                    [ Stroke (if selected && not conflict then "turquoise" else if conflict then "orange" else "black")
+                    [ Stroke (if selected && not conflict then "turquoise" else "black")
                       StrokeWidth (if selected || conflict then "5" else "1")
                       Fill (if selected then (if conflict then "orange" else "black") else if conflict then "orange" else "grey") ]
                 OnClick (fun _ -> dispatch (ViewAircraftDetails aircraft.AircraftID))
@@ -371,14 +371,14 @@ let simulationView model dispatch =
               | None -> "NA"
 
             
-
+            let blockWidth = max 6 callsign.Length |> string 
             yield!
               [
                 rect [
-                  X (string x)
-                  Y (string y)
-                  SVGAttr.Width "6em"
-                  SVGAttr.Height "4.1em"
+                  X (string (x + 3.))
+                  Y (string (y + 3.))
+                  SVGAttr.Width (blockWidth + "em")
+                  SVGAttr.Height "4.2em"
                   Style
                     [ Fill "white"
                       Stroke "#4f4f4f"
@@ -618,7 +618,7 @@ let viewControlMenu model dispatch =
             str "Run as observer" ]
 
           Menu.Item.li
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "data/scenarios/x_sector_parsed_scenario.scn")) ] [
+            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "x_sector_parsed_scenario.scn")) ] [
             //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [
             Icon.icon [ ] [ Fa.i [Fa.Solid.FileImport ][]]
             str "Load test scenario" ]

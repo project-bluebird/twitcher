@@ -165,7 +165,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             { model with ShowDataBlocks = x },
             Cmd.batch (
               model.Positions 
-              |> List.map (fun pos -> getRequestedAltitudeCmd config pos.AircraftID )
+              |> List.map (fun pos -> getAltitudeInfoCmd config pos.AircraftID )
             ) 
         | None -> { model with ShowDataBlocks = x }, Cmd.none
 
@@ -218,7 +218,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             model, Cmd.none
         | Some config ->
             model,
-            getAircraftPositionCmd config aircraftID
+            Cmd.batch [
+              getAircraftPositionCmd config aircraftID
+
+              yield! 
+                model.Positions 
+                    |> List.map (fun pos -> getAltitudeInfoCmd config pos.AircraftID)
+              ]
+
 
     | FetchedAllPositions (positionInfo, elapsed) ->
         let aircraftInView = 
@@ -245,7 +252,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
             PositionHistory = updateHistory model.PositionHistory aircraftInView
             InConflict = checkLossOfSeparation model.DisplayView aircraftInView
             SimulationTime = elapsed } ,
-        Cmd.none
+            Cmd.none
 
     | FetchedPosition positionInfo ->
         match positionInfo with
@@ -257,20 +264,24 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
-    | FetchedRequestedAltitude value  ->
+    | FetchedAltitudeInfo value  ->
       match value with
-      | Some (aircraftID, altitude) ->
-        let alt =
-          if altitude.[0..1] = "FL" then
-             (altitude.[2..] |> int |> fun x -> x * 1<FL> |> Conversions.Altitude.fl2ft)
-          else
-              (float altitude * 1.<ft>)
+      | Some (aircraftID, currentFL, clearedFL, requestedFL) ->
+        printfn "\n\n\ncleared FL: %A  \n\n\n" clearedFL
+        // let parseFL (altopt: string option) =
+        //   altopt
+        //   |> Option.map (fun alt ->
+        //       if alt.[0..1] = "FL" then 
+        //         alt.[2..] |> int |> fun x -> x * 1<FL> |> Conversions.Altitude.fl2ft
+        //       else
+        //         float alt * 1.<ft>)
         
         let positions = 
           model.Positions 
           |> List.map (fun pos -> 
             if pos.AircraftID = aircraftID then
-              { pos with TargetFlightLevel = Some alt }
+              { pos with TargetFlightLevel = None//Some (float requestedFL * 1.<m> |> Conversions.Altitude.m2ft)
+                         ClearedFlightLevel = Some (float clearedFL * 1.<m> |> Conversions.Altitude.m2ft) }
             else pos
           )
         
