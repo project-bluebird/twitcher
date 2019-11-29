@@ -81,3 +81,15 @@ type Feature = {
 type FeatureCollection = {
   features : Feature []
 }
+
+// ===========================
+// Decoders
+
+
+let decodePolygonGeometry : Decoder<PolygonGeometry> =
+  Decode.object 
+    (fun get -> {
+      Type = get.Required.Field "type" Decode.string
+      coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float [][][]>())
+    }
+    )
