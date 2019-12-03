@@ -74,7 +74,7 @@ type FeatureGeometry =
 
 type Feature = {
   Type : string
-  geometry : FeatureGeometry
+  geometry : FeatureGeometry option
   properties : FeatureProperties
 }
 
@@ -109,6 +109,19 @@ let decodeLineStringGeometry : Decoder<LineStringGeometry> =
       coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float [][]>())
     }
     )
+let decodeGeometry : Decoder<FeatureGeometry> = 
+  Decode.field "type" Decode.string
+  |> Decode.andThen (
+    function
+    | "Polygon" ->
+      decodePolygonGeometry |> Decode.map PolygonGeometry
+    | "LineString" ->
+      decodeLineStringGeometry |> Decode.map LineStringGeometry
+    | "Point" ->
+      decodePointGeometry |> Decode.map PointGeometry
+    | x -> Decode.fail ("Unknown geometry " + x)
+  )
+
 
 // -----
 
@@ -152,17 +165,85 @@ let decodeSectorProperties : Decoder<SectorProperties> =
       Children = get.Required.Field "children" (Decode.dict decodeFixes)
     })    
 
+let decodeProperties : Decoder<FeatureProperties> = 
+  Decode.field "type" Decode.string
+  |> Decode.andThen (
+    function
+    | "SECTOR" ->
+      decodeSectorProperties |> Decode.map SectorProperties
+    | "SECTOR_VOLUME" ->
+      decodePolygonProperties |> Decode.map PolygonProperties
+    | "ROUTE" ->
+      decodeLineStringProperties |> Decode.map LineStringProperties
+    | "FIX" ->
+      decodePointProperties |> Decode.map PointProperties
+    | x -> Decode.fail ("Unknown properties " + x)
+  )    
+
 //----
 
 let decodeFeature : Decoder<Feature> =
   Decode.object
-    (fun get -> {
-      
-    })
+    (fun get -> 
+      { Type = get.Required.Field "type" Decode.string
+        geometry = get.Optional.Field "geometry" decodeGeometry
+        properties = get.Required.Field "properties" decodeProperties
+      })
 
 
 let decodeFeatureCollection : Decoder<FeatureCollection> =
   Decode.object
     (fun get -> {
-
+      features = get.Required.Field "features" (Decode.array decodeFeature)
     })
+
+// ======================
+
+let getFixes (fc: FeatureCollection) =
+  fc.features
+  |> Array.choose (fun f ->
+      match f.geometry with
+      | Some (PointGeometry pg) ->
+        match f.properties with
+        | PointProperties pp ->
+          if pp.Type = "FIX" then
+            {
+              Name = pp.Name 
+              Position = {
+                Coordinates = {
+                  Latitude = pg.coordinates.[0] * 1.<latitude>
+                  Longitude = pg.coordinates.[1] * 1.<longitude>
+                }
+                Altitude = 0.<ft>
+              }
+            }
+            |> Some
+          else 
+            None
+        | _ -> None
+      | _ -> None)
+
+let getOutline (fc: FeatureCollection) =
+  fc.features
+  |> Array.choose (fun f ->
+      match f.geometry with 
+      | Some(PolygonGeometry gm) ->
+          match f.properties with 
+          | PolygonProperties gp ->
+              if gm.Type = "Polygon" then
+                let coords = 
+                  gm.coordinates
+                  |> Array.concat 
+                  |> Array.map (fun l -> { Longitude = l.[0] * 1.<longitude>; Latitude =  l.[1] * 1.<latitude> })   
+                {
+                  Coordinates = coords
+                  TopAltitude = gp.UpperLimit * 1<FL>
+                  BottomAltitude = gp.LowerLimit * 1<FL>
+                  Waypoints = getFixes fc
+                }
+                |> Some
+              else 
+                None
+          | _ -> None
+      | _ -> None)
+  |> Array.exactlyOne
