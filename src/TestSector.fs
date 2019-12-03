@@ -8,14 +8,14 @@ open Twitcher.Model
 // ========================
 // Properties
 
-type ChildNames = {
+type FixNames = {
   Names : string []
 }
 
 type SectorProperties = {
   Name : string
   Type : string
-  Children : Dictionary<string, ChildNames>
+  Children : Map<string, FixNames>
 }
 
 type PointProperties = {
@@ -26,14 +26,14 @@ type PointProperties = {
 type LineStringProperties = {
   Name : string
   Type : string
-  Children : Dictionary<string, ChildNames>
+  Children : Map<string, FixNames>
 }
 
 type PolygonProperties = {
   Name : string
   Type : string
-  lower_limit : int
-  upper_limit : int
+  LowerLimit : int
+  UpperLimit : int
   Children : string option  // how to encode {}?
 }
 
@@ -93,3 +93,76 @@ let decodePolygonGeometry : Decoder<PolygonGeometry> =
       coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float [][][]>())
     }
     )
+
+let decodePointGeometry : Decoder<PointGeometry> =
+  Decode.object 
+    (fun get -> {
+      Type = get.Required.Field "type" Decode.string
+      coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float []>())
+    }
+    )    
+
+let decodeLineStringGeometry : Decoder<LineStringGeometry> =
+  Decode.object 
+    (fun get -> {
+      Type = get.Required.Field "type" Decode.string
+      coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float [][]>())
+    }
+    )
+
+// -----
+
+let decodePolygonProperties : Decoder<PolygonProperties> =
+  Decode.object 
+    (fun get -> {
+      Name = get.Required.Field "name" Decode.string
+      Type = get.Required.Field "type" Decode.string
+      LowerLimit = get.Required.Field "lower_limit" Decode.int
+      UpperLimit = get.Required.Field "upper_limit" Decode.int
+      Children = None
+    })   
+
+
+let decodeFixes : Decoder<FixNames> =
+  Decode.object 
+    (fun get -> {
+      Names = get.Required.Field "names" (Decode.Auto.generateDecoder<string []>())
+    })
+
+let decodeLineStringProperties : Decoder<LineStringProperties> =
+  Decode.object 
+    (fun get -> {
+      Name = get.Required.Field "name" Decode.string
+      Type = get.Required.Field "type" Decode.string
+      Children = get.Required.Field "children" (Decode.dict decodeFixes)
+    })    
+
+let decodePointProperties : Decoder<PointProperties> =
+  Decode.object 
+    (fun get -> {
+      Name = get.Required.Field "name" Decode.string
+      Type = get.Required.Field "type" Decode.string
+    })
+
+let decodeSectorProperties : Decoder<SectorProperties> =
+  Decode.object 
+    (fun get -> {
+      Name = get.Required.Field "name" Decode.string
+      Type = get.Required.Field "type" Decode.string
+      Children = get.Required.Field "children" (Decode.dict decodeFixes)
+    })    
+
+//----
+
+let decodeFeature : Decoder<Feature> =
+  Decode.object
+    (fun get -> {
+      
+    })
+
+
+let decodeFeatureCollection : Decoder<FeatureCollection> =
+  Decode.object
+    (fun get -> {
+
+    })
