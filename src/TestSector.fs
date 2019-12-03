@@ -61,13 +61,15 @@ type PolygonGeometry = {
   coordinates : float [] [] []
 }
 
+type EmptyGeometry = { Type : string option }
+
 // type SectorGeometry = { Type : string option } // use this instead of string option?
 
 type FeatureGeometry = 
   | LineStringGeometry of LineStringGeometry
   | PolygonGeometry of PolygonGeometry
   | PointGeometry of PointGeometry
-  | SectorGeometry of string option
+//  | SectorGeometry of EmptyGeometry
 
 // ========================
 // General structure
@@ -110,16 +112,19 @@ let decodeLineStringGeometry : Decoder<LineStringGeometry> =
     }
     )
 let decodeGeometry : Decoder<FeatureGeometry> = 
-  Decode.field "type" Decode.string
+  Decode.field "type" (Decode.option Decode.string)
   |> Decode.andThen (
     function
-    | "Polygon" ->
+    | Some "Polygon" ->
       decodePolygonGeometry |> Decode.map PolygonGeometry
-    | "LineString" ->
+    | Some "LineString" ->
       decodeLineStringGeometry |> Decode.map LineStringGeometry
-    | "Point" ->
+    | Some "Point" ->
       decodePointGeometry |> Decode.map PointGeometry
-    | x -> Decode.fail ("Unknown geometry " + x)
+    | Some x -> Decode.fail ("Unknown geometry " + x)
+    | None -> 
+        Decode.Auto.generateDecoder<EmptyGeometry>()
+        |> Decode.map SectorGeometry
   )
 
 
@@ -186,8 +191,9 @@ let decodeFeature : Decoder<Feature> =
   Decode.object
     (fun get -> 
       { Type = get.Required.Field "type" Decode.string
-        geometry = get.Optional.Field "geometry" decodeGeometry
+        //geometry = get.Required.Field "geometry" decodeGeometry
         properties = get.Required.Field "properties" decodeProperties
+        
       })
 
 
@@ -203,7 +209,7 @@ let getFixes (fc: FeatureCollection) =
   fc.features
   |> Array.choose (fun f ->
       match f.geometry with
-      | Some (PointGeometry pg) ->
+      | PointGeometry pg ->
         match f.properties with
         | PointProperties pp ->
           if pp.Type = "FIX" then
@@ -226,8 +232,9 @@ let getFixes (fc: FeatureCollection) =
 let getOutline (fc: FeatureCollection) =
   fc.features
   |> Array.choose (fun f ->
+      printfn "%A" f
       match f.geometry with 
-      | Some(PolygonGeometry gm) ->
+      | PolygonGeometry gm ->
           match f.properties with 
           | PolygonProperties gp ->
               if gm.Type = "Polygon" then

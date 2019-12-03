@@ -492,7 +492,7 @@ let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 let getSectorOutline() =
   promise {
-    let url = "assets/sector-example-sector-I-150-400.json"
+    let url = "assets/sector-example_sector-I-150-400.json"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
@@ -500,6 +500,7 @@ let getSectorOutline() =
       | Ok value -> 
           return Some(TestSector.getOutline value)
       | Error err ->
+          printfn "**** Couldn't parse GeoJSON sector definition"
           Fable.Core.JS.console.log(err)
           return None
     with ex ->
