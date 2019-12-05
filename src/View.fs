@@ -98,6 +98,8 @@ let waypointsView model =
               else
                 height * 0.9
 
+            printfn "%s: %f, %f" fix.Name x y   
+
             [
               circle [
                 Cx (string x)

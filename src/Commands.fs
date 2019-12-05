@@ -492,7 +492,7 @@ let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 let getSectorOutline() =
   promise {
-    let url = "assets/sector-example_sector-I-150-400.json"
+    let url = "assets/sector-I-sector-I-140-400.geojson"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
