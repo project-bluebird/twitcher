@@ -61,27 +61,22 @@ type PolygonGeometry = {
   coordinates : float [] [] []
 }
 
-type EmptyGeometry = { Type : string option }
-
-// type SectorGeometry = { Type : string option } // use this instead of string option?
-
 type FeatureGeometry = 
   | LineStringGeometry of LineStringGeometry
   | PolygonGeometry of PolygonGeometry
   | PointGeometry of PointGeometry
-//  | SectorGeometry of EmptyGeometry
 
 // ========================
 // General structure
 
 type Feature = {
   Type : string
-  geometry : FeatureGeometry option
-  properties : FeatureProperties
+  Geometry : FeatureGeometry option
+  Properties : FeatureProperties
 }
 
 type FeatureCollection = {
-  features : Feature []
+  Features : Feature []
 }
 
 // ===========================
@@ -111,22 +106,6 @@ let decodeLineStringGeometry : Decoder<LineStringGeometry> =
       coordinates = get.Required.Field "coordinates" (Decode.Auto.generateDecoder<float [][]>())
     }
     )
-let decodeGeometry : Decoder<FeatureGeometry> = 
-  Decode.field "type" (Decode.option Decode.string)
-  |> Decode.andThen (
-    function
-    | Some "Polygon" ->
-      decodePolygonGeometry |> Decode.map PolygonGeometry
-    | Some "LineString" ->
-      decodeLineStringGeometry |> Decode.map LineStringGeometry
-    | Some "Point" ->
-      decodePointGeometry |> Decode.map PointGeometry
-    | Some x -> Decode.fail ("Unknown geometry " + x)
-    | None -> 
-        Decode.Auto.generateDecoder<EmptyGeometry>()
-        |> Decode.map SectorGeometry
-  )
-
 
 // -----
 
@@ -190,27 +169,40 @@ let decodeProperties : Decoder<FeatureProperties> =
 let decodeFeature : Decoder<Feature> =
   Decode.object
     (fun get -> 
+      let properties = get.Required.Field "properties" decodeProperties 
       { Type = get.Required.Field "type" Decode.string
         //geometry = get.Required.Field "geometry" decodeGeometry
-        properties = get.Required.Field "properties" decodeProperties
-        
+        Properties = properties
+        Geometry =
+          match properties with
+          | LineStringProperties _ -> 
+              get.Required.Field "geometry" (decodeLineStringGeometry |> Decode.map LineStringGeometry)
+              |> Some
+          | PolygonProperties _ -> 
+              get.Required.Field "geometry" (decodePolygonGeometry |> Decode.map PolygonGeometry)
+              |> Some
+          | PointProperties _ ->
+              get.Required.Field "geometry" (decodePointGeometry |> Decode.map PointGeometry)
+              |> Some
+          | SectorProperties _ ->
+              None
       })
 
 
 let decodeFeatureCollection : Decoder<FeatureCollection> =
   Decode.object
     (fun get -> {
-      features = get.Required.Field "features" (Decode.array decodeFeature)
+      Features = get.Required.Field "features" (Decode.array decodeFeature)
     })
 
 // ======================
 
 let getFixes (fc: FeatureCollection) =
-  fc.features
+  fc.Features
   |> Array.choose (fun f ->
-      match f.geometry with
-      | PointGeometry pg ->
-        match f.properties with
+      match f.Geometry with
+      | Some (PointGeometry pg) ->
+        match f.Properties with
         | PointProperties pp ->
           if pp.Type = "FIX" then
             {
@@ -230,12 +222,12 @@ let getFixes (fc: FeatureCollection) =
       | _ -> None)
 
 let getOutline (fc: FeatureCollection) =
-  fc.features
+  fc.Features
   |> Array.choose (fun f ->
       printfn "%A" f
-      match f.geometry with 
-      | PolygonGeometry gm ->
-          match f.properties with 
+      match f.Geometry with 
+      | Some(PolygonGeometry gm) ->
+          match f.Properties with 
           | PolygonProperties gp ->
               if gm.Type = "Polygon" then
                 let coords = 

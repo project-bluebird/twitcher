@@ -19,7 +19,7 @@
                     }
                 }
             },
-            "geometry": { "type": null }
+            "geometry": {}
         },
         {
             "type": "Feature",
