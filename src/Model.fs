@@ -25,6 +25,9 @@ type CommandForm =
 
 type ElapsedTime = System.TimeSpan
 
+type SectorType =
+  | I | X | Y | Other
+
 type SectorDisplay =
   | TopDown
   | LateralNorthSouth
@@ -52,6 +55,7 @@ type SectorInfo = {
 type Model = {
   Animate : bool
 
+  SectorType : SectorType
   SectorInfo : SectorInfo option
   SectorDisplay : SectorDisplay
   DisplayView : DisplayView   

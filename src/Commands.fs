@@ -490,9 +490,12 @@ let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 
 
-let getSectorOutline() =
+let getSectorOutline(filePath) =
   promise {
-    let url = "assets/sector-I-sector-I-140-400.geojson"
+    let url = 
+      match filePath with
+      | Some x -> x
+      | None -> "assets/sector-I-sector-I-140-400.geojson"
     try
       let! res = Fetch.fetch url []
       let! txt = res.text()
@@ -519,5 +522,5 @@ let getSectorOutline() =
 
 
 /// Fetch sector outline
-let getSectorOutlineCmd() =
-  Cmd.OfPromise.either getSectorOutline () SectorOutline ErrorMessage
+let getSectorOutlineCmd(filePath) =
+  Cmd.OfPromise.either getSectorOutline (filePath) SectorOutline ErrorMessage
