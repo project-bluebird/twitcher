@@ -141,9 +141,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         match sectorOutline with
         | Some outline ->
 
-          // TODO: adjust so that latitude and longitude have similar scale
-          // use square size
-
           let maxLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.max |> Mercator.latToY
           let minLat = outline.Coordinates |> Array.map (fun c -> float c.Latitude) |> Array.min |> Mercator.latToY
           let maxLon = outline.Coordinates |> Array.map (fun c -> float c.Longitude) |> Array.max |> Mercator.lonToX
@@ -155,25 +152,19 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let height = maxAlt - minAlt
           let centreLat = minLat + 0.5*ywidth
           let centreLon = minLon + 0.5*xwidth
-
-          // printfn "maxLat: %f" maxLat
-          // printfn "minLat: %f" minLat
-          // printfn "maxLon: %f" maxLon
-          // printfn "minLon: %f" minLon
-          // printfn "xwidth: %f" xwidth
-          // printfn "ywidth: %f" ywidth
           
           let maxSize = 0.5 * (max xwidth ywidth)
-          let displayMargin = 1.25
+          let displayMargin = 0.25
+          let altDisplayMargin = 0.1
 
-          let bottomLeft = centreLon - displayMargin * maxSize, centreLat - displayMargin * maxSize
-          let topRight = centreLon + displayMargin * maxSize, centreLat + displayMargin * maxSize
+          let bottomLeft = centreLon - (1.0 + displayMargin) * maxSize, centreLat - (1.0 + displayMargin) * maxSize
+          let topRight = centreLon + (1.0 + displayMargin) * maxSize, centreLat + (1.0 + displayMargin) * maxSize
 
           let displayArea = {
             BottomLeft = bottomLeft
             TopRight = topRight
-            BottomAltitude = minAlt - displayMargin * height
-            TopAltitude = maxAlt + displayMargin * height
+            BottomAltitude = minAlt - altDisplayMargin * height
+            TopAltitude = maxAlt + altDisplayMargin * height
           }
 
           { model with 
