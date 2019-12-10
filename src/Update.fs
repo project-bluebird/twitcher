@@ -104,7 +104,7 @@ let rescaleVisualisationToSector sv =
 
   let sv' = 
     let x,y = sv.VisualisationViewSize
-    { sv with VisualisationViewSize = x, x*sectorViewRatio }
+    { sv with VisualisationViewSize = x, min (x*sectorViewRatio) x }
   sv'
 
 let inSector (sector : DisplayAreaMercator) (position: Position) =
@@ -125,7 +125,16 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | LoadSector ->
         model,
-        getSectorOutlineCmd()
+        // hard-coded for now
+        match model.SectorType with
+        | Other ->
+            getSectorOutlineCmd None
+        | I ->
+            getSectorOutlineCmd (Some "assets/sector-I-sector-I-140-400.geojson")
+        | X ->
+            getSectorOutlineCmd (Some "assets/sector-X-sector-X-140-400.geojson")
+        | Y ->
+            getSectorOutlineCmd (Some "assets/sector-Y-sector-Y-140-400.geojson")
 
     | SectorOutline sectorOutline ->
 
@@ -141,14 +150,21 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let xwidth = maxLon - minLon |> abs
           let ywidth = maxLat - minLat |> abs
           let height = maxAlt - minAlt
-
+          let centreLat = minLat + 0.5*ywidth
+          let centreLon = minLon + 0.5*xwidth
+          
+          let maxSize = 0.5 * (max xwidth ywidth)
           let displayMargin = 0.25
+          let altDisplayMargin = 0.1
+
+          let bottomLeft = centreLon - (1.0 + displayMargin) * maxSize, centreLat - (1.0 + displayMargin) * maxSize
+          let topRight = centreLon + (1.0 + displayMargin) * maxSize, centreLat + (1.0 + displayMargin) * maxSize
 
           let displayArea = {
-            BottomLeft = minLon - displayMargin*xwidth, minLat - displayMargin*ywidth
-            TopRight = maxLon + displayMargin*xwidth, maxLat + displayMargin*ywidth
-            BottomAltitude = minAlt - displayMargin * height
-            TopAltitude = maxAlt + displayMargin * height
+            BottomLeft = bottomLeft
+            TopRight = topRight
+            BottomAltitude = minAlt - altDisplayMargin * height
+            TopAltitude = maxAlt + altDisplayMargin * height
           }
 
           { model with 

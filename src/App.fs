@@ -36,6 +36,7 @@ let init() =
     Positions = []
     Animate = false
     Config = None
+    SectorType = SectorType.I
     SectorInfo = None
     SectorDisplay = TopDown
     DisplayView = {

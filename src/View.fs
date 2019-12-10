@@ -92,12 +92,12 @@ let waypointsView model =
             let x,y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (fix.Position.Coordinates.Longitude, fix.Position.Coordinates.Latitude, fix.Position.Altitude) model.DisplayView
 
             let y =
-              let height = model.DisplayView.VisualisationViewSize |> snd
-              if y' <= height then 
-                y'
-              else
-                height * 0.9
-
+              match model.SectorDisplay with
+              | TopDown -> y'
+              | LateralEastWest | LateralNorthSouth -> 
+                  let height = model.DisplayView.VisualisationViewSize |> snd
+                  height * 0.95            
+            
             [
               circle [
                 Cx (string x)
@@ -706,7 +706,7 @@ let viewDisplayMenu model dispatch =
             Menu.Item.OnClick (fun _ -> if model.ShowWaypoints then dispatch (ShowWaypoints false) else dispatch (ShowWaypoints true))
             ] [
               Icon.icon [ ] [ Fa.i [Fa.Solid.MapMarkerAlt][] ]
-              Text.span [] [ str "Show waypoints"]
+              Text.span [] [ str (if model.ShowWaypoints then "Hide waypoints" else "Show waypoints")]
             ]
           ]
       ]

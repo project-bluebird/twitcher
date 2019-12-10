@@ -1,0 +1,354 @@
+{
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Y-sector",
+                "type": "SECTOR",
+                "children": {
+                    "SECTOR_VOLUME": {
+                        "names": [
+                            "-8812452331346689193"
+                        ]
+                    },
+                    "ROUTE": {
+                        "names": [
+                            "ALMIGHTY",
+                            "ETHEREAL",
+                            "EVERLASTING",
+                            "DIVINE"
+                        ]
+                    }
+                }
+            },
+            "geometry": {}
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            -0.2602488976272832,
+                            51.291844888262695
+                        ],
+                        [
+                            -0.2613190484730091,
+                            51.65994333976855
+                        ],
+                        [
+                            -0.7764651001318795,
+                            51.84227529880512
+                        ],
+                        [
+                            -0.6437545846868753,
+                            51.98707497539875
+                        ],
+                        [
+                            -0.1275,
+                            51.80416978977504
+                        ],
+                        [
+                            0.3887545846868753,
+                            51.98707497539875
+                        ],
+                        [
+                            0.5214651001318794,
+                            51.84227529880512
+                        ],
+                        [
+                            0.006319048473009085,
+                            51.65994333976855
+                        ],
+                        [
+                            0.005248897627283189,
+                            51.291844888262695
+                        ],
+                        [
+                            -0.2602488976272832,
+                            51.291844888262695
+                        ]
+                    ]
+                ]
+            },
+            "properties": {
+                "name": "-8812452331346689193",
+                "type": "SECTOR_VOLUME",
+                "lower_limit": 140,
+                "upper_limit": 400,
+                "children": {}
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "ALMIGHTY",
+                "type": "ROUTE",
+                "children": {
+                    "FIX": {
+                        "names": [
+                            "DEACN",
+                            "SON",
+                            "TRI",
+                            "BISHP",
+                            "GHOST"
+                        ]
+                    }
+                }
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -0.12750000000000003,
+                        51.125449865837126
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.29192004276904
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.7080700619115
+                    ],
+                    [
+                        -0.7102158235214537,
+                        51.91469433610231
+                    ],
+                    [
+                        -0.9447860210478874,
+                        51.99653057424092
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "ETHEREAL",
+                "type": "ROUTE",
+                "children": {
+                    "FIX": {
+                        "names": [
+                            "GHOST",
+                            "BISHP",
+                            "TRI",
+                            "SON",
+                            "DEACN"
+                        ]
+                    }
+                }
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -0.9447860210478874,
+                        51.99653057424092
+                    ],
+                    [
+                        -0.7102158235214537,
+                        51.91469433610231
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.7080700619115
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.29192004276904
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.125449865837126
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "EVERLASTING",
+                "type": "ROUTE",
+                "children": {
+                    "FIX": {
+                        "names": [
+                            "DEACN",
+                            "SON",
+                            "TRI",
+                            "CANON",
+                            "GOD"
+                        ]
+                    }
+                }
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -0.12750000000000003,
+                        51.125449865837126
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.29192004276904
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.7080700619115
+                    ],
+                    [
+                        0.4552158235214537,
+                        51.91469433610231
+                    ],
+                    [
+                        0.6897860210478874,
+                        51.99653057424092
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "DIVINE",
+                "type": "ROUTE",
+                "children": {
+                    "FIX": {
+                        "names": [
+                            "GOD",
+                            "CANON",
+                            "TRI",
+                            "SON",
+                            "DEACN"
+                        ]
+                    }
+                }
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        0.6897860210478874,
+                        51.99653057424092
+                    ],
+                    [
+                        0.4552158235214537,
+                        51.91469433610231
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.7080700619115
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.29192004276904
+                    ],
+                    [
+                        -0.12750000000000003,
+                        51.125449865837126
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "GHOST",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.9447860210478874,
+                    51.99653057424092
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "BISHP",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.7102158235214537,
+                    51.91469433610231
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "GOD",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    0.6897860210478874,
+                    51.99653057424092
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "CANON",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    0.4552158235214537,
+                    51.91469433610231
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "TRI",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.12750000000000003,
+                    51.7080700619115
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "SON",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.12750000000000003,
+                    51.29192004276904
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "DEACN",
+                "type": "FIX"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.12750000000000003,
+                    51.125449865837126
+                ]
+            }
+        }
+    ]
+}
