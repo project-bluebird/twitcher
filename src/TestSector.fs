@@ -209,8 +209,8 @@ let getFixes (fc: FeatureCollection) =
               Name = pp.Name 
               Position = {
                 Coordinates = {
-                  Latitude = pg.coordinates.[0] * 1.<latitude>
-                  Longitude = pg.coordinates.[1] * 1.<longitude>
+                  Latitude = pg.coordinates.[1] * 1.<latitude>
+                  Longitude = pg.coordinates.[0] * 1.<longitude>
                 }
                 Altitude = 0.<ft>
               }
