@@ -123,18 +123,23 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetSimulationViewSize
         ]
 
+    | ReadSectorDefinition filePath ->
+        // TODO - fetch filePath properly
+        model,
+        readSectorDefinitionCmd model.Config.Value "assets/sector-X-sector-X-140-400.geojson"
+
+    | UploadSector sectorJson ->
+        model,
+        uploadSectorOutlineCmd model.Config.Value sectorJson
+
+    | SectorUploaded status ->
+        printfn "%s" status
+
+        model, Cmd.ofMsg LoadSector
+
     | LoadSector ->
         model,
-        // hard-coded for now
-        match model.SectorType with
-        | Other ->
-            getSectorOutlineCmd None
-        | I ->
-            getSectorOutlineCmd (Some "assets/sector-I-sector-I-140-400.geojson")
-        | X ->
-            getSectorOutlineCmd (Some "assets/sector-X-sector-X-140-400.geojson")
-        | Y ->
-            getSectorOutlineCmd (Some "assets/sector-Y-sector-Y-140-400.geojson")
+        loadSectorOutlineCmd model.Config.Value
 
     | SectorOutline sectorOutline ->
 

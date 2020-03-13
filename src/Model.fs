@@ -25,9 +25,6 @@ type CommandForm =
 
 type ElapsedTime = System.TimeSpan
 
-type SectorType =
-  | I | X | Y | Other
-
 type SectorDisplay =
   | TopDown
   | LateralNorthSouth
@@ -55,7 +52,6 @@ type SectorInfo = {
 type Model = {
   Animate : bool
 
-  SectorType : SectorType
   SectorInfo : SectorInfo option
   SectorDisplay : SectorDisplay
   DisplayView : DisplayView   
@@ -80,8 +76,13 @@ type Model = {
 type Msg =
   | Init
   | Config of Configuration
+
+  | ReadSectorDefinition of string
+  | UploadSector of Thoth.Json.JsonValue
+  | SectorUploaded of string
   | LoadSector
   | SectorOutline of SectorInfo option
+  
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize

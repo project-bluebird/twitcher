@@ -63,6 +63,7 @@ let decodeConfig (alltext: string) =
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
+    Endpoint_sector = getYamlAttribute "endpoint_upload_sector" text
 }
 
 
@@ -490,38 +491,64 @@ let changeHeadingCmd config aircraftID heading =
 let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
 
 
+let urlSector (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_sector ]
+  |> String.concat "/"
 
-let getSectorOutline(filePath) =
+let encodeSector sectorJson =
+  let body =
+    Encode.object
+      [ "name", Encode.string "sector-test"
+        "content", sectorJson
+      ]
+  Encode.toString 0 body  
+
+let readSectorFromFile(config, filePath) = 
   promise {
-    let url = 
-      match filePath with
-      | Some x -> x
-      | None -> "assets/sector-I-sector-I-140-400.geojson"
-    try
-      let! res = Fetch.fetch url []
-      let! txt = res.text()
-      match Decode.fromString TestSector.decodeFeatureCollection txt with
-      | Ok value -> 
-          return Some(TestSector.getOutline value)
-      | Error err ->
-          printfn "**** Couldn't parse GeoJSON sector definition"
-          Fable.Core.JS.console.log(err)
-          return None
-    with ex ->
-      // Fable.Core.JS.console.log(ex)
+    // TODO - fetch sector outline from JSON 
+    // 1. locally 
+    // 2. properly from a user-defined file
+    // https://fable.io/repl/#?code=LYewJgrgNgpgBAUSsAlgZwBYDoDKLgAOsAkgHYEQAuAUNQBQBUD1AsiqfgIZRycFEoAxp0ooQpOJhAB3dgHM4GGXEog4ENPCSpM1AJogIcYRIBm7MHFAAneO1NrOAI0OVEOjL2uCMKSjEFKCFteUks0TkJYNF43DEpKAjQALgB6VJhkdGw5PwwIJywxVOoGAEpaEAIYCQAxZ1gsAGEQWywAKTQyf2sq6iqauHqnRoAlGE5A-uq6hpgsccnKLAAFXqTpwe1szYltzAWJqYHZkfmW21p0uBYAeQARBAAZWkoAT2qb8Ey4AF5qOCAuAAbyGKFgLVI-ihcGSkko1nkcAAvq8PvAWGgFP8gXAAD5wJoYTikOQwABq3Ag8BApnhiNJAKBBJwnAAbjBauCYJDoW5afT5EzAQSENZetZFmB5FzYLRYG52H44HQyn8QWCIeI+eqAES6lEAGkJwDAWFI4hgV1ScAAqit7gBBAAqCHlMDcEAIYBE8DowCxyUxcjV-u+UCD4bVOKBwBEPisWLgskoGGF+LgrI5sp52pqbkEeZhAFoAHzp3GgnO8-PqwtQ2vI41NU3my20XGi8WtKUy7lwMsVoHXe5qNAgYAe3yM3G40BgTLN1sW0hW6jXcnEBAAdRVtjCMFslhTnkWgQq1AVcDZKBg0is4bg0rQBHjnhjgOlbLgAG1CVBODQGJdTjdhi3rShOHYQ8DQAXSHQE-wQ2d2AoNxkNnIEkMwnCcKaACgLgXVUKoXUMNwoFnXRIjzFgMiKIYuBblIMg0JVUwIAkGBvzLOByMYoEr1o+BfjgbisEg6wyUoAB+YS0BkugAAYLwEgSr1sTgF2sdUACFemkTRrCwUdgCwHMpUPZpNP8VUOzUhjNO0rBxCgEAtLgAAeYs4A4ri2TcQcHIc59X0oBM6CzTluRrGFuOWSTpJk2w0GgShVOC3CnKsy1ux07zfM4sSAoHctMoE0K30QPLe1JHN7PK2dsuMpzHTQZ0YAAD0oOhhIqRrATVfjZ3giqUG-P9RuCv80ARB8FygcyYqLNwpsw+D1xtR1+GoNYQDkaxIiwYAAGs9oOyI4CVT1vV9a9b2kag8VLOBzsOsyT0hcdYGdQ7BCtZ7Xt6C6PryM9KBwN5SB8XoLQ0IjMg8Ys+AIMjAbeo7rE46ggA&html=DwCwLgtgNgfAUHUBTAhgE3gAm54ElgqbhgAOAtEgI4CuAlgG4C8A5AMID2AdmEj+QBUAnqSQtMAY268erXgA8wAenDQA3JJAoATgGcCTGmABm5ABwssOYLona6pMJl3aJTAEQB9TwAkA8gDKAt5KUHQARrpK2qgSYAB0pNocaDRxdNzxEHRc8QBWuu4wwEq29o5W2DZ2Dk4ubl6+gcGeoRFRMShx5GgcEInJqemZ2bkFRSVltfAlIKgYCMDhKUKSUCi6uh4opBRSPCg5SNpFcDi4aIyYdGgeSFDZuiDkO6Tuaxtb7vePz68TSkuDBmSmWaCE8EQKkgsDgQA&css=BYFwtgNgNAUARgewCYE8AEBvGadoGYIB2IAtAM4CWAXgKYBcaAjAGwAOAHgNwwC+MMAOjABDCoRIBjIiFGEaAJ0zZcSCmVYRhKBngg0uynAHcKSEMAaMADFYCk3XGmA0KAc1CWb9w2gBWAVzIQCjwUSWkaYgYJSJAFB1xhCDdxCjiwMmjY+J9dfRJVeRoJYKJohAh-MEJuPkExVn8QJUdWYSRVQlcGAQAmAFYisAScAmJyanomNgNHEzMLNAGrDhG0EXlXMRJEEBAEMEsh2pggA
 
-      // // get a default sector
-      // let urlDefault = "assets/default-sector.json"
-      // let! resDefault = Fetch.fetch urlDefault []
-      // let! txt = resDefault.text()
-      // match Decode.fromString sectorDecoder txt with
-      // | Ok value -> return Some(value)
-      // | Error err ->
-          Fable.Core.JS.console.log(ex)
-          return None
+    return Encode.object ["content", Encode.string "{}" ]
+  }  
+
+let uploadSectorOutline(config, sectorJson :JsonValue) =
+  promise {    
+    // let path =
+    //   match filePath with
+    //   | Some x -> x
+    //   | None -> "assets/sector-X-sector-X-140-400.geojson"
+
+    let url = urlSector config
+    let body = encodeSector sectorJson
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+          RequestProperties.Body !^body
+          ]
+
+    let! response =  Fetch.fetch url props
+    match response.Status with
+    | _ -> return response.StatusText
   }
 
+let readSectorDefinitionCmd config filePath =
+  Cmd.OfPromise.either readSectorFromFile (config, filePath) UploadSector ErrorMessage
 
 /// Fetch sector outline
-let getSectorOutlineCmd(filePath) =
-  Cmd.OfPromise.either getSectorOutline (filePath) SectorOutline ErrorMessage
+let uploadSectorOutlineCmd config sectorJson =
+  Cmd.OfPromise.either uploadSectorOutline (config, sectorJson) SectorUploaded ErrorMessage
+  
+
+let loadSectorOutline config =
+  promise {
+    // TODO
+    return None
+  }
+
+let loadSectorOutlineCmd config =
+  Cmd.OfPromise.either loadSectorOutline config SectorOutline ErrorMessage
+

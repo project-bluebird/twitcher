@@ -83,6 +83,7 @@ type Configuration = {
     Endpoint_change_altitude: string
     Endpoint_change_heading: string
     Endpoint_change_speed: string
+    Endpoint_sector: string
     Query_aircraft_id: string
     Aircraft_type: string
     Latitude: string
