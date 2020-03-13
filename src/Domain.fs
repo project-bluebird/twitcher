@@ -77,18 +77,18 @@ type Configuration = {
     Endpoint_pause_simulation: string
     Endpoint_resume_simulation: string
     Endpoint_set_simulation_rate_multiplier: string
-    Endpoint_load_scenario: string
+    Endpoint_create_scenario: string
     Endpoint_create_aircraft: string
     Endpoint_aircraft_position: string
     Endpoint_change_altitude: string
     Endpoint_change_heading: string
     Endpoint_change_speed: string
-    Endpoint_change_vertical_speed: string
     Query_aircraft_id: string
     Aircraft_type: string
     Latitude: string
     Longitude: string
     Altitude: string
+    Heading : string
     Ground_speed: string
     Vertical_speed: string
     Simulator_time: string

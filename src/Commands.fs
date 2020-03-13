@@ -22,6 +22,7 @@ open Fetch
 // TODO: Change this to OpenAPI type provider when implemented
 
 let getYamlAttribute name (text: string []) =
+  printfn "%s" name
   let result =
     text
     |> Array.filter (fun line -> line.Trim().StartsWith (name + ":"))
@@ -45,18 +46,18 @@ let decodeConfig (alltext: string) =
     Endpoint_pause_simulation = getYamlAttribute "endpoint_pause_simulation" text
     Endpoint_resume_simulation = getYamlAttribute "endpoint_resume_simulation" text
     Endpoint_set_simulation_rate_multiplier = getYamlAttribute "endpoint_set_simulation_rate_multiplier" text
-    Endpoint_load_scenario = getYamlAttribute "endpoint_load_scenario" text
+    Endpoint_create_scenario = getYamlAttribute "endpoint_create_scenario" text
     Endpoint_create_aircraft = getYamlAttribute "endpoint_create_aircraft" text
     Endpoint_aircraft_position = getYamlAttribute "endpoint_aircraft_position" text
     Endpoint_change_altitude = getYamlAttribute "endpoint_change_altitude" text
     Endpoint_change_heading = getYamlAttribute "endpoint_change_heading" text
     Endpoint_change_speed = getYamlAttribute "endpoint_change_speed" text
-    Endpoint_change_vertical_speed = getYamlAttribute "endpoint_change_vertical_speed" text
     Query_aircraft_id = getYamlAttribute "query_aircraft_id" text
     Aircraft_type = getYamlAttribute "aircraft_type" text
     Latitude = getYamlAttribute "latitude" text
     Longitude = getYamlAttribute "longitude" text
     Altitude = getYamlAttribute "altitude" text
+    Heading = getYamlAttribute "heading" text
     Ground_speed = getYamlAttribute "ground_speed" text
     Simulator_time = getYamlAttribute "simulator_time" text
     Vertical_speed = getYamlAttribute "vertical_speed" text
@@ -90,7 +91,7 @@ let urlAircraftPosition (config: Configuration) =
 
 let pingBluebird config =
   promise {
-      let url = urlAircraftPosition config + "?acid=all"
+      let url = urlAircraftPosition config 
 
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
@@ -149,7 +150,7 @@ let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
 let getAllPositions config =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=all"
+        urlAircraftPosition config 
       let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
       match res.Status with
@@ -186,7 +187,7 @@ let getAllPositionsCmd config  =
 let getAircraftPosition (config, aircraftID) =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=" + aircraftID
+        urlAircraftPosition config + "?" + config.Query_aircraft_id + "=" + aircraftID
 
       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       let! txt = res.text()
@@ -203,7 +204,7 @@ let getAircraftPositionCmd config aircraftID =
 
 let urlLoadScenario (config: Configuration) =
   [ urlBase config
-    config.Endpoint_load_scenario ]
+    config.Endpoint_create_scenario ]
   |> String.concat "/"
 
 let loadScenario (config, path) =
