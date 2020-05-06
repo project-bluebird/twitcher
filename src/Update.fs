@@ -123,10 +123,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetSimulationViewSize
         ]
 
-    | ReadSectorDefinition filePath ->
-        // TODO - fetch filePath properly
+    | ReadSectorError -> 
+        printfn "Error reading sector definition from file"
+        model, Cmd.none
+
+    | ReadSectorDefinition content ->
+        printfn "%s" content
         model,
-        readSectorDefinitionCmd model.Config.Value "assets/sector-X-sector-X-140-400.geojson"
+        readSectorDefinitionCmd model.Config.Value content
 
     | UploadSector sectorJson ->
         model,

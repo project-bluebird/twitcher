@@ -77,6 +77,7 @@ type Msg =
   | Init
   | Config of Configuration
 
+  | ReadSectorError
   | ReadSectorDefinition of string
   | UploadSector of Thoth.Json.JsonValue
   | SectorUploaded of string
