@@ -79,7 +79,7 @@ type Msg =
 
   | ReadSectorError
   | ReadSectorDefinition of string
-  | UploadSector of Thoth.Json.JsonValue
+  | UploadSector of string //Thoth.Json.JsonValue
   | SectorUploaded of string
   | LoadSector
   | SectorOutline of SectorInfo option

@@ -508,11 +508,15 @@ let encodeSector sectorJson =
 
 let readSectorFromFile(config, content) = 
   promise {
-    // TODO - figure out how to correctly send the content to Bluebird
-    return Encode.object ["content", Encode.string content ]
+    // Hack - pass the GeoJSON sector file directly as a string without parsing
+    return 
+      """{
+    "name": "twitcher-sector",
+    "content": """ + content + """
+}"""
   }  
 
-let uploadSectorOutline(config, sectorJson :JsonValue) =
+let uploadSectorOutline(config, sectorJson :string) =
   promise {    
     // let path =
     //   match filePath with
@@ -520,7 +524,8 @@ let uploadSectorOutline(config, sectorJson :JsonValue) =
     //   | None -> "assets/sector-X-sector-X-140-400.geojson"
 
     let url = urlSector config
-    let body = encodeSector sectorJson
+    let body = //encodeSector sectorJson 
+          sectorJson
 
     let props =
         [ RequestProperties.Method HttpMethod.POST
