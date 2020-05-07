@@ -518,11 +518,6 @@ let readSectorFromFile(config, content) =
 
 let uploadSectorOutline(config, sectorJson :string) =
   promise {    
-    // let path =
-    //   match filePath with
-    //   | Some x -> x
-    //   | None -> "assets/sector-X-sector-X-140-400.geojson"
-
     let url = urlSector config
     let body = //encodeSector sectorJson 
           sectorJson
@@ -548,8 +543,20 @@ let uploadSectorOutlineCmd config sectorJson =
 
 let loadSectorOutline config =
   promise {
-    // TODO
-    return None
+    let url = urlSector config
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return None
+    | 200 ->
+      let! txt = res.text()
+      printfn "%s" txt
+      return None
+    | _ ->
+      Fable.Core.JS.console.log("Cannot fetch sector outline, return code " + string res.Status)
+      return None
   }
 
 let loadSectorOutlineCmd config =
