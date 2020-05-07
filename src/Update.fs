@@ -128,7 +128,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model, Cmd.none
 
     | ReadSectorDefinition content ->
-        printfn "%s" content
         model,
         readSectorDefinitionCmd model.Config.Value content
 
@@ -137,8 +136,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         uploadSectorOutlineCmd model.Config.Value sectorJson
 
     | SectorUploaded status ->
-        printfn "%s" status
-
         model, Cmd.ofMsg LoadSector
 
     | LoadSector ->

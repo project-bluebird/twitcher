@@ -254,7 +254,6 @@ let getFixes (fc: FeatureCollection) =
 let getOutline (fc: FeatureCollection) =
   fc.Features
   |> Array.choose (fun f ->
-      printfn "%A" f
       match f.Geometry with 
       | Some(PolygonGeometry gm) ->
           match f.Properties with 
