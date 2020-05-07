@@ -15,7 +15,13 @@ type FixNames = {
 type SectorProperties = {
   Name : string
   Type : string
-  Children : Map<string, FixNames>
+  Children : Map<string, FixNames>  // TODO
+}
+
+type SectorInfoProperties = {
+  Name : string
+  Type : string
+  Children : Map<string, FixNames>  // TODO
 }
 
 type PointProperties = {
@@ -42,6 +48,7 @@ type FeatureProperties =
   | PolygonProperties of PolygonProperties
   | PointProperties of PointProperties
   | SectorProperties of SectorProperties
+  | SectorInfoProperties of SectorInfoProperties
 
 // ========================
 // Geometries
@@ -77,6 +84,11 @@ type Feature = {
 
 type FeatureCollection = {
   Features : Feature []
+}
+
+type SectorDefinition = {
+  Name : string
+  Content : string option
 }
 
 // ===========================
@@ -149,6 +161,14 @@ let decodeSectorProperties : Decoder<SectorProperties> =
       Children = get.Required.Field "children" (Decode.dict decodeFixes)
     })    
 
+let decodeSectorInfoProperties : Decoder<SectorInfoProperties> =
+  Decode.object 
+    (fun get -> {
+      Name = get.Required.Field "name" Decode.string
+      Type = get.Required.Field "type" Decode.string
+      Children = get.Required.Field "children" (Decode.dict decodeFixes)
+    })        
+
 let decodeProperties : Decoder<FeatureProperties> = 
   Decode.field "type" Decode.string
   |> Decode.andThen (
@@ -161,6 +181,8 @@ let decodeProperties : Decoder<FeatureProperties> =
       decodeLineStringProperties |> Decode.map LineStringProperties
     | "FIX" ->
       decodePointProperties |> Decode.map PointProperties
+    | "FIR" ->
+      decodeSectorInfoProperties |> Decode.map SectorInfoProperties
     | x -> Decode.fail ("Unknown properties " + x)
   )    
 
@@ -184,7 +206,7 @@ let decodeFeature : Decoder<Feature> =
           | PointProperties _ ->
               get.Required.Field "geometry" (decodePointGeometry |> Decode.map PointGeometry)
               |> Some
-          | SectorProperties _ ->
+          | SectorProperties _ | SectorInfoProperties _ ->
               None
       })
 
@@ -194,6 +216,14 @@ let decodeFeatureCollection : Decoder<FeatureCollection> =
     (fun get -> {
       Features = get.Required.Field "features" (Decode.array decodeFeature)
     })
+
+let decodeSectorDefinition : Decoder<SectorDefinition> =
+  Decode.object (
+    fun get -> {
+      Name = get.Required.Field "name" (Decode.string)
+      Content = get.Optional.Field "content" (Decode.string)
+    }
+  )    
 
 // ======================
 

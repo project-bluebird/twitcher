@@ -490,9 +490,6 @@ let changeHeadingCmd config aircraftID heading =
 //=================================================================
 
 
-let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
-
-
 let urlSector (config: Configuration) =
   [ urlBase config
     config.Endpoint_sector ]
@@ -552,8 +549,26 @@ let loadSectorOutline config =
       return None
     | 200 ->
       let! txt = res.text()
-      printfn "%s" txt
-      return None
+      
+      match Decode.fromString TestSector.decodeSectorDefinition txt with
+      | Ok value -> 
+          printfn "*** Parsed sector definition"
+          match value.Content with
+          | None -> 
+              printfn "No sector definition content"
+              return None // no available sector definition found
+          | Some sector -> 
+              match Decode.fromString TestSector.decodeFeatureCollection sector with
+              | Ok x -> 
+                  printfn "Parsed feature collection"
+                  return Some(TestSector.getOutline x)
+              | Error e -> 
+                  printfn "Couldn't parse feature collection"
+                  return None
+      | Error err ->
+          printfn "**** Couldn't parse GeoJSON sector definition"
+          Fable.Core.JS.console.log(err)
+          return None
     | _ ->
       Fable.Core.JS.console.log("Cannot fetch sector outline, return code " + string res.Status)
       return None
