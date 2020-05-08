@@ -756,11 +756,34 @@ let viewSimulatorControls model dispatch =
                             dispatch (ReadSectorDefinition evt.target?result)
 
                         reader.onerror <- fun evt ->
-                            dispatch ReadSectorError
+                            dispatch ReadJsonErrorr
 
                         reader.readAsText(file)
                     ) 
                 ] ]    
+
+          Menu.Item.li
+            [  ] [ 
+            str "Load scenario"
+            input 
+                [ 
+                    Class "input"
+                    Type "file"
+                    OnInput (fun ev -> 
+                        let file = ev.target?files?(0)
+
+                        let reader = Browser.Dom.FileReader.Create()
+
+                        reader.onload <- fun evt ->
+                            dispatch (ReadScenario evt.target?result)
+
+                        reader.onerror <- fun evt ->
+                            dispatch ReadJsonErrorr
+
+                        reader.readAsText(file)
+                    ) 
+                ] ]    
+
         ]
     ]
 

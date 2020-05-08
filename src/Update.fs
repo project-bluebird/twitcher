@@ -123,8 +123,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetSimulationViewSize
         ]
 
-    | ReadSectorError -> 
-        printfn "Error reading sector definition from file"
+    | ReadJsonErrorr -> 
+        printfn "Error reading JSON from file"
         model, Cmd.none
 
     | ReadSectorDefinition content ->
@@ -244,10 +244,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           { model with Positions = aircraftInView |> List.ofArray }
 
         { newModel with
-            Positions =
-              newModel.Positions
-              |> List.map (fun ac ->
-                  { ac with Heading = estimateHeading newModel ac.AircraftID})
+            // Positions =
+            //   newModel.Positions
+            //   |> List.map (fun ac ->
+            //       { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory aircraftInView
             InConflict = checkLossOfSeparation model.DisplayView aircraftInView
             SimulationTime = elapsed } ,
@@ -263,14 +263,18 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
-    | ShowLoadScenarioForm ->
-        let f, cmd = ScenarioForm.init()
-        { model with FormModel = Some (LoadScenarioForm(f)) },
-            Cmd.batch [
-              Cmd.map LoadScenarioMsg cmd
-            ]
+    // | ShowLoadScenarioForm ->
+    //     let f, cmd = ScenarioForm.init()
+    //     { model with FormModel = Some (LoadScenarioForm(f)) },
+    //         Cmd.batch [
+    //           Cmd.map LoadScenarioMsg cmd
+    //         ]
 
-    | LoadScenario path ->
+    | ReadScenario content ->
+        model,
+        readScenarioFileCmd model.Config.Value content        
+
+    | UploadScenario path ->
         { model with
               State = Connected
               FormModel = None
@@ -550,7 +554,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           | ScenarioForm.ExternalMsg.Submit(path) ->
               { model with FormModel = None },
               Cmd.batch [
-                Cmd.ofMsg (LoadScenario path)
+                Cmd.ofMsg (UploadScenario path)
               ]
 
           | ScenarioForm.ExternalMsg.NoOp ->

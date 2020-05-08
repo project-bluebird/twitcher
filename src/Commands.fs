@@ -112,10 +112,20 @@ let pingBluebirdCmd config =
 // ===============================================================
 // Aircraft position
 
+// {
+//   "AC1001": {
+//     "cleared_fl": 22500,
+//     "current_fl": 20000,
+//     "hdg": 120.4,
+//     "requested_fl": 25000,
+
 
 type JsonPositionInfo = {
     actype: string
-    alt: float<m>
+    cleared_fl: float<m>
+    current_fl : float<m>
+    requested_fl : float<m> option
+    hdg : float
     gs: float<m/s>
     lat: float<latitude>
     lon: float<longitude>
@@ -130,7 +140,7 @@ let parseAircraftInfo id info =
       Time = None
       Type = Some info.actype
       Position = {
-        Altitude = info.alt |> Conversions.Altitude.m2ft
+        Altitude = info.current_fl |> Conversions.Altitude.m2ft
         Coordinates = {
           Latitude = info.lat
           Longitude = info.lon
@@ -139,13 +149,13 @@ let parseAircraftInfo id info =
       GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some
       VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
       CalibratedAirSpeed = None
-      Heading = None
+      Heading = Some info.hdg
     }
 
 let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
   data
   |> Collections.Map.toArray
-  |> Array.filter (fun (key, info) -> key <> "sim_t")
+  |> Array.filter (fun (key, info) -> key <> "scenario_time")
   |> Array.map (fun (acid, info) -> parseAircraftInfo acid (info :?> JsonPositionInfo))
 
 let getAllPositions config =
@@ -161,7 +171,7 @@ let getAllPositions config =
       | 200 ->
         let! txt = res.text()
 
-        let decodeTime = Decode.field "sim_t" (Decode.int)
+        let decodeTime = Decode.field "scenario_time" (Decode.float)
         let resultTime = Decode.fromString decodeTime txt   // TODO
 
         let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
@@ -203,33 +213,44 @@ let getAircraftPositionCmd config aircraftID =
 // ===============================================================
 // Load scenario
 
-// TODO - change to load the scenario from a file and post the resulting JSON
-
-let urlLoadScenario (config: Configuration) =
+let urlScenario (config: Configuration) =
   [ urlBase config
     config.Endpoint_create_scenario ]
   |> String.concat "/"
 
-let loadScenario (config, path) =
+let readScenarioFromFile(config, content) = 
   promise {
-      let url = urlLoadScenario config
-      let body = Encode.toString 0 (Encode.object [ "filename", Encode.string path ])
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            RequestProperties.Body !^body
-            ]
+    // Hack - pass the JSON scenario file directly as a string without parsing
+    return 
+      """{
+    "name": "twitcher-scenario",
+    "content": """ + content + """
+}"""
+  }  
 
-      let! response =  Fetch.fetch url props
-      match response.Status with
-      | 200 -> return "Scenario loaded"
-      | 400 -> return "Invalid filename"
-      | 500 -> return "Scenario not found"
-      | _ -> return response.StatusText
+let uploadScenario(config, scenarioJson :string) =
+  promise {    
+    let url = urlScenario config
+    let body = scenarioJson
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+          RequestProperties.Body !^body
+          ]
+
+    let! response =  Fetch.fetch url props
+    match response.Status with
+    | _ -> return response.StatusText
   }
 
-let loadScenarioCmd config path =
-  Cmd.OfPromise.either loadScenario (config, path) LoadedScenario ConnectionError
+let readScenarioFileCmd config content =
+  Cmd.OfPromise.either readScenarioFromFile (config, content) UploadScenario ErrorMessage
+
+
+let loadScenarioCmd config scenarioJson =
+  Cmd.OfPromise.either uploadScenario (config, scenarioJson) LoadedScenario ConnectionError
+
 
 // ===============================================================
 // Reset simulator
@@ -494,14 +515,6 @@ let urlSector (config: Configuration) =
   [ urlBase config
     config.Endpoint_sector ]
   |> String.concat "/"
-
-let encodeSector sectorJson =
-  let body =
-    Encode.object
-      [ "name", Encode.string "sector-test"
-        "content", sectorJson
-      ]
-  Encode.toString 0 body  
 
 let readSectorFromFile(config, content) = 
   promise {

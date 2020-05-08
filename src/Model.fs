@@ -77,12 +77,16 @@ type Msg =
   | Init
   | Config of Configuration
 
-  | ReadSectorError
+  | ReadJsonErrorr
   | ReadSectorDefinition of string
   | UploadSector of string //Thoth.Json.JsonValue
   | SectorUploaded of string
   | LoadSector
   | SectorOutline of SectorInfo option
+
+  | ReadScenario of string
+  | UploadScenario of string
+  | LoadedScenario of string
   
   | ConnectionActive of bool
   | ConnectionError of exn
@@ -97,8 +101,6 @@ type Msg =
   | FetchedPosition of AircraftInfo option
   | FetchedAllPositions of AircraftInfo[] * ElapsedTime
 
-  | LoadScenario of string
-  | LoadedScenario of string
   | Observe 
   | StopObserving
 
@@ -135,7 +137,7 @@ type Msg =
   | ChangeVerticalSpeed of AircraftID * VerticalSpeed
   | ChangedVerticalSpeed
   
-  | ShowLoadScenarioForm 
+  // | ShowLoadScenarioForm 
 
   | MakeStep of unit
   | ErrorMessage of exn
