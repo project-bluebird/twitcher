@@ -92,9 +92,44 @@ let urlAircraftPosition (config: Configuration) =
    config.Endpoint_aircraft_position ]
   |> String.concat "/"
 
+//===================================
+
+let urlSimulationInfo (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_simulation_info ]
+  |> String.concat "/"
+
+let simulationInfoDecoder = Decode.Auto.generateDecoder<SimulationInfo>(true)
+
+let getSimulationInfo config =
+  promise {
+    let url = urlSimulationInfo config
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return None
+    | 200 ->
+      let! txt = res.text()
+      match Decode.fromString simulationInfoDecoder txt with
+      | Ok value -> 
+        return Some value
+      | Error e ->
+        printfn "Error decoding simulation info: %A" e
+        return None
+
+    | _ -> return None
+  }  
+
+let getSimulationInfoCmd config =
+  Cmd.OfPromise.either getSimulationInfo config SimulationInfo ErrorMessage
+
+//=====================================
+
 let pingBluebird config =
   promise {
-      let url = urlAircraftPosition config 
+      let url = urlSimulationInfo config
 
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
@@ -615,35 +650,3 @@ let makeSimulationStep config =
 let makeSimulationStepCmd config =
   Cmd.OfPromise.attempt makeSimulationStep config ErrorMessage
 
-//=====================================
-
-let urlSimulationInfo (config: Configuration) =
-  [ urlBase config
-    config.Endpoint_simulation_info ]
-  |> String.concat "/"
-
-let simulationInfoDecoder = Decode.Auto.generateDecoder<SimulationInfo>(true)
-
-let getSimulationInfo config =
-  promise {
-    let url = urlSimulationInfo config
-    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
-
-    match res.Status with
-    | 400 ->
-      Fable.Core.JS.console.log("400: Fetch sector outline")
-      return None
-    | 200 ->
-      let! txt = res.text()
-      match Decode.fromString simulationInfoDecoder txt with
-      | Ok value -> 
-        return Some value
-      | Error e ->
-        printfn "Error decoding simulation info: %A" e
-        return None
-
-    | _ -> return None
-  }  
-
-let getSimulationInfoCmd config =
-  Cmd.OfPromise.either getSimulationInfo config SimulationInfo ErrorMessage
