@@ -77,6 +77,7 @@ type Configuration = {
     Endpoint_pause_simulation: string
     Endpoint_resume_simulation: string
     Endpoint_set_simulation_rate_multiplier: string
+    Endpoint_simulation_step : string
     Endpoint_create_scenario: string
     Endpoint_create_aircraft: string
     Endpoint_aircraft_position: string

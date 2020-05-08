@@ -21,7 +21,6 @@ type CommandForm =
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
   | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
   | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
-  | LoadScenarioForm of Twitcher.ScenarioForm.FormModel
 
 type ElapsedTime = System.TimeSpan
 
@@ -148,4 +147,4 @@ type Msg =
   | ChangeAltitudeMsg of AltitudeForm.Msg
   | ChangeSpeedMsg of SpeedForm.Msg
   | ChangeHeadingMsg of HeadingForm.Msg
-  | LoadScenarioMsg of ScenarioForm.Msg
+

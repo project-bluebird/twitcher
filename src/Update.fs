@@ -549,27 +549,3 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Fable.Core.JS.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none
 
-    | LoadScenarioMsg m ->
-      match model.FormModel with
-
-      | Some(LoadScenarioForm f) ->
-          let f', cmd, externalMsg = ScenarioForm.update m f
-
-          match externalMsg with
-          | ScenarioForm.ExternalMsg.Submit(path) ->
-              { model with FormModel = None },
-              Cmd.batch [
-                Cmd.ofMsg (UploadScenario path)
-              ]
-
-          | ScenarioForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (LoadScenarioForm(f')) },
-              Cmd.map ChangeHeadingMsg cmd
-
-          | ScenarioForm.ExternalMsg.Cancel ->
-              { model with FormModel = None },
-              Cmd.none
-
-      | None | Some _ ->
-          Fable.Core.JS.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none

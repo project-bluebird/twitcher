@@ -401,8 +401,6 @@ let commandForm model dispatch =
       [ SpeedForm.view f (ChangeSpeedMsg >> dispatch)]
     | Some(ChangeHeadingForm f) ->
       [ HeadingForm.view f (ChangeHeadingMsg >> dispatch)]
-    | Some(LoadScenarioForm f) ->
-      [ ScenarioForm.view f (LoadScenarioMsg >> dispatch)]
     | None -> []
     )
 

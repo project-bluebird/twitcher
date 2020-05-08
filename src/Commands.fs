@@ -46,6 +46,7 @@ let decodeConfig (alltext: string) =
     Endpoint_pause_simulation = getYamlAttribute "endpoint_pause_simulation" text
     Endpoint_resume_simulation = getYamlAttribute "endpoint_resume_simulation" text
     Endpoint_set_simulation_rate_multiplier = getYamlAttribute "endpoint_set_simulation_rate_multiplier" text
+    Endpoint_simulation_step = getYamlAttribute "endpoint_simulation_step" text
     Endpoint_create_scenario = getYamlAttribute "endpoint_create_scenario" text
     Endpoint_create_aircraft = getYamlAttribute "endpoint_create_aircraft" text
     Endpoint_aircraft_position = getYamlAttribute "endpoint_aircraft_position" text
@@ -64,6 +65,7 @@ let decodeConfig (alltext: string) =
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
     Endpoint_sector = getYamlAttribute "endpoint_upload_sector" text
+
 }
 
 
