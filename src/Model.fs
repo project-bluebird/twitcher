@@ -138,10 +138,12 @@ type Msg =
   
   // | ShowLoadScenarioForm 
 
-  | MakeStep of unit
+  | MakeAnimationStep of unit
   | ErrorMessage of exn
   | StartAnimation
   | StopAnimation
+
+  | MakeSimulatorStep 
 
   | CreateAircraftMsg of AircraftForm.Msg
   | ChangeAltitudeMsg of AltitudeForm.Msg

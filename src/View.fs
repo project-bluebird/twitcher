@@ -647,6 +647,13 @@ let viewControlMenu model dispatch =
                 ]
 
              ]
+
+          Menu.Item.li
+            [ Menu.Item.OnClick (fun _ -> dispatch MakeSimulatorStep)
+              Menu.Item.Props []
+             ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.StepForward][] ]
+              str "Make step" ]
         ]
 
       Menu.label [ ] [ str "Aircraft controls" ]

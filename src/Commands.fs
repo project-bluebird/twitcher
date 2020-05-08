@@ -592,3 +592,26 @@ let loadSectorOutline config =
 let loadSectorOutlineCmd config =
   Cmd.OfPromise.either loadSectorOutline config SectorOutline ErrorMessage
 
+//=============================
+
+let urlSimulationStep (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_simulation_step ]
+  |> String.concat "/"
+
+
+let makeSimulationStep config =
+  promise {
+    let url = urlSimulationStep config
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          ]
+
+    let! result = Fetch.fetch url props
+    return ()
+  }
+
+let makeSimulationStepCmd config =
+  Cmd.OfPromise.attempt makeSimulationStep config ErrorMessage
+

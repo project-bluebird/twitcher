@@ -357,6 +357,10 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               State = ActiveSimulation Observing },
         Cmd.ofMsg StartAnimation
 
+    | MakeSimulatorStep ->
+        model, 
+        makeSimulationStepCmd model.Config.Value
+
     | StopObserving ->
         { model with State = Connected },
         Cmd.ofMsg StopAnimation
@@ -397,12 +401,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
-    | MakeStep _ ->
+    | MakeAnimationStep _ ->
         if model.Animate then
           model,
           Cmd.batch [
            getAllPositionsCmd model.Config.Value
-           Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
+           Cmd.OfPromise.either delayMsg () MakeAnimationStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
            (if model.SectorInfo.IsNone then Cmd.ofMsg LoadSector else Cmd.none)
           ]
@@ -411,7 +415,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.none
 
     | StartAnimation ->
-        { model with Animate = true }, Cmd.ofMsg (MakeStep())
+        { model with Animate = true }, Cmd.ofMsg (MakeAnimationStep())
 
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
@@ -548,4 +552,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
       | None | Some _ ->
           Fable.Core.JS.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none
+
+
 
