@@ -65,7 +65,7 @@ let decodeConfig (alltext: string) =
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
     Endpoint_sector = getYamlAttribute "endpoint_upload_sector" text
-
+    Endpoint_simulation_info = getYamlAttribute "endpoint_simulation_info" text 
 }
 
 
@@ -615,3 +615,35 @@ let makeSimulationStep config =
 let makeSimulationStepCmd config =
   Cmd.OfPromise.attempt makeSimulationStep config ErrorMessage
 
+//=====================================
+
+let urlSimulationInfo (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_simulation_info ]
+  |> String.concat "/"
+
+let simulationInfoDecoder = Decode.Auto.generateDecoder<SimulationInfo>(true)
+
+let getSimulationInfo config =
+  promise {
+    let url = urlSimulationInfo config
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return None
+    | 200 ->
+      let! txt = res.text()
+      match Decode.fromString simulationInfoDecoder txt with
+      | Ok value -> 
+        return Some value
+      | Error e ->
+        printfn "Error decoding simulation info: %A" e
+        return None
+
+    | _ -> return None
+  }  
+
+let getSimulationInfoCmd config =
+  Cmd.OfPromise.either getSimulationInfo config SimulationInfo ErrorMessage

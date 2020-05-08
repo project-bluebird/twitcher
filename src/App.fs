@@ -33,6 +33,7 @@ let init() =
   }
 
   {     
+    SimulationInfo = None
     Positions = []
     Animate = false
     Config = None

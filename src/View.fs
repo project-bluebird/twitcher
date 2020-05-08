@@ -764,6 +764,61 @@ let viewSimulatorControls model dispatch =
         ]
     ]
 
+let viewSimulationInfo model dispatch =
+  div [] [
+    yield br []
+    yield hr []
+
+    match model.SimulationInfo with
+    | None -> 
+      yield
+        Button.button
+          [ Button.Size IsMedium;
+            (if model.SimulationInfo.IsSome then Button.Color IsLight else Button.Color IsWhite)
+            Button.OnClick (fun _ -> dispatch GetSimulationInfo) ]
+          [ Icon.icon [ ] [ Fa.i [Fa.Solid.Info ][] ]
+            ]     
+    | Some info ->
+      yield 
+        Message.message [ Message.Color IsLight ] [
+          Message.header [] [
+            Icon.icon [ ] [ Fa.i [Fa.Solid.Info ][] ]
+            Heading.h6 [] [ str "Simulation info" ] 
+          ]
+          Message.body [] [
+            Table.table [ Table.Props [ClassName "table-no-border"] ]
+              [ tbody [] [
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Simulation type"] ]
+                    td [] [ str info.Sim_type ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Mode"] ]
+                    td [] [ str info.Mode ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Sector name"] ]
+                    td [] [ str info.Sector_name ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Scenario name"] ]
+                    td [] [ str info.Scenario_name ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Seed"] ]
+                    td [] [ str (match info.Seed with | Some s -> string s | None -> "NA") ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Speed"] ]
+                    td [] [ str (string info.Speed) ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Dt"] ]
+                    td [] [ str (string info.Dt) ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "State"] ]
+                    td [] [ str info.State ]]
+              ]
+              ]
+          ]
+        ]
+        
+  ]
+
 let view model dispatch =
     Hero.hero [  ]
       [
@@ -812,6 +867,8 @@ let view model dispatch =
                         ]
 
                       ]
+
+                    viewSimulationInfo model dispatch
 
                     commandForm model dispatch
 

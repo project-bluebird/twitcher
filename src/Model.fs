@@ -48,6 +48,20 @@ type SectorInfo = {
   Waypoints : FixInfo []
 }
 
+type SimulationInfo = {
+    Callsigns : string []
+    Mode : string
+    Sector_name : string
+    Scenario_name : string
+    Scenario_time : float
+    Seed : int option
+    Sim_type : string
+    Speed : int
+    State : string
+    Dt : float
+    Utc_datetime : string
+}
+
 type Model = {
   Animate : bool
 
@@ -68,6 +82,8 @@ type Model = {
   SimulationSpeed : float
   SimulationTime: ElapsedTime
 
+  SimulationInfo : SimulationInfo option
+
   Score : float
 }
 
@@ -75,6 +91,8 @@ type Model = {
 type Msg =
   | Init
   | Config of Configuration
+  | GetSimulationInfo
+  | SimulationInfo of SimulationInfo option
 
   | ReadJsonErrorr
   | ReadSectorDefinition of string

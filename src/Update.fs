@@ -357,6 +357,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               State = ActiveSimulation Observing },
         Cmd.ofMsg StartAnimation
 
+    | GetSimulationInfo ->
+        model, 
+        getSimulationInfoCmd model.Config.Value
+
+    | SimulationInfo info ->
+        { model with SimulationInfo = info },
+        Cmd.none
+
     | MakeSimulatorStep ->
         model, 
         makeSimulationStepCmd model.Config.Value

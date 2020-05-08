@@ -96,4 +96,5 @@ type Configuration = {
     Simulator_time: string
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
+    Endpoint_simulation_info : string
 }
