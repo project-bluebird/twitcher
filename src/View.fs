@@ -570,34 +570,6 @@ let viewControlMenu model dispatch =
             Icon.icon [ ] [ Fa.i [Fa.Solid.Binoculars][] ]
             str "Run as observer" ]
 
-          // Menu.Item.li
-          //   [  ] [ 
-          //   str "Load sector definition"
-          //   input 
-          //       [ 
-          //           Class "input"
-          //           Type "file"
-          //           OnInput (fun ev -> 
-          //               let file = ev.target?files?(0)
-
-          //               let reader = Browser.Dom.FileReader.Create()
-
-          //               reader.onload <- fun evt ->
-          //                   dispatch (ReadSectorDefinition evt.target?result)
-
-          //               reader.onerror <- fun evt ->
-          //                   dispatch ReadSectorError
-
-          //               reader.readAsText(file)
-          //           ) 
-          //       ] ]  
-
-          // Menu.Item.li
-          //   [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [
-          //   //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [
-          //   Icon.icon [ ] [ Fa.i [Fa.Solid.FileImport ][]]
-          //   str "Load test scenario" ]
-
           Menu.Item.li
             [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [
             Icon.icon [ ] [ Fa.i [Fa.Solid.Times][] ]

@@ -239,9 +239,13 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           |> Array.filter (fun ac ->
               inSector model.DisplayView.DisplayArea ac.Position 
           )
+        printfn "%A" positionInfo
+        printfn "model.DisplayView.DisplayArea: %A" model.DisplayView.DisplayArea
+        printfn "in view: %A" aircraftInView.Length
 
         let newModel =
-          { model with Positions = aircraftInView |> List.ofArray }
+          // { model with Positions = aircraftInView |> List.ofArray }
+          { model with Positions = positionInfo |> List.ofArray }
 
         { newModel with
             // Positions =
@@ -288,7 +292,8 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         // pause the scenario
         { model with
             State = ActiveSimulation Playing },
-        pauseSimulationCmd model.Config.Value
+        Cmd.none
+        //pauseSimulationCmd model.Config.Value
 
     | ResetSimulator ->
         model,
@@ -399,7 +404,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
            getAllPositionsCmd model.Config.Value
            Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
-
+           (if model.SectorInfo.IsNone then Cmd.ofMsg LoadSector else Cmd.none)
           ]
         else
           model,

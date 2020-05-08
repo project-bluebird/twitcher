@@ -174,7 +174,7 @@ let getAllPositions config =
         let decodeTime = Decode.field "scenario_time" (Decode.float)
         let resultTime = Decode.fromString decodeTime txt   // TODO
 
-        let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
+        // let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
         let result = Decode.fromString (Decode.dict positionDecoder) txt
 
         match result, resultTime with
