@@ -159,9 +159,9 @@ let pingBluebirdCmd config =
 
 type JsonPositionInfo = {
     actype: string
-    cleared_fl: float<m>
-    current_fl : float<m>
-    requested_fl : float<m> option
+    cleared_fl: float<ft>
+    current_fl : float<ft>
+    requested_fl : float<ft> option
     hdg : float
     gs: float<m/s>
     lat: float<latitude>
@@ -177,7 +177,7 @@ let parseAircraftInfo id info =
       Time = None
       Type = Some info.actype
       Position = {
-        Altitude = info.current_fl |> Conversions.Altitude.m2ft
+        Altitude = info.current_fl 
         Coordinates = {
           Latitude = info.lat
           Longitude = info.lon
