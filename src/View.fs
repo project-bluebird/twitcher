@@ -426,7 +426,9 @@ let viewAircraftDetails model dispatch =
                   [ td [] [ Heading.h6 [] [str "Aircraft type"] ]
                     td []
                       [ str info.Type ]
-                    td [] []]
+                    td [] [
+                      a [ Href ("https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=" + info.Type) ] [ str "View [external link]" ]
+                    ]]
                 
                 tr []
                   [ td [] [ Heading.h6 [] [str "Longitude"] ]
