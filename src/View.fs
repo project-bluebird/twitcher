@@ -748,7 +748,7 @@ let viewDisplayMenu model dispatch =
 
 let viewSimulatorControls model dispatch =
   Menu.menu [ ]
-    [ Menu.label [ ] [ str "Simulator controls" ]
+    [ Menu.label [ ] [ str "Sector and scenario upload" ]
       Menu.list [ ]
         [ 
           Menu.Item.li
@@ -814,6 +814,13 @@ let viewSimulationInfo model dispatch =
             ]     
     | Some info ->
       yield 
+        Button.button
+          [ Button.Size IsMedium;
+            Button.Color IsWhite
+            Button.OnClick (fun _ -> dispatch GetSimulationInfo) ]
+          [ Icon.icon [ ] [ Fa.i [Fa.Solid.Redo ][] ]
+            ]     
+      yield
         Message.message [ Message.Color IsLight ] [
           Message.header [] [
             Icon.icon [ ] [ Fa.i [Fa.Solid.Info ][] ]
@@ -881,8 +888,6 @@ let view model dispatch =
 
                       ]
 
-                    viewSimulatorControls model dispatch
-
                     viewScore model dispatch
 
                     viewTimer model dispatch
@@ -901,6 +906,8 @@ let view model dispatch =
                         ]
 
                       ]
+
+                    viewSimulatorControls model dispatch
 
                     viewSimulationInfo model dispatch
 
