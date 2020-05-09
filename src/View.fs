@@ -320,7 +320,7 @@ let simulationView model dispatch =
             |> Array.map (fun pastPosition -> // TODO - precompute this?
               CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.DisplayView)
           else [||]
-        let selected = model.ViewDetails = Some(aircraft.AircraftID)
+        let selected = model.ViewDetails = Some(aircraft.AircraftID, None)
         let conflict = model.InConflict |> Array.contains aircraft.AircraftID
 
         [
@@ -408,7 +408,7 @@ let commandForm model dispatch =
 let viewAircraftDetails model dispatch =
   div [] [
     match model.ViewDetails with
-    | Some(aircraft) ->
+    | Some(aircraft, route) ->
       let info = model.Positions |> List.find (fun ac -> ac.AircraftID = aircraft)
 
       yield! [
@@ -423,6 +423,12 @@ let viewAircraftDetails model dispatch =
             Table.table [ Table.Props [ClassName "table-no-border"] ]
               [
                 tr []
+                  [ td [] [ Heading.h6 [] [str "Aircraft type"] ]
+                    td []
+                      [ str info.Type ]
+                    td [] []]
+                
+                tr []
                   [ td [] [ Heading.h6 [] [str "Longitude"] ]
                     td []
                       [ str (sprintf "%.3f" info.Position.Coordinates.Longitude) ]
@@ -433,13 +439,9 @@ let viewAircraftDetails model dispatch =
                       [ str (sprintf "%.3f" info.Position.Coordinates.Latitude) ]
                     td [] []]
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Course"] ]
+                  [ td [] [ Heading.h6 [] [str "Heading"] ]
                     td []
-                      [
-                          match info.Heading with
-                          | Some(x) -> yield (str (sprintf "%.1f" x + "°"))
-                          | None -> yield (Button.a [ Button.IsLoading true; Button.IsOutlined; Button.IsText; Button.Size IsSmall ] [ str "Loading" ])
-                           ]
+                      [ yield (str (sprintf "%.1f" info.Heading + "°")) ]
                     td [] [
                       Button.button
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
@@ -448,7 +450,7 @@ let viewAircraftDetails model dispatch =
                         [ Icon.icon [ ] [ Fa.i [Fa.Solid.LocationArrow] [] ]
                           Text.span [] [ str "Change heading" ]]]]
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Altitude"] ]
+                  [ td [] [ Heading.h6 [] [str "Current altitude"] ]
                     td []
                       [ str (sprintf "%.0f ft" info.Position.Altitude) ]
                     td [] [
@@ -459,6 +461,19 @@ let viewAircraftDetails model dispatch =
                         [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV] [] ]
                           Text.span [] [str "Change" ]]]
                   ]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Cleared altitude"] ]
+                    td []
+                      [ str (sprintf "%.0f ft" info.ClearedFlightLevel) ]
+                    td [] []]       
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Requested altitude"] ]
+                    td []
+                      [ str (
+                          match info.RequestedFlightLevel with 
+                          | Some x -> sprintf "%.0f ft" x 
+                          |  None -> "Not available") ]
+                    td [] []]                               
                 tr []
                   [ td [] [ Heading.h6 [] [str "Ground speed"] ]
                     td []
@@ -482,6 +497,21 @@ let viewAircraftDetails model dispatch =
                           | Some(s) -> sprintf "%.1f" s + " ft/min"
                           | None -> "unknown") ]
                     td [] []]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Route"] ]
+                    td []
+                      [ str (if route.IsSome then route.Value.Name else "Not available") ]
+                    td [] []]                    
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Next waypoint"] ]
+                    td []
+                      [ str (if route.IsSome then route.Value.NextWaypoint else "Not available") ]
+                    td [ ] [ 
+                      str (if route.IsSome then 
+                            route.Value.Waypoints |> String.concat "→"
+                           else "Not available")
+                    ]]                    
+
               ]
 
 
@@ -499,7 +529,8 @@ let viewPositionTable model dispatch =
               [ th [ ] [ str "Aircraft ID" ]
                 th [ ] [ str "Latitude" ]
                 th [ ] [ str "Longitude" ]
-                th [ ] [ str "Altitude" ] ] ]
+                th [ ] [ str "Altitude" ]
+                th [ ] [ str "Heading" ] ] ]
         tbody [ ]
           (model.Positions
           |> List.map (fun pos ->
@@ -509,7 +540,7 @@ let viewPositionTable model dispatch =
                   else
                     yield  ""
                 match model.ViewDetails with
-                  | Some(acid) when acid = pos.AircraftID ->
+                  | Some(acid, route) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
                 if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.DisplayView then
@@ -522,7 +553,8 @@ let viewPositionTable model dispatch =
                   [ td [] [str pos.AircraftID]
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)]
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)]
-                    td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
+                    td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ]
+                    td [] [str (sprintf "%.1f°" pos.Heading)] ]
             ))
        ]
 
@@ -804,7 +836,7 @@ let viewSimulationInfo model dispatch =
                   [ td [] [ Heading.h6 [] [str "Seed"] ]
                     td [] [ str (match info.Seed with | Some s -> string s | None -> "NA") ]]
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Speed"] ]
+                  [ td [] [ Heading.h6 [] [str "Speed multiplier"] ]
                     td [] [ str (string info.Speed) ]]
                 tr []
                   [ td [] [ Heading.h6 [] [str "Dt"] ]
@@ -862,7 +894,7 @@ let view model dispatch =
                             viewPositionTable model dispatch
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.Is5)] [
+                        Column.column [ Column.Width(Screen.All, Column.Is6)] [
                           viewAircraftDetails model dispatch
                         ]
 

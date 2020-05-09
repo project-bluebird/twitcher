@@ -50,10 +50,12 @@ type Position = {
 
 type AircraftInfo = {
     AircraftID : AircraftID
-    Type : string option 
+    Type : string
     Time: System.DateTime option
-    Heading : Heading option
+    Heading : Heading
     Position : Position
+    ClearedFlightLevel : Altitude
+    RequestedFlightLevel : Altitude option
     GroundSpeed : Speed option
     CalibratedAirSpeed : Speed option
     VerticalSpeed : float<ft/minute> option
@@ -97,4 +99,5 @@ type Configuration = {
     Feet_altitude_upper_limit: int
     Flight_level_lower_limit: int
     Endpoint_simulation_info : string
+    Endpoint_list_route: string
 }

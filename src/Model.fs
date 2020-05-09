@@ -62,6 +62,12 @@ type SimulationInfo = {
     Utc_datetime : string
 }
 
+type Route = {
+  NextWaypoint : string
+  Name : string
+  Waypoints : string []
+}
+
 type Model = {
   Animate : bool
 
@@ -77,7 +83,7 @@ type Model = {
   State: TwitcherState
   FormModel : CommandForm option
   SimulationViewSize : float * float // width, height
-  ViewDetails : AircraftID option
+  ViewDetails : (AircraftID * Route option) option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
@@ -112,6 +118,7 @@ type Msg =
 
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails
+  | RouteInfo of (AircraftID * Route option)
   
   | GetPosition of AircraftID
   | GetAllPositions

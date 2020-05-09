@@ -210,7 +210,12 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Cmd.none        
 
     | ViewAircraftDetails aircraftID ->
-        { model with ViewDetails = Some(aircraftID) }, Cmd.none
+        { model with ViewDetails = Some(aircraftID, None) }, 
+        getRouteInfoCmd model.Config.Value aircraftID
+
+    | RouteInfo (aircraftID, route) ->
+        { model with ViewDetails = Some(aircraftID, route) },
+        Cmd.none
 
     | CloseAircraftDetails ->
         { model with ViewDetails = None }, Cmd.none
@@ -362,7 +367,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         getSimulationInfoCmd model.Config.Value
 
     | SimulationInfo info ->
-        { model with SimulationInfo = info },
+        { model with 
+            SimulationInfo = info
+            SimulationSpeed = if info.IsSome then float info.Value.Speed else model.SimulationSpeed },
         Cmd.none
 
     | MakeSimulatorStep ->

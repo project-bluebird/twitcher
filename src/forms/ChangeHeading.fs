@@ -19,7 +19,7 @@ open Thoth.Json
 
 type FormModel =
   { AircraftID : string
-    CurrentHeading : Heading option
+    CurrentHeading : Heading
     NewHeading : string
     CheckFields : bool
    }
@@ -75,14 +75,11 @@ let view model (dispatch: Msg -> unit) =
               Heading.p [ Heading.Is5 ] [ str "Change heading" ]
 
               Level.level []
-                (match model.CurrentHeading with
-                 | Some(hdg) ->
                    [ Level.item [Level.Item.HasTextCentered ] [
                       div []
                         [ Level.heading [] [ str "Current course"]
-                          Level.title [] [ str (sprintf "%.1f°" hdg ) ] ]
+                          Level.title [] [ str (sprintf "%.1f°" model.CurrentHeading ) ] ]
                     ] ]
-                 | None -> [])
 
               form [ ]
                 [ // TODO display current heading

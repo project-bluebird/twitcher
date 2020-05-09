@@ -66,6 +66,7 @@ let decodeConfig (alltext: string) =
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
     Endpoint_sector = getYamlAttribute "endpoint_upload_sector" text
     Endpoint_simulation_info = getYamlAttribute "endpoint_simulation_info" text 
+    Endpoint_list_route = getYamlAttribute "endpoint_list_route" text
 }
 
 
@@ -175,7 +176,7 @@ let parseAircraftInfo id info =
     {
       AircraftID = id
       Time = None
-      Type = Some info.actype
+      Type = info.actype
       Position = {
         Altitude = info.current_fl 
         Coordinates = {
@@ -183,10 +184,12 @@ let parseAircraftInfo id info =
           Longitude = info.lon
         }
       }
+      ClearedFlightLevel = info.cleared_fl
+      RequestedFlightLevel = info.requested_fl
       GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some
       VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
       CalibratedAirSpeed = None
-      Heading = Some info.hdg
+      Heading = info.hdg
     }
 
 let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
@@ -388,11 +391,11 @@ let encodeAircraftInfo a =
   let aircraft =
     Encode.object
       [ "acid", Encode.string a.AircraftID
-        "type", Encode.string a.Type.Value
+        "type", Encode.string a.Type
         "alt", Encode.float (float a.Position.Altitude)
         "lat", Encode.float (float a.Position.Coordinates.Latitude)
         "lon", Encode.float (float a.Position.Coordinates.Longitude)
-        "hdg", Encode.float a.Heading.Value
+        "hdg", Encode.float a.Heading
         "spd", match a.CalibratedAirSpeed with
                 | Some(cas) -> Encode.float (float cas)
                 | None -> failwith "Cannot create aircraft"
@@ -650,3 +653,58 @@ let makeSimulationStep config =
 let makeSimulationStepCmd config =
   Cmd.OfPromise.attempt makeSimulationStep config ErrorMessage
 
+// =============================
+
+// GET /api/v2/listroute?callsign=AC1001
+
+// A valid response looks like:
+
+// {
+//     "callsign": "AC1001",
+//     "next_waypoint": "FIRE",
+//     "route_name": "test_route",
+//     "route_waypoints": ["WATER", "FIRE", "EARTH"]
+// }
+let urlRouteInfo (config: Configuration) aircraftID =
+  [ urlBase config
+    config.Endpoint_list_route ]
+  |> String.concat "/"
+  |> fun url -> url + "?callsign=" + aircraftID
+
+type ListRoute = {
+  callsign : string
+  next_waypoint : string
+  route_name : string
+  route_waypoints : string []
+}  
+
+let routeDecoder = Decode.Auto.generateDecoder<ListRoute>()
+
+let getRouteInfo (config: Configuration, aircraftID: AircraftID) =
+  promise {
+    let url = urlRouteInfo config aircraftID
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return (aircraftID, None)
+    | 200 ->
+      let! txt = res.text()
+      match Decode.fromString routeDecoder txt with
+      | Ok value -> 
+        let routeInfo = {
+            NextWaypoint = value.next_waypoint
+            Name = value.route_name
+            Waypoints = value.route_waypoints
+        }
+        return (aircraftID, Some routeInfo)
+      | Error e ->
+        printfn "Error decoding route info: %A" e
+        return (aircraftID, None)
+
+    | _ -> return (aircraftID, None)
+  } 
+
+let getRouteInfoCmd config (aircraftID: AircraftID) = 
+  Cmd.OfPromise.either getRouteInfo (config, aircraftID) RouteInfo ErrorMessage
