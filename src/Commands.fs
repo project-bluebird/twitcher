@@ -390,7 +390,7 @@ let urlCreateAircraft (config: Configuration) =
 let encodeAircraftInfo a =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string a.AircraftID
+      [ "callsign", Encode.string a.AircraftID
         "type", Encode.string a.Type
         "alt", Encode.float (float a.Position.Altitude)
         "lat", Encode.float (float a.Position.Coordinates.Latitude)
@@ -436,7 +436,7 @@ let urlChangeAltitude (config: Configuration) =
 let encodeChangeAltitude aircraftID altitude verticalSpeed =
   let aircraft =
     Encode.object
-      [ yield! ["acid", Encode.string aircraftID]
+      [ yield! ["callsign", Encode.string aircraftID]
         yield! ["alt", Encode.float (float altitude)]
         yield! [
            match verticalSpeed with
@@ -480,7 +480,7 @@ let urlChangeSpeed (config: Configuration) =
 let encodeChangeSpeed aircraftID (speed: Speed) =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string aircraftID
+      [ "callsign", Encode.string aircraftID
         "spd", Encode.float (float speed)
       ]
   Encode.toString 0 aircraft
@@ -519,7 +519,7 @@ let urlChangeHeading (config: Configuration) =
 let encodeChangeHeading (aircraftID: AircraftID) (heading: Heading) =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string aircraftID
+      [ "callsign", Encode.string aircraftID
         "hdg", Encode.float (float heading)
       ]
   Encode.toString 0 aircraft
