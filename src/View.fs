@@ -678,12 +678,22 @@ let viewControlMenu model dispatch =
                         Button.Color (if model.SimulationSpeed = 10. then IsLight else IsWhite)
                         Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 10.)) ]
                       [ str "10×"] ]
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
+                        Button.Color (if model.SimulationSpeed = 20. then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 20.)) ]
+                      [ str "20×"] ]                  
                 ]
 
              ]
 
           Menu.Item.li
-            [ Menu.Item.OnClick (fun _ -> dispatch MakeSimulatorStep)
+            [ (match model.State with
+               | ActiveSimulation(Observing) ->
+                  Menu.Item.OnClick (fun _ -> dispatch MakeSimulatorStep)
+               | _ ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
               Menu.Item.Props []
              ] [
               Icon.icon [ ] [ Fa.i [Fa.Solid.StepForward][] ]

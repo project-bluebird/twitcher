@@ -7,6 +7,7 @@ type SimulatorState =
   | Playing
   | Paused
   | Observing
+  | TakingStep
 
 type TwitcherState = 
   | NotConnected
@@ -169,6 +170,7 @@ type Msg =
   | StopAnimation
 
   | MakeSimulatorStep 
+  | SimulatorStepTaken of unit
 
   | CreateAircraftMsg of AircraftForm.Msg
   | ChangeAltitudeMsg of AltitudeForm.Msg

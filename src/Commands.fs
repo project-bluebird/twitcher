@@ -646,25 +646,21 @@ let makeSimulationStep config =
         [ RequestProperties.Method HttpMethod.POST
           ]
 
-    let! result = Fetch.fetch url props
-    return ()
+    let! res = Fetch.fetch url props
+
+    match res.Status with
+    | 200 ->
+      return ()
+    | _ ->
+      Fable.Core.JS.console.log("Cannot make simulator step")
+      return ()
   }
 
 let makeSimulationStepCmd config =
-  Cmd.OfPromise.attempt makeSimulationStep config ErrorMessage
+  Cmd.OfPromise.either makeSimulationStep config SimulatorStepTaken ErrorMessage
 
 // =============================
 
-// GET /api/v2/listroute?callsign=AC1001
-
-// A valid response looks like:
-
-// {
-//     "callsign": "AC1001",
-//     "next_waypoint": "FIRE",
-//     "route_name": "test_route",
-//     "route_waypoints": ["WATER", "FIRE", "EARTH"]
-// }
 let urlRouteInfo (config: Configuration) aircraftID =
   [ urlBase config
     config.Endpoint_list_route ]

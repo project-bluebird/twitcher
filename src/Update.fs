@@ -244,9 +244,6 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           |> Array.filter (fun ac ->
               inSector model.DisplayView.DisplayArea ac.Position 
           )
-        printfn "%A" positionInfo
-        printfn "model.DisplayView.DisplayArea: %A" model.DisplayView.DisplayArea
-        printfn "in view: %A" aircraftInView.Length
 
         let newModel =
           // { model with Positions = aircraftInView |> List.ofArray }
@@ -373,8 +370,17 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         Cmd.none
 
     | MakeSimulatorStep ->
-        model, 
-        makeSimulationStepCmd model.Config.Value
+        match model.State with
+        | ActiveSimulation(_) ->
+          { model with State = ActiveSimulation(TakingStep) },
+          makeSimulationStepCmd model.Config.Value
+        | _ ->
+          model, Cmd.none 
+
+    | SimulatorStepTaken () ->
+        { model with State = ActiveSimulation Observing }, Cmd.none        
+        // TODO: potentially need to decide if Observing or Playing \
+        // when sandbox mode enabled
 
     | StopObserving ->
         { model with State = Connected },
