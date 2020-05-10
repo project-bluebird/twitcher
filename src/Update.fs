@@ -26,7 +26,8 @@ let delayMsg _ =
   }
 
 let simulationViewWidth() =
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
+  Browser.Dom.window.screen.availHeight
+  // Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
 let historyLength = 10000
 let historyInterval = 10
@@ -98,14 +99,23 @@ let rescaleVisualisationToSector sv =
   let sectorViewRatio = 
     let width = abs(fst sv.DisplayArea.BottomLeft - fst sv.DisplayArea.TopRight)
     let height = abs(snd sv.DisplayArea.BottomLeft - snd sv.DisplayArea.TopRight)
-    height/width
+    // height/width
+    width/height
 
   printfn "Sector view ratio: %f" sectorViewRatio
 
+  // let sv' = 
+  //   let x,_ = sv.VisualisationViewSize
+  //   { sv with VisualisationViewSize = x, min (x*sectorViewRatio) x }
+  // sv'
   let sv' = 
-    let x,y = sv.VisualisationViewSize
-    { sv with VisualisationViewSize = x, min (x*sectorViewRatio) x }
+    let _, screenHeight = sv.VisualisationViewSize
+    let visHeight = 0.6 * screenHeight
+  //    let visWidth = max visHeight (sectorViewRatio*visHeight)
+    let visWidth = Browser.Dom.window.innerWidth * 0.6
+    { sv with VisualisationViewSize = visWidth, visHeight }
   sv'
+    
 
 let inSector (sector : DisplayAreaMercator) (position: Position) =
   let x,y = CoordinateSystem.Mercator.lonLatToXY (float position.Coordinates.Longitude) (float position.Coordinates.Latitude)
@@ -160,7 +170,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let centreLon = minLon + 0.5*xwidth
           
           let maxSize = 0.5 * (max xwidth ywidth)
-          let displayMargin = 0.25
+          let displayMargin = 1.2  // how much space around the sector should be visible
           let altDisplayMargin = 0.1
 
           let bottomLeft = centreLon - (1.0 + displayMargin) * maxSize, centreLat - (1.0 + displayMargin) * maxSize
@@ -196,15 +206,22 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         let viewWidth = simulationViewWidth()
         let x,y = model.DisplayView.VisualisationViewSize
 
+        // { model with
+        //     DisplayView = { model.DisplayView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
+        //     SeparationDistance =
+        //       let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.DisplayView
+        //       let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.DisplayView
+        //       Some(y1 - y2)
+        //   },
+        // Cmd.none
         { model with
-            DisplayView = { model.DisplayView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
+            DisplayView = { model.DisplayView with VisualisationViewSize = x, viewWidth } |> rescaleVisualisationToSector
             SeparationDistance =
               let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.DisplayView
               let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.DisplayView
               Some(y1 - y2)
           },
         Cmd.none
-
     | ChangeDisplay sectorDisplay ->
         { model with SectorDisplay = sectorDisplay },
         Cmd.none        

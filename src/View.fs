@@ -368,9 +368,9 @@ let simulationView model dispatch =
 
 
 let viewSimulation model dispatch =
-  Columns.columns [ Columns.IsCentered  ]
-    [
-      Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
+  // Columns.columns [ Columns.IsCentered  ]
+  //   [
+  //     Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
         div [ 
           //ClassName "svg-box" 
           ] [
@@ -378,7 +378,7 @@ let viewSimulation model dispatch =
             //ClassName "svg-box-content"
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
-            SVGAttr.Width "100%"
+            SVGAttr.Width (model.DisplayView.VisualisationViewSize |> fst |> string) //"100%"
             SVGAttr.Height (model.DisplayView.VisualisationViewSize |> snd |> string)
             ]
             [
@@ -386,8 +386,8 @@ let viewSimulation model dispatch =
               yield! simulationView model dispatch
             ]
         ]
-      ]
-    ]
+    //   ]
+    // ]
 
 
 let commandForm model dispatch =
@@ -561,26 +561,22 @@ let viewPositionTable model dispatch =
        ]
 
 
-let viewTimer model dispatch =
-  Level.level [ ]
-    [ Level.item [ Level.Item.HasTextCentered ]
-        [ div [ ]
-            [ Level.heading [ ]
-                [ str "Simulation time" ]
-              Level.title [ ]
-                [ str (
-                    sprintf "%02d:%02d:%02d"
-                      model.SimulationTime.Hours
-                      model.SimulationTime.Minutes
-                      model.SimulationTime.Seconds
-                )]
-            ]
-        ]
-    ]
-
 let viewScore model dispatch =
   Level.level [ ]
     [ 
+        Level.item [ Level.Item.HasTextCentered ]
+          [ div [ ]
+              [ Level.heading [ ]
+                  [ str "Simulation time" ]
+                Level.title [ ]
+                  [ str (
+                      sprintf "%02d:%02d:%02d"
+                        model.SimulationTime.Hours
+                        model.SimulationTime.Minutes
+                        model.SimulationTime.Seconds
+                  )]
+              ]
+          ]
         Level.item [ Level.Item.HasTextCentered ]
           [ div [] [
               Level.heading [ ]
@@ -884,13 +880,13 @@ let view model dispatch =
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
                   [
-                    Columns.columns []
+                    Columns.columns [ Columns.IsCentered ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is10)]
+                        Column.column [ Column.Width(Screen.All, Column.Is9)]
                           [
                             viewSimulation model dispatch
                           ]
-                        Column.column [ Column.Width(Screen.All, Column.Is2)]
+                        Column.column [ Column.Width(Screen.All, Column.Is3)]
                           [
                             viewDisplayMenu model dispatch
                             viewControlMenu model dispatch
@@ -900,15 +896,13 @@ let view model dispatch =
 
                     viewScore model dispatch
 
-                    viewTimer model dispatch
-
                     Columns.columns [
                       Columns.IsCentered  ]
                       [
 
                         Column.column [ Column.Width(Screen.All, Column.Is4) ] [
-
-                            viewPositionTable model dispatch
+                          if model.Positions.Length > 0 then
+                            yield viewPositionTable model dispatch
                         ]
 
                         Column.column [ Column.Width(Screen.All, Column.Is6)] [
