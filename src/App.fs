@@ -47,6 +47,7 @@ let init() =
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
+    SimulationZoom = 0.3
     ViewDetails = None
     PositionHistory = 0, (Dictionary<AircraftID, Position []>())
     InConflict = [||]

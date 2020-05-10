@@ -84,6 +84,7 @@ type Model = {
   State: TwitcherState
   FormModel : CommandForm option
   SimulationViewSize : float * float // width, height
+  SimulationZoom : float 
   ViewDetails : (AircraftID * Route option) option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
@@ -116,6 +117,9 @@ type Msg =
   | ConnectionError of exn
   | GetSimulationViewSize
   | ChangeDisplay of SectorDisplay
+
+  | ZoomIn
+  | ZoomOut
 
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails

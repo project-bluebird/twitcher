@@ -25,7 +25,7 @@ let delayMsg _ =
     return ()
   }
 
-let simulationViewWidth() =
+let simulationViewHeight() =
   Browser.Dom.window.screen.availHeight
   // Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
@@ -99,20 +99,12 @@ let rescaleVisualisationToSector sv =
   let sectorViewRatio = 
     let width = abs(fst sv.DisplayArea.BottomLeft - fst sv.DisplayArea.TopRight)
     let height = abs(snd sv.DisplayArea.BottomLeft - snd sv.DisplayArea.TopRight)
-    // height/width
     width/height
 
-  printfn "Sector view ratio: %f" sectorViewRatio
-
-  // let sv' = 
-  //   let x,_ = sv.VisualisationViewSize
-  //   { sv with VisualisationViewSize = x, min (x*sectorViewRatio) x }
-  // sv'
   let sv' = 
-    let _, screenHeight = sv.VisualisationViewSize
+    let screenHeight = Browser.Dom.window.screen.availHeight
     let visHeight = 0.6 * screenHeight
-  //    let visWidth = max visHeight (sectorViewRatio*visHeight)
-    let visWidth = Browser.Dom.window.innerWidth * 0.6
+    let visWidth = max visHeight (sectorViewRatio*visHeight)
     { sv with VisualisationViewSize = visWidth, visHeight }
   sv'
     
@@ -170,7 +162,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let centreLon = minLon + 0.5*xwidth
           
           let maxSize = 0.5 * (max xwidth ywidth)
-          let displayMargin = 1.2  // how much space around the sector should be visible
+          let displayMargin = model.SimulationZoom  // how much space around the sector should be visible
           let altDisplayMargin = 0.1
 
           let bottomLeft = centreLon - (1.0 + displayMargin) * maxSize, centreLat - (1.0 + displayMargin) * maxSize
@@ -192,9 +184,17 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
 
+    | ZoomIn ->
+        { model with SimulationZoom = model.SimulationZoom - 0.1 }, 
+        Cmd.ofMsg (SectorOutline model.SectorInfo)
+
+    | ZoomOut ->    
+        { model with SimulationZoom = model.SimulationZoom + 0.1 }, 
+        Cmd.ofMsg (SectorOutline model.SectorInfo)
+
     | ConnectionActive result ->
         if result then
-          { model with State = Connected }, Cmd.none
+          { model with State = ActiveSimulation(Observing) }, Cmd.none
         else
           { model with State = ConnectionFailed}, Cmd.none
 
@@ -203,7 +203,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        pingBluebirdCmd config
 
     | GetSimulationViewSize ->
-        let viewWidth = simulationViewWidth()
+        let viewWidth = simulationViewHeight()
         let x,y = model.DisplayView.VisualisationViewSize
 
         // { model with
@@ -310,7 +310,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | LoadedScenario response ->
         // pause the scenario
         { model with
-            State = ActiveSimulation Playing },
+            State = ActiveSimulation Observing },
         Cmd.none
         //pauseSimulationCmd model.Config.Value
 

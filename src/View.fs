@@ -203,7 +203,7 @@ let areaLatitudesLongitudesView model dispatch =
   let xTicks = 
     match model.SectorDisplay with
     | TopDown | LateralNorthSouth ->
-      [roundToHalf x0 .. 0.1 .. roundToHalf x1] 
+      [roundToHalf x0 .. 0.2 .. roundToHalf x1] 
       |> List.map (fun x -> 
           let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(x,2)) , x')
@@ -713,6 +713,35 @@ let viewControlMenu model dispatch =
             ]
           ]
 
+      Menu.label [ ] [ str "View controls" ]
+      Menu.list [ ]
+        [
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> dispatch ZoomIn)
+            (
+              match model.SectorInfo with
+               | Some(_) ->
+                  Menu.Item.Props []
+               | None ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Plus][] ]
+              Text.span [] [ str "Zoom in"]
+            ]
+          
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> dispatch ZoomOut)
+            (
+              match model.SectorInfo with
+               | Some(_) ->
+                  Menu.Item.Props []
+               | None ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Minus][] ]
+              Text.span [] [ str "Zoom out"]
+            ]
+          ]
       ]
 
 let viewDisplayMenu model dispatch =
@@ -882,14 +911,14 @@ let view model dispatch =
                   [
                     Columns.columns [ Columns.IsCentered ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is9)]
-                          [
-                            viewSimulation model dispatch
-                          ]
                         Column.column [ Column.Width(Screen.All, Column.Is3)]
                           [
                             viewDisplayMenu model dispatch
                             viewControlMenu model dispatch
+                          ]
+                        Column.column [ Column.Width(Screen.All, Column.Is9)]
+                          [
+                            viewSimulation model dispatch
                           ]
 
                       ]
@@ -900,7 +929,7 @@ let view model dispatch =
                       Columns.IsCentered  ]
                       [
 
-                        Column.column [ Column.Width(Screen.All, Column.Is4) ] [
+                        Column.column [ Column.Width(Screen.All, Column.Is6) ] [
                           if model.Positions.Length > 0 then
                             yield viewPositionTable model dispatch
                         ]
