@@ -25,8 +25,9 @@ let delayMsg _ =
     return ()
   }
 
-let simulationViewWidth() =
-  Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
+let simulationViewHeight() =
+  Browser.Dom.window.screen.availHeight
+  // Browser.Dom.window.document.getElementById("simulation-viewer").clientWidth
 
 let historyLength = 10000
 let historyInterval = 10
@@ -98,14 +99,15 @@ let rescaleVisualisationToSector sv =
   let sectorViewRatio = 
     let width = abs(fst sv.DisplayArea.BottomLeft - fst sv.DisplayArea.TopRight)
     let height = abs(snd sv.DisplayArea.BottomLeft - snd sv.DisplayArea.TopRight)
-    height/width
-
-  printfn "Sector view ratio: %f" sectorViewRatio
+    width/height
 
   let sv' = 
-    let x,y = sv.VisualisationViewSize
-    { sv with VisualisationViewSize = x, min (x*sectorViewRatio) x }
+    let screenHeight = Browser.Dom.window.screen.availHeight
+    let visHeight = 0.6 * screenHeight
+    let visWidth = max visHeight (sectorViewRatio*visHeight)
+    { sv with VisualisationViewSize = visWidth, visHeight }
   sv'
+    
 
 let inSector (sector : DisplayAreaMercator) (position: Position) =
   let x,y = CoordinateSystem.Mercator.lonLatToXY (float position.Coordinates.Longitude) (float position.Coordinates.Latitude)
@@ -123,18 +125,24 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Cmd.ofMsg GetSimulationViewSize
         ]
 
+    | ReadJsonErrorr -> 
+        printfn "Error reading JSON from file"
+        model, Cmd.none
+
+    | ReadSectorDefinition content ->
+        model,
+        readSectorDefinitionCmd model.Config.Value content
+
+    | UploadSector sectorJson ->
+        model,
+        uploadSectorOutlineCmd model.Config.Value sectorJson
+
+    | SectorUploaded status ->
+        model, Cmd.ofMsg LoadSector
+
     | LoadSector ->
         model,
-        // hard-coded for now
-        match model.SectorType with
-        | Other ->
-            getSectorOutlineCmd None
-        | I ->
-            getSectorOutlineCmd (Some "assets/sector-I-sector-I-140-400.geojson")
-        | X ->
-            getSectorOutlineCmd (Some "assets/sector-X-sector-X-140-400.geojson")
-        | Y ->
-            getSectorOutlineCmd (Some "assets/sector-Y-sector-Y-140-400.geojson")
+        loadSectorOutlineCmd model.Config.Value
 
     | SectorOutline sectorOutline ->
 
@@ -154,7 +162,7 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           let centreLon = minLon + 0.5*xwidth
           
           let maxSize = 0.5 * (max xwidth ywidth)
-          let displayMargin = 0.25
+          let displayMargin = model.SimulationZoom  // how much space around the sector should be visible
           let altDisplayMargin = 0.1
 
           let bottomLeft = centreLon - (1.0 + displayMargin) * maxSize, centreLat - (1.0 + displayMargin) * maxSize
@@ -176,9 +184,17 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
 
     | ShowWaypoints x -> { model with ShowWaypoints = x }, Cmd.none
 
+    | ZoomIn ->
+        { model with SimulationZoom = model.SimulationZoom - 0.1 }, 
+        Cmd.ofMsg (SectorOutline model.SectorInfo)
+
+    | ZoomOut ->    
+        { model with SimulationZoom = model.SimulationZoom + 0.1 }, 
+        Cmd.ofMsg (SectorOutline model.SectorInfo)
+
     | ConnectionActive result ->
         if result then
-          { model with State = Connected }, Cmd.none
+          { model with State = ActiveSimulation(Observing) }, Cmd.none
         else
           { model with State = ConnectionFailed}, Cmd.none
 
@@ -187,24 +203,36 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
        pingBluebirdCmd config
 
     | GetSimulationViewSize ->
-        let viewWidth = simulationViewWidth()
+        let viewWidth = simulationViewHeight()
         let x,y = model.DisplayView.VisualisationViewSize
 
+        // { model with
+        //     DisplayView = { model.DisplayView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
+        //     SeparationDistance =
+        //       let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.DisplayView
+        //       let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.DisplayView
+        //       Some(y1 - y2)
+        //   },
+        // Cmd.none
         { model with
-            DisplayView = { model.DisplayView with VisualisationViewSize = viewWidth, y } |> rescaleVisualisationToSector
+            DisplayView = { model.DisplayView with VisualisationViewSize = x, viewWidth } |> rescaleVisualisationToSector
             SeparationDistance =
               let x1, y1 = rescaleSectorToView TopDown calibrationPoint1 model.DisplayView
               let x2, y2 = rescaleSectorToView TopDown calibrationPoint2 model.DisplayView
               Some(y1 - y2)
           },
         Cmd.none
-
     | ChangeDisplay sectorDisplay ->
         { model with SectorDisplay = sectorDisplay },
         Cmd.none        
 
     | ViewAircraftDetails aircraftID ->
-        { model with ViewDetails = Some(aircraftID) }, Cmd.none
+        { model with ViewDetails = Some(aircraftID, None) }, 
+        getRouteInfoCmd model.Config.Value aircraftID
+
+    | RouteInfo (aircraftID, route) ->
+        { model with ViewDetails = Some(aircraftID, route) },
+        Cmd.none
 
     | CloseAircraftDetails ->
         { model with ViewDetails = None }, Cmd.none
@@ -235,13 +263,14 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           )
 
         let newModel =
-          { model with Positions = aircraftInView |> List.ofArray }
+          // { model with Positions = aircraftInView |> List.ofArray }
+          { model with Positions = positionInfo |> List.ofArray }
 
         { newModel with
-            Positions =
-              newModel.Positions
-              |> List.map (fun ac ->
-                  { ac with Heading = estimateHeading newModel ac.AircraftID})
+            // Positions =
+            //   newModel.Positions
+            //   |> List.map (fun ac ->
+            //       { ac with Heading = estimateHeading newModel ac.AircraftID})
             PositionHistory = updateHistory model.PositionHistory aircraftInView
             InConflict = checkLossOfSeparation model.DisplayView aircraftInView
             SimulationTime = elapsed } ,
@@ -257,14 +286,18 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
-    | ShowLoadScenarioForm ->
-        let f, cmd = ScenarioForm.init()
-        { model with FormModel = Some (LoadScenarioForm(f)) },
-            Cmd.batch [
-              Cmd.map LoadScenarioMsg cmd
-            ]
+    // | ShowLoadScenarioForm ->
+    //     let f, cmd = ScenarioForm.init()
+    //     { model with FormModel = Some (LoadScenarioForm(f)) },
+    //         Cmd.batch [
+    //           Cmd.map LoadScenarioMsg cmd
+    //         ]
 
-    | LoadScenario path ->
+    | ReadScenario content ->
+        model,
+        readScenarioFileCmd model.Config.Value content        
+
+    | UploadScenario path ->
         { model with
               State = Connected
               FormModel = None
@@ -277,8 +310,9 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
     | LoadedScenario response ->
         // pause the scenario
         { model with
-            State = ActiveSimulation Playing },
-        pauseSimulationCmd model.Config.Value
+            State = ActiveSimulation Observing },
+        Cmd.none
+        //pauseSimulationCmd model.Config.Value
 
     | ResetSimulator ->
         model,
@@ -342,6 +376,29 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
               State = ActiveSimulation Observing },
         Cmd.ofMsg StartAnimation
 
+    | GetSimulationInfo ->
+        model, 
+        getSimulationInfoCmd model.Config.Value
+
+    | SimulationInfo info ->
+        { model with 
+            SimulationInfo = info
+            SimulationSpeed = if info.IsSome then float info.Value.Speed else model.SimulationSpeed },
+        Cmd.none
+
+    | MakeSimulatorStep ->
+        match model.State with
+        | ActiveSimulation(_) ->
+          { model with State = ActiveSimulation(TakingStep) },
+          makeSimulationStepCmd model.Config.Value
+        | _ ->
+          model, Cmd.none 
+
+    | SimulatorStepTaken () ->
+        { model with State = ActiveSimulation Observing }, Cmd.none        
+        // TODO: potentially need to decide if Observing or Playing \
+        // when sandbox mode enabled
+
     | StopObserving ->
         { model with State = Connected },
         Cmd.ofMsg StopAnimation
@@ -382,21 +439,21 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
         model,
         Cmd.none
 
-    | MakeStep _ ->
+    | MakeAnimationStep _ ->
         if model.Animate then
           model,
           Cmd.batch [
            getAllPositionsCmd model.Config.Value
-           Cmd.OfPromise.either delayMsg () MakeStep ErrorMessage
+           Cmd.OfPromise.either delayMsg () MakeAnimationStep ErrorMessage
            Cmd.ofMsg GetSimulationViewSize
-
+           (if model.SectorInfo.IsNone then Cmd.ofMsg LoadSector else Cmd.none)
           ]
         else
           model,
           Cmd.none
 
     | StartAnimation ->
-        { model with Animate = true }, Cmd.ofMsg (MakeStep())
+        { model with Animate = true }, Cmd.ofMsg (MakeAnimationStep())
 
     | StopAnimation ->
         { model with Animate = false }, Cmd.none
@@ -534,27 +591,5 @@ let update (msg:Msg) (model:Model) : Model * Cmd<Msg> =
           Fable.Core.JS.console.log("Error - incorrect form model")
           { model with FormModel = None }, Cmd.none
 
-    | LoadScenarioMsg m ->
-      match model.FormModel with
 
-      | Some(LoadScenarioForm f) ->
-          let f', cmd, externalMsg = ScenarioForm.update m f
 
-          match externalMsg with
-          | ScenarioForm.ExternalMsg.Submit(path) ->
-              { model with FormModel = None },
-              Cmd.batch [
-                Cmd.ofMsg (LoadScenario path)
-              ]
-
-          | ScenarioForm.ExternalMsg.NoOp ->
-              { model with FormModel = Some (LoadScenarioForm(f')) },
-              Cmd.map ChangeHeadingMsg cmd
-
-          | ScenarioForm.ExternalMsg.Cancel ->
-              { model with FormModel = None },
-              Cmd.none
-
-      | None | Some _ ->
-          Fable.Core.JS.console.log("Error - incorrect form model")
-          { model with FormModel = None }, Cmd.none

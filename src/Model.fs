@@ -7,6 +7,7 @@ type SimulatorState =
   | Playing
   | Paused
   | Observing
+  | TakingStep
 
 type TwitcherState = 
   | NotConnected
@@ -21,12 +22,8 @@ type CommandForm =
   | ChangeAltitudeForm of Twitcher.AltitudeForm.FormModel
   | ChangeSpeedForm of Twitcher.SpeedForm.FormModel
   | ChangeHeadingForm of Twitcher.HeadingForm.FormModel
-  | LoadScenarioForm of Twitcher.ScenarioForm.FormModel
 
 type ElapsedTime = System.TimeSpan
-
-type SectorType =
-  | I | X | Y | Other
 
 type SectorDisplay =
   | TopDown
@@ -52,10 +49,29 @@ type SectorInfo = {
   Waypoints : FixInfo []
 }
 
+type SimulationInfo = {
+    Callsigns : string []
+    Mode : string
+    Sector_name : string
+    Scenario_name : string
+    Scenario_time : float
+    Seed : int option
+    Sim_type : string
+    Speed : int
+    State : string
+    Dt : float
+    Utc_datetime : string
+}
+
+type Route = {
+  NextWaypoint : string
+  Name : string
+  Waypoints : string []
+}
+
 type Model = {
   Animate : bool
 
-  SectorType : SectorType
   SectorInfo : SectorInfo option
   SectorDisplay : SectorDisplay
   DisplayView : DisplayView   
@@ -68,10 +84,13 @@ type Model = {
   State: TwitcherState
   FormModel : CommandForm option
   SimulationViewSize : float * float // width, height
-  ViewDetails : AircraftID option
+  SimulationZoom : float 
+  ViewDetails : (AircraftID * Route option) option
   SeparationDistance : float option  // what does the loss of separation distance look like in pixels
   SimulationSpeed : float
   SimulationTime: ElapsedTime
+
+  SimulationInfo : SimulationInfo option
 
   Score : float
 }
@@ -80,23 +99,37 @@ type Model = {
 type Msg =
   | Init
   | Config of Configuration
+  | GetSimulationInfo
+  | SimulationInfo of SimulationInfo option
+
+  | ReadJsonErrorr
+  | ReadSectorDefinition of string
+  | UploadSector of string //Thoth.Json.JsonValue
+  | SectorUploaded of string
   | LoadSector
   | SectorOutline of SectorInfo option
+
+  | ReadScenario of string
+  | UploadScenario of string
+  | LoadedScenario of string
+  
   | ConnectionActive of bool
   | ConnectionError of exn
   | GetSimulationViewSize
   | ChangeDisplay of SectorDisplay
 
+  | ZoomIn
+  | ZoomOut
+
   | ViewAircraftDetails of AircraftID
   | CloseAircraftDetails
+  | RouteInfo of (AircraftID * Route option)
   
   | GetPosition of AircraftID
   | GetAllPositions
   | FetchedPosition of AircraftInfo option
   | FetchedAllPositions of AircraftInfo[] * ElapsedTime
 
-  | LoadScenario of string
-  | LoadedScenario of string
   | Observe 
   | StopObserving
 
@@ -133,15 +166,18 @@ type Msg =
   | ChangeVerticalSpeed of AircraftID * VerticalSpeed
   | ChangedVerticalSpeed
   
-  | ShowLoadScenarioForm 
+  // | ShowLoadScenarioForm 
 
-  | MakeStep of unit
+  | MakeAnimationStep of unit
   | ErrorMessage of exn
   | StartAnimation
   | StopAnimation
+
+  | MakeSimulatorStep 
+  | SimulatorStepTaken of unit
 
   | CreateAircraftMsg of AircraftForm.Msg
   | ChangeAltitudeMsg of AltitudeForm.Msg
   | ChangeSpeedMsg of SpeedForm.Msg
   | ChangeHeadingMsg of HeadingForm.Msg
-  | LoadScenarioMsg of ScenarioForm.Msg
+

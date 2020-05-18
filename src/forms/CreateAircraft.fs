@@ -127,22 +127,27 @@ let update msg model =
         (model.Heading |> checkFloat) &&
         (model.Speed |> checkFloat) &&
         (model.Altitude |> checkFloat) then
+
+        let altitude = 
+          match model.AltitudeUnit with
+          | FlightLevels -> (model.Altitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
+          | Feet -> float model.Altitude * 1.<ft>
+          | Meters -> float model.Altitude * 1.<m> |> Conversions.Altitude.m2ft
+
         let aircraftInfo =
           { AircraftID = model.AircraftID
-            Type = Some model.Type
+            Type = model.Type
             Time = None
-            Heading = Some (float model.Heading)
+            Heading = float model.Heading
             Position = {
               Coordinates = {
                 Latitude = float model.Latitude * 1.<latitude>
                 Longitude = float model.Longitude * 1.<longitude>
               }
-              Altitude =
-                match model.AltitudeUnit with
-                | FlightLevels -> (model.Altitude |> float |> round |> int) * 1<FL> |> Conversions.Altitude.fl2ft
-                | Feet -> float model.Altitude * 1.<ft>
-                | Meters -> float model.Altitude * 1.<m> |> Conversions.Altitude.m2ft
+              Altitude = altitude
             }
+            ClearedFlightLevel = altitude
+            RequestedFlightLevel = None
             GroundSpeed = None
             VerticalSpeed = None
             CalibratedAirSpeed =

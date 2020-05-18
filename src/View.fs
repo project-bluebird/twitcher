@@ -203,7 +203,7 @@ let areaLatitudesLongitudesView model dispatch =
   let xTicks = 
     match model.SectorDisplay with
     | TopDown | LateralNorthSouth ->
-      [roundToHalf x0 .. 0.1 .. roundToHalf x1] 
+      [roundToHalf x0 .. 0.2 .. roundToHalf x1] 
       |> List.map (fun x -> 
           let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(x,2)) , x')
@@ -320,7 +320,7 @@ let simulationView model dispatch =
             |> Array.map (fun pastPosition -> // TODO - precompute this?
               CoordinateSystem.rescaleSectorToView model.SectorDisplay (pastPosition.Coordinates.Longitude, pastPosition.Coordinates.Latitude, pastPosition.Altitude) model.DisplayView)
           else [||]
-        let selected = model.ViewDetails = Some(aircraft.AircraftID)
+        let selected = model.ViewDetails = Some(aircraft.AircraftID, None)
         let conflict = model.InConflict |> Array.contains aircraft.AircraftID
 
         [
@@ -368,9 +368,9 @@ let simulationView model dispatch =
 
 
 let viewSimulation model dispatch =
-  Columns.columns [ Columns.IsCentered  ]
-    [
-      Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
+  // Columns.columns [ Columns.IsCentered  ]
+  //   [
+  //     Column.column [ Column.Width(Screen.All, Column.IsFull) ] [
         div [ 
           //ClassName "svg-box" 
           ] [
@@ -378,7 +378,7 @@ let viewSimulation model dispatch =
             //ClassName "svg-box-content"
             Style [ BackgroundColor "#e0e0e0" ]
             Id "simulation-viewer"
-            SVGAttr.Width "100%"
+            SVGAttr.Width (model.DisplayView.VisualisationViewSize |> fst |> string) //"100%"
             SVGAttr.Height (model.DisplayView.VisualisationViewSize |> snd |> string)
             ]
             [
@@ -386,8 +386,8 @@ let viewSimulation model dispatch =
               yield! simulationView model dispatch
             ]
         ]
-      ]
-    ]
+    //   ]
+    // ]
 
 
 let commandForm model dispatch =
@@ -401,8 +401,6 @@ let commandForm model dispatch =
       [ SpeedForm.view f (ChangeSpeedMsg >> dispatch)]
     | Some(ChangeHeadingForm f) ->
       [ HeadingForm.view f (ChangeHeadingMsg >> dispatch)]
-    | Some(LoadScenarioForm f) ->
-      [ ScenarioForm.view f (LoadScenarioMsg >> dispatch)]
     | None -> []
     )
 
@@ -410,7 +408,7 @@ let commandForm model dispatch =
 let viewAircraftDetails model dispatch =
   div [] [
     match model.ViewDetails with
-    | Some(aircraft) ->
+    | Some(aircraft, route) ->
       let info = model.Positions |> List.find (fun ac -> ac.AircraftID = aircraft)
 
       yield! [
@@ -425,6 +423,14 @@ let viewAircraftDetails model dispatch =
             Table.table [ Table.Props [ClassName "table-no-border"] ]
               [
                 tr []
+                  [ td [] [ Heading.h6 [] [str "Aircraft type"] ]
+                    td []
+                      [ str info.Type ]
+                    td [] [
+                      a [ Href ("https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=" + info.Type) ] [ str "View [external link]" ]
+                    ]]
+                
+                tr []
                   [ td [] [ Heading.h6 [] [str "Longitude"] ]
                     td []
                       [ str (sprintf "%.3f" info.Position.Coordinates.Longitude) ]
@@ -435,13 +441,9 @@ let viewAircraftDetails model dispatch =
                       [ str (sprintf "%.3f" info.Position.Coordinates.Latitude) ]
                     td [] []]
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Course"] ]
+                  [ td [] [ Heading.h6 [] [str "Heading"] ]
                     td []
-                      [
-                          match info.Heading with
-                          | Some(x) -> yield (str (sprintf "%.1f" x + "°"))
-                          | None -> yield (Button.a [ Button.IsLoading true; Button.IsOutlined; Button.IsText; Button.Size IsSmall ] [ str "Loading" ])
-                           ]
+                      [ yield (str (sprintf "%.1f" info.Heading + "°")) ]
                     td [] [
                       Button.button
                         [ Button.OnClick (fun _ -> dispatch (ShowChangeHeadingForm info))
@@ -450,7 +452,7 @@ let viewAircraftDetails model dispatch =
                         [ Icon.icon [ ] [ Fa.i [Fa.Solid.LocationArrow] [] ]
                           Text.span [] [ str "Change heading" ]]]]
                 tr []
-                  [ td [] [ Heading.h6 [] [str "Altitude"] ]
+                  [ td [] [ Heading.h6 [] [str "Current altitude"] ]
                     td []
                       [ str (sprintf "%.0f ft" info.Position.Altitude) ]
                     td [] [
@@ -461,6 +463,19 @@ let viewAircraftDetails model dispatch =
                         [ Icon.icon [ ] [ Fa.i [Fa.Solid.ArrowsAltV] [] ]
                           Text.span [] [str "Change" ]]]
                   ]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Cleared altitude"] ]
+                    td []
+                      [ str (sprintf "%.0f ft" info.ClearedFlightLevel) ]
+                    td [] []]       
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Requested altitude"] ]
+                    td []
+                      [ str (
+                          match info.RequestedFlightLevel with 
+                          | Some x -> sprintf "%.0f ft" x 
+                          |  None -> "Not available") ]
+                    td [] []]                               
                 tr []
                   [ td [] [ Heading.h6 [] [str "Ground speed"] ]
                     td []
@@ -484,6 +499,21 @@ let viewAircraftDetails model dispatch =
                           | Some(s) -> sprintf "%.1f" s + " ft/min"
                           | None -> "unknown") ]
                     td [] []]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Route"] ]
+                    td []
+                      [ str (if route.IsSome then route.Value.Name else "Not available") ]
+                    td [] []]                    
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Next waypoint"] ]
+                    td []
+                      [ str (if route.IsSome then route.Value.NextWaypoint else "Not available") ]
+                    td [ ] [ 
+                      str (if route.IsSome then 
+                            route.Value.Waypoints |> String.concat "→"
+                           else "Not available")
+                    ]]                    
+
               ]
 
 
@@ -501,7 +531,8 @@ let viewPositionTable model dispatch =
               [ th [ ] [ str "Aircraft ID" ]
                 th [ ] [ str "Latitude" ]
                 th [ ] [ str "Longitude" ]
-                th [ ] [ str "Altitude" ] ] ]
+                th [ ] [ str "Altitude" ]
+                th [ ] [ str "Heading" ] ] ]
         tbody [ ]
           (model.Positions
           |> List.map (fun pos ->
@@ -511,7 +542,7 @@ let viewPositionTable model dispatch =
                   else
                     yield  ""
                 match model.ViewDetails with
-                  | Some(acid) when acid = pos.AircraftID ->
+                  | Some(acid, route) when acid = pos.AircraftID ->
                       yield  "is-bold "
                   | _ -> yield  ""
                 if CoordinateSystem.isInViewSector (pos.Position.Coordinates.Longitude, pos.Position.Coordinates.Latitude, pos.Position.Altitude) model.DisplayView then
@@ -524,31 +555,28 @@ let viewPositionTable model dispatch =
                   [ td [] [str pos.AircraftID]
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Latitude)]
                     td [] [str (sprintf "%.3f" pos.Position.Coordinates.Longitude)]
-                    td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ] ]
+                    td [] [str (sprintf "%.0f ft" (float pos.Position.Altitude)) ]
+                    td [] [str (sprintf "%.1f°" pos.Heading)] ]
             ))
        ]
 
 
-let viewTimer model dispatch =
-  Level.level [ ]
-    [ Level.item [ Level.Item.HasTextCentered ]
-        [ div [ ]
-            [ Level.heading [ ]
-                [ str "Simulation time" ]
-              Level.title [ ]
-                [ str (
-                    sprintf "%02d:%02d:%02d"
-                      model.SimulationTime.Hours
-                      model.SimulationTime.Minutes
-                      model.SimulationTime.Seconds
-                )]
-            ]
-        ]
-    ]
-
 let viewScore model dispatch =
   Level.level [ ]
     [ 
+        Level.item [ Level.Item.HasTextCentered ]
+          [ div [ ]
+              [ Level.heading [ ]
+                  [ str "Simulation time" ]
+                Level.title [ ]
+                  [ str (
+                      sprintf "%02d:%02d:%02d"
+                        model.SimulationTime.Hours
+                        model.SimulationTime.Minutes
+                        model.SimulationTime.Seconds
+                  )]
+              ]
+          ]
         Level.item [ Level.Item.HasTextCentered ]
           [ div [] [
               Level.heading [ ]
@@ -569,12 +597,6 @@ let viewControlMenu model dispatch =
             [ Menu.Item.OnClick (fun _ -> dispatch Observe) ] [
             Icon.icon [ ] [ Fa.i [Fa.Solid.Binoculars][] ]
             str "Run as observer" ]
-
-          Menu.Item.li
-            [ Menu.Item.OnClick (fun _ -> dispatch (LoadScenario "scenario/test-scenario.scn")) ] [
-            //[ Menu.Item.OnClick (fun _ -> dispatch ShowLoadScenarioForm) ] [
-            Icon.icon [ ] [ Fa.i [Fa.Solid.FileImport ][]]
-            str "Load test scenario" ]
 
           Menu.Item.li
             [ Menu.Item.OnClick (fun _ -> dispatch ResetSimulator) ] [
@@ -652,9 +674,26 @@ let viewControlMenu model dispatch =
                         Button.Color (if model.SimulationSpeed = 10. then IsLight else IsWhite)
                         Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 10.)) ]
                       [ str "10×"] ]
+                  Control.div [] [
+                    Button.button
+                      [ Button.Size IsSmall;
+                        Button.Color (if model.SimulationSpeed = 20. then IsLight else IsWhite)
+                        Button.OnClick (fun _ -> dispatch (SetSimulationRateMultiplier 20.)) ]
+                      [ str "20×"] ]                  
                 ]
 
              ]
+
+          Menu.Item.li
+            [ (match model.State with
+               | ActiveSimulation(Observing) ->
+                  Menu.Item.OnClick (fun _ -> dispatch MakeSimulatorStep)
+               | _ ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+              Menu.Item.Props []
+             ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.StepForward][] ]
+              str "Make step" ]
         ]
 
       Menu.label [ ] [ str "Aircraft controls" ]
@@ -674,6 +713,35 @@ let viewControlMenu model dispatch =
             ]
           ]
 
+      Menu.label [ ] [ str "View controls" ]
+      Menu.list [ ]
+        [
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> dispatch ZoomIn)
+            (
+              match model.SectorInfo with
+               | Some(_) ->
+                  Menu.Item.Props []
+               | None ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Plus][] ]
+              Text.span [] [ str "Zoom in"]
+            ]
+          
+          Menu.Item.li [
+            Menu.Item.OnClick (fun _ -> dispatch ZoomOut)
+            (
+              match model.SectorInfo with
+               | Some(_) ->
+                  Menu.Item.Props []
+               | None ->
+                  Menu.Item.Props [ ClassName "is-disabled" ])
+            ] [
+              Icon.icon [ ] [ Fa.i [Fa.Solid.Minus][] ]
+              Text.span [] [ str "Zoom out"]
+            ]
+          ]
       ]
 
 let viewDisplayMenu model dispatch =
@@ -713,6 +781,120 @@ let viewDisplayMenu model dispatch =
   br []
   ]
 
+let viewSimulatorControls model dispatch =
+  Menu.menu [ ]
+    [ Menu.label [ ] [ str "Sector and scenario upload" ]
+      Menu.list [ ]
+        [ 
+          Menu.Item.li
+            [  ] [ 
+            str "Load sector definition"
+            input 
+                [ 
+                    Class "input"
+                    Type "file"
+                    OnInput (fun ev -> 
+                        let file = ev.target?files?(0)
+
+                        let reader = Browser.Dom.FileReader.Create()
+
+                        reader.onload <- fun evt ->
+                            dispatch (ReadSectorDefinition evt.target?result)
+
+                        reader.onerror <- fun evt ->
+                            dispatch ReadJsonErrorr
+
+                        reader.readAsText(file)
+                    ) 
+                ] ]    
+
+          Menu.Item.li
+            [  ] [ 
+            str "Load scenario"
+            input 
+                [ 
+                    Class "input"
+                    Type "file"
+                    OnInput (fun ev -> 
+                        let file = ev.target?files?(0)
+
+                        let reader = Browser.Dom.FileReader.Create()
+
+                        reader.onload <- fun evt ->
+                            dispatch (ReadScenario evt.target?result)
+
+                        reader.onerror <- fun evt ->
+                            dispatch ReadJsonErrorr
+
+                        reader.readAsText(file)
+                    ) 
+                ] ]    
+
+        ]
+    ]
+
+let viewSimulationInfo model dispatch =
+  div [] [
+    yield br []
+    yield hr []
+
+    match model.SimulationInfo with
+    | None -> 
+      yield
+        Button.button
+          [ Button.Size IsMedium;
+            (if model.SimulationInfo.IsSome then Button.Color IsLight else Button.Color IsWhite)
+            Button.OnClick (fun _ -> dispatch GetSimulationInfo) ]
+          [ Icon.icon [ ] [ Fa.i [Fa.Solid.Info ][] ]
+            ]     
+    | Some info ->
+      yield 
+        Button.button
+          [ Button.Size IsMedium;
+            Button.Color IsWhite
+            Button.OnClick (fun _ -> dispatch GetSimulationInfo) ]
+          [ Icon.icon [ ] [ Fa.i [Fa.Solid.Redo ][] ]
+            ]     
+      yield
+        Message.message [ Message.Color IsLight ] [
+          Message.header [] [
+            Icon.icon [ ] [ Fa.i [Fa.Solid.Info ][] ]
+            Heading.h6 [] [ str "Simulation info" ] 
+          ]
+          Message.body [] [
+            Table.table [ Table.Props [ClassName "table-no-border"] ]
+              [ tbody [] [
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Simulation type"] ]
+                    td [] [ str info.Sim_type ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Mode"] ]
+                    td [] [ str info.Mode ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Sector name"] ]
+                    td [] [ str info.Sector_name ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Scenario name"] ]
+                    td [] [ str info.Scenario_name ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Seed"] ]
+                    td [] [ str (match info.Seed with | Some s -> string s | None -> "NA") ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Speed multiplier"] ]
+                    td [] [ str (string info.Speed) ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "Dt"] ]
+                    td [] [ str (string info.Dt) ]]
+                tr []
+                  [ td [] [ Heading.h6 [] [str "State"] ]
+                    td [] [ str info.State ]]
+              ]
+              ]
+          ]
+        ]
+        
+  ]
+
 let view model dispatch =
     Hero.hero [  ]
       [
@@ -727,38 +909,40 @@ let view model dispatch =
                    [ Heading.p [ Heading.Is3 ] [ str "Connection failed" ] ]
                | _ ->
                   [
-                    Columns.columns []
+                    Columns.columns [ Columns.IsCentered ]
                       [
-                        Column.column [ Column.Width(Screen.All, Column.Is10)]
-                          [
-                            viewSimulation model dispatch
-                          ]
-                        Column.column [ Column.Width(Screen.All, Column.Is2)]
+                        Column.column [ Column.Width(Screen.All, Column.Is3)]
                           [
                             viewDisplayMenu model dispatch
                             viewControlMenu model dispatch
+                          ]
+                        Column.column [ Column.Width(Screen.All, Column.Is9)]
+                          [
+                            viewSimulation model dispatch
                           ]
 
                       ]
 
                     viewScore model dispatch
 
-                    viewTimer model dispatch
-
                     Columns.columns [
                       Columns.IsCentered  ]
                       [
 
-                        Column.column [ Column.Width(Screen.All, Column.Is4) ] [
-
-                            viewPositionTable model dispatch
+                        Column.column [ Column.Width(Screen.All, Column.Is6) ] [
+                          if model.Positions.Length > 0 then
+                            yield viewPositionTable model dispatch
                         ]
 
-                        Column.column [ Column.Width(Screen.All, Column.Is5)] [
+                        Column.column [ Column.Width(Screen.All, Column.Is6)] [
                           viewAircraftDetails model dispatch
                         ]
 
                       ]
+
+                    viewSimulatorControls model dispatch
+
+                    viewSimulationInfo model dispatch
 
                     commandForm model dispatch
 

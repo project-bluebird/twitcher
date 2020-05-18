@@ -22,6 +22,7 @@ open Fetch
 // TODO: Change this to OpenAPI type provider when implemented
 
 let getYamlAttribute name (text: string []) =
+  printfn "%s" name
   let result =
     text
     |> Array.filter (fun line -> line.Trim().StartsWith (name + ":"))
@@ -45,23 +46,27 @@ let decodeConfig (alltext: string) =
     Endpoint_pause_simulation = getYamlAttribute "endpoint_pause_simulation" text
     Endpoint_resume_simulation = getYamlAttribute "endpoint_resume_simulation" text
     Endpoint_set_simulation_rate_multiplier = getYamlAttribute "endpoint_set_simulation_rate_multiplier" text
-    Endpoint_load_scenario = getYamlAttribute "endpoint_load_scenario" text
+    Endpoint_simulation_step = getYamlAttribute "endpoint_simulation_step" text
+    Endpoint_create_scenario = getYamlAttribute "endpoint_create_scenario" text
     Endpoint_create_aircraft = getYamlAttribute "endpoint_create_aircraft" text
     Endpoint_aircraft_position = getYamlAttribute "endpoint_aircraft_position" text
     Endpoint_change_altitude = getYamlAttribute "endpoint_change_altitude" text
     Endpoint_change_heading = getYamlAttribute "endpoint_change_heading" text
     Endpoint_change_speed = getYamlAttribute "endpoint_change_speed" text
-    Endpoint_change_vertical_speed = getYamlAttribute "endpoint_change_vertical_speed" text
     Query_aircraft_id = getYamlAttribute "query_aircraft_id" text
     Aircraft_type = getYamlAttribute "aircraft_type" text
     Latitude = getYamlAttribute "latitude" text
     Longitude = getYamlAttribute "longitude" text
     Altitude = getYamlAttribute "altitude" text
+    Heading = getYamlAttribute "heading" text
     Ground_speed = getYamlAttribute "ground_speed" text
     Simulator_time = getYamlAttribute "simulator_time" text
     Vertical_speed = getYamlAttribute "vertical_speed" text
     Feet_altitude_upper_limit = getYamlAttribute "feet_altitude_upper_limit" text |> int
     Flight_level_lower_limit = getYamlAttribute "flight_level_lower_limit" text |> int
+    Endpoint_sector = getYamlAttribute "endpoint_upload_sector" text
+    Endpoint_simulation_info = getYamlAttribute "endpoint_simulation_info" text 
+    Endpoint_list_route = getYamlAttribute "endpoint_list_route" text
 }
 
 
@@ -88,9 +93,44 @@ let urlAircraftPosition (config: Configuration) =
    config.Endpoint_aircraft_position ]
   |> String.concat "/"
 
+//===================================
+
+let urlSimulationInfo (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_simulation_info ]
+  |> String.concat "/"
+
+let simulationInfoDecoder = Decode.Auto.generateDecoder<SimulationInfo>(true)
+
+let getSimulationInfo config =
+  promise {
+    let url = urlSimulationInfo config
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return None
+    | 200 ->
+      let! txt = res.text()
+      match Decode.fromString simulationInfoDecoder txt with
+      | Ok value -> 
+        return Some value
+      | Error e ->
+        printfn "Error decoding simulation info: %A" e
+        return None
+
+    | _ -> return None
+  }  
+
+let getSimulationInfoCmd config =
+  Cmd.OfPromise.either getSimulationInfo config SimulationInfo ErrorMessage
+
+//=====================================
+
 let pingBluebird config =
   promise {
-      let url = urlAircraftPosition config + "?acid=all"
+      let url = urlSimulationInfo config
 
       try
         let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
@@ -110,10 +150,20 @@ let pingBluebirdCmd config =
 // ===============================================================
 // Aircraft position
 
+// {
+//   "AC1001": {
+//     "cleared_fl": 22500,
+//     "current_fl": 20000,
+//     "hdg": 120.4,
+//     "requested_fl": 25000,
+
 
 type JsonPositionInfo = {
     actype: string
-    alt: float<m>
+    cleared_fl: float<ft>
+    current_fl : float<ft>
+    requested_fl : float<ft> option
+    hdg : float
     gs: float<m/s>
     lat: float<latitude>
     lon: float<longitude>
@@ -126,30 +176,32 @@ let parseAircraftInfo id info =
     {
       AircraftID = id
       Time = None
-      Type = Some info.actype
+      Type = info.actype
       Position = {
-        Altitude = info.alt |> Conversions.Altitude.m2ft
+        Altitude = info.current_fl 
         Coordinates = {
           Latitude = info.lat
           Longitude = info.lon
         }
       }
+      ClearedFlightLevel = info.cleared_fl
+      RequestedFlightLevel = info.requested_fl
       GroundSpeed = info.gs |> Conversions.Speed.ms2knot |> Some
       VerticalSpeed = info.vs |> Conversions.Speed.ms2fm |> Some
       CalibratedAirSpeed = None
-      Heading = None
+      Heading = info.hdg
     }
 
 let parseAllPositions (data: Microsoft.FSharp.Collections.Map<string, obj>) =
   data
   |> Collections.Map.toArray
-  |> Array.filter (fun (key, info) -> key <> "sim_t")
+  |> Array.filter (fun (key, info) -> key <> "scenario_time")
   |> Array.map (fun (acid, info) -> parseAircraftInfo acid (info :?> JsonPositionInfo))
 
 let getAllPositions config =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=all"
+        urlAircraftPosition config 
       let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
 
       match res.Status with
@@ -159,10 +211,10 @@ let getAllPositions config =
       | 200 ->
         let! txt = res.text()
 
-        let decodeTime = Decode.field "sim_t" (Decode.int)
+        let decodeTime = Decode.field "scenario_time" (Decode.float)
         let resultTime = Decode.fromString decodeTime txt   // TODO
 
-        let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
+        // let resultPosition = Decode.fromString (Decode.dict positionDecoder) txt
         let result = Decode.fromString (Decode.dict positionDecoder) txt
 
         match result, resultTime with
@@ -186,7 +238,7 @@ let getAllPositionsCmd config  =
 let getAircraftPosition (config, aircraftID) =
   promise {
       let url =
-        urlAircraftPosition config + "?acid=" + aircraftID
+        urlAircraftPosition config + "?" + config.Query_aircraft_id + "=" + aircraftID
 
       let! res = Fetch.fetch url [RequestProperties.Method HttpMethod.POST]
       let! txt = res.text()
@@ -201,31 +253,44 @@ let getAircraftPositionCmd config aircraftID =
 // ===============================================================
 // Load scenario
 
-let urlLoadScenario (config: Configuration) =
+let urlScenario (config: Configuration) =
   [ urlBase config
-    config.Endpoint_load_scenario ]
+    config.Endpoint_create_scenario ]
   |> String.concat "/"
 
-let loadScenario (config, path) =
+let readScenarioFromFile(config, content) = 
   promise {
-      let url = urlLoadScenario config
-      let body = Encode.toString 0 (Encode.object [ "filename", Encode.string path ])
-      let props =
-          [ RequestProperties.Method HttpMethod.POST
-            Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
-            RequestProperties.Body !^body
-            ]
+    // Hack - pass the JSON scenario file directly as a string without parsing
+    return 
+      """{
+    "name": "twitcher-scenario",
+    "content": """ + content + """
+}"""
+  }  
 
-      let! response =  Fetch.fetch url props
-      match response.Status with
-      | 200 -> return "Scenario loaded"
-      | 400 -> return "Invalid filename"
-      | 500 -> return "Scenario not found"
-      | _ -> return response.StatusText
+let uploadScenario(config, scenarioJson :string) =
+  promise {    
+    let url = urlScenario config
+    let body = scenarioJson
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+          RequestProperties.Body !^body
+          ]
+
+    let! response =  Fetch.fetch url props
+    match response.Status with
+    | _ -> return response.StatusText
   }
 
-let loadScenarioCmd config path =
-  Cmd.OfPromise.either loadScenario (config, path) LoadedScenario ConnectionError
+let readScenarioFileCmd config content =
+  Cmd.OfPromise.either readScenarioFromFile (config, content) UploadScenario ErrorMessage
+
+
+let loadScenarioCmd config scenarioJson =
+  Cmd.OfPromise.either uploadScenario (config, scenarioJson) LoadedScenario ConnectionError
+
 
 // ===============================================================
 // Reset simulator
@@ -325,12 +390,12 @@ let urlCreateAircraft (config: Configuration) =
 let encodeAircraftInfo a =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string a.AircraftID
-        "type", Encode.string a.Type.Value
+      [ "callsign", Encode.string a.AircraftID
+        "type", Encode.string a.Type
         "alt", Encode.float (float a.Position.Altitude)
         "lat", Encode.float (float a.Position.Coordinates.Latitude)
         "lon", Encode.float (float a.Position.Coordinates.Longitude)
-        "hdg", Encode.float a.Heading.Value
+        "hdg", Encode.float a.Heading
         "spd", match a.CalibratedAirSpeed with
                 | Some(cas) -> Encode.float (float cas)
                 | None -> failwith "Cannot create aircraft"
@@ -371,7 +436,7 @@ let urlChangeAltitude (config: Configuration) =
 let encodeChangeAltitude aircraftID altitude verticalSpeed =
   let aircraft =
     Encode.object
-      [ yield! ["acid", Encode.string aircraftID]
+      [ yield! ["callsign", Encode.string aircraftID]
         yield! ["alt", Encode.float (float altitude)]
         yield! [
            match verticalSpeed with
@@ -415,7 +480,7 @@ let urlChangeSpeed (config: Configuration) =
 let encodeChangeSpeed aircraftID (speed: Speed) =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string aircraftID
+      [ "callsign", Encode.string aircraftID
         "spd", Encode.float (float speed)
       ]
   Encode.toString 0 aircraft
@@ -454,7 +519,7 @@ let urlChangeHeading (config: Configuration) =
 let encodeChangeHeading (aircraftID: AircraftID) (heading: Heading) =
   let aircraft =
     Encode.object
-      [ "acid", Encode.string aircraftID
+      [ "callsign", Encode.string aircraftID
         "hdg", Encode.float (float heading)
       ]
   Encode.toString 0 aircraft
@@ -486,41 +551,156 @@ let changeHeadingCmd config aircraftID heading =
 //=================================================================
 
 
-let sectorDecoder = Decode.Auto.generateDecoder<Coordinates list>()
+let urlSector (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_sector ]
+  |> String.concat "/"
 
-
-
-let getSectorOutline(filePath) =
+let readSectorFromFile(config, content) = 
   promise {
-    let url = 
-      match filePath with
-      | Some x -> x
-      | None -> "assets/sector-I-sector-I-140-400.geojson"
-    try
-      let! res = Fetch.fetch url []
+    // Hack - pass the GeoJSON sector file directly as a string without parsing
+    return 
+      """{
+    "name": "twitcher-sector",
+    "content": """ + content + """
+}"""
+  }  
+
+let uploadSectorOutline(config, sectorJson :string) =
+  promise {    
+    let url = urlSector config
+    let body = //encodeSector sectorJson 
+          sectorJson
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          Fetch.requestHeaders [ HttpRequestHeaders.ContentType "application/json" ]
+          RequestProperties.Body !^body
+          ]
+
+    let! response =  Fetch.fetch url props
+    match response.Status with
+    | _ -> return response.StatusText
+  }
+
+let readSectorDefinitionCmd config content =
+  Cmd.OfPromise.either readSectorFromFile (config, content) UploadSector ErrorMessage
+
+/// Fetch sector outline
+let uploadSectorOutlineCmd config sectorJson =
+  Cmd.OfPromise.either uploadSectorOutline (config, sectorJson) SectorUploaded ErrorMessage
+  
+
+let loadSectorOutline config =
+  promise {
+    let url = urlSector config
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return None
+    | 200 ->
       let! txt = res.text()
-      match Decode.fromString TestSector.decodeFeatureCollection txt with
+      
+      match Decode.fromString TestSector.decodeSectorDefinition txt with
       | Ok value -> 
-          return Some(TestSector.getOutline value)
+          printfn "*** Parsed sector definition"
+          match value.Content with
+          | None -> 
+              printfn "No sector definition content"
+              return None // no available sector definition found
+          | Some sector -> 
+              match Decode.fromString TestSector.decodeFeatureCollection sector with
+              | Ok x -> 
+                  printfn "Parsed feature collection"
+                  return Some(TestSector.getOutline x)
+              | Error e -> 
+                  printfn "Couldn't parse feature collection"
+                  return None
       | Error err ->
           printfn "**** Couldn't parse GeoJSON sector definition"
           Fable.Core.JS.console.log(err)
           return None
-    with ex ->
-      // Fable.Core.JS.console.log(ex)
-
-      // // get a default sector
-      // let urlDefault = "assets/default-sector.json"
-      // let! resDefault = Fetch.fetch urlDefault []
-      // let! txt = resDefault.text()
-      // match Decode.fromString sectorDecoder txt with
-      // | Ok value -> return Some(value)
-      // | Error err ->
-          Fable.Core.JS.console.log(ex)
-          return None
+    | _ ->
+      Fable.Core.JS.console.log("Cannot fetch sector outline, return code " + string res.Status)
+      return None
   }
 
+let loadSectorOutlineCmd config =
+  Cmd.OfPromise.either loadSectorOutline config SectorOutline ErrorMessage
 
-/// Fetch sector outline
-let getSectorOutlineCmd(filePath) =
-  Cmd.OfPromise.either getSectorOutline (filePath) SectorOutline ErrorMessage
+//=============================
+
+let urlSimulationStep (config: Configuration) =
+  [ urlBase config
+    config.Endpoint_simulation_step ]
+  |> String.concat "/"
+
+
+let makeSimulationStep config =
+  promise {
+    let url = urlSimulationStep config
+
+    let props =
+        [ RequestProperties.Method HttpMethod.POST
+          ]
+
+    let! res = Fetch.fetch url props
+
+    match res.Status with
+    | 200 ->
+      return ()
+    | _ ->
+      Fable.Core.JS.console.log("Cannot make simulator step")
+      return ()
+  }
+
+let makeSimulationStepCmd config =
+  Cmd.OfPromise.either makeSimulationStep config SimulatorStepTaken ErrorMessage
+
+// =============================
+
+let urlRouteInfo (config: Configuration) aircraftID =
+  [ urlBase config
+    config.Endpoint_list_route ]
+  |> String.concat "/"
+  |> fun url -> url + "?callsign=" + aircraftID
+
+type ListRoute = {
+  callsign : string
+  next_waypoint : string
+  route_name : string
+  route_waypoints : string []
+}  
+
+let routeDecoder = Decode.Auto.generateDecoder<ListRoute>()
+
+let getRouteInfo (config: Configuration, aircraftID: AircraftID) =
+  promise {
+    let url = urlRouteInfo config aircraftID
+    let! res = Fetch.fetch url [ RequestProperties.Method HttpMethod.GET ]
+
+    match res.Status with
+    | 400 ->
+      Fable.Core.JS.console.log("400: Fetch sector outline")
+      return (aircraftID, None)
+    | 200 ->
+      let! txt = res.text()
+      match Decode.fromString routeDecoder txt with
+      | Ok value -> 
+        let routeInfo = {
+            NextWaypoint = value.next_waypoint
+            Name = value.route_name
+            Waypoints = value.route_waypoints
+        }
+        return (aircraftID, Some routeInfo)
+      | Error e ->
+        printfn "Error decoding route info: %A" e
+        return (aircraftID, None)
+
+    | _ -> return (aircraftID, None)
+  } 
+
+let getRouteInfoCmd config (aircraftID: AircraftID) = 
+  Cmd.OfPromise.either getRouteInfo (config, aircraftID) RouteInfo ErrorMessage

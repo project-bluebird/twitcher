@@ -33,20 +33,21 @@ let init() =
   }
 
   {     
+    SimulationInfo = None
     Positions = []
     Animate = false
     Config = None
-    SectorType = SectorType.I
     SectorInfo = None
     SectorDisplay = TopDown
     DisplayView = {
       VisualisationViewSize = 0., 0.
       DisplayArea = sectorDisplayArea
     }
-    ShowWaypoints = false
+    ShowWaypoints = true
     State = NotConnected
     FormModel = None
     SimulationViewSize = 0.,0.
+    SimulationZoom = 0.3
     ViewDetails = None
     PositionHistory = 0, (Dictionary<AircraftID, Position []>())
     InConflict = [||]
