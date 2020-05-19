@@ -60,6 +60,7 @@ let init() =
   Cmd.batch [
     Cmd.ofMsg Init
     Cmd.ofMsg LoadSector
+    Cmd.ofMsg Observe
   ]
 // TODO save state into cookie to stay through refresh?
 
