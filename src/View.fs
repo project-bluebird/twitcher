@@ -190,6 +190,12 @@ let sectorOutlineView model dispatch =
 let roundToHalf value =
   System.Math.Round(value * 2.0, System.MidpointRounding.ToEven) / 2.0
 
+let closestNiceValue value =   
+  let nPlaces = value |> log10 |> abs |> round
+  value * 10.**(nPlaces) 
+  |> roundToHalf
+  |> fun x -> x/(10.**(nPlaces ))
+
 let areaLatitudesLongitudesView model dispatch =
   let x0, y0 = 
     model.DisplayView.DisplayArea.BottomLeft
@@ -203,12 +209,18 @@ let areaLatitudesLongitudesView model dispatch =
   let xTicks = 
     match model.SectorDisplay with
     | TopDown | LateralNorthSouth ->
-      [roundToHalf x0 .. 0.2 .. roundToHalf x1] 
+      let xrange = roundToHalf x1 - roundToHalf x0
+      let tickWidth = xrange/10. |> closestNiceValue
+      
+      [roundToHalf x0 .. tickWidth .. roundToHalf x1] 
       |> List.map (fun x -> 
           let x', y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x*1.<longitude>, y0*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(x,2)) , x')
     | LateralEastWest ->
-      [roundToHalf y0 .. 0.1 .. roundToHalf y1] 
+      let yrange = roundToHalf y1 - roundToHalf y0
+      let tickWidth = yrange/10. |> closestNiceValue
+      
+      [roundToHalf y0 .. tickWidth .. roundToHalf y1] 
       |> List.map (fun y -> 
           let x', y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), x')  
@@ -216,7 +228,10 @@ let areaLatitudesLongitudesView model dispatch =
   let yTicks = 
     match model.SectorDisplay with
     | TopDown ->
-      [ roundToHalf y0 .. 0.1 .. roundToHalf y1] 
+      let yrange = roundToHalf y1 - roundToHalf y0
+      let tickWidth = yrange/10. |> closestNiceValue
+      
+      [roundToHalf y0 .. tickWidth .. roundToHalf y1] 
       |> List.map (fun y -> 
           let x, y' = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y*1.<latitude>, 0.<ft>) model.DisplayView
           string (System.Math.Round(y,2)), y')
@@ -224,7 +239,7 @@ let areaLatitudesLongitudesView model dispatch =
       (match model.SectorInfo with
        | None -> [ a0 .. 1000. .. a1] 
        | Some outline ->
-        [ outline.BottomAltitude .. 10<FL> .. outline.TopAltitude]
+        [ outline.BottomAltitude .. 50<FL> .. outline.TopAltitude]
         |> List.map (Twitcher.Conversions.Altitude.fl2ft >> float) )
       |> List.map (fun a -> 
           let x, y = CoordinateSystem.rescaleSectorToView model.SectorDisplay (x0*1.<longitude>, y0*1.<latitude>, a*1.<ft>) model.DisplayView
