@@ -1,3 +1,4 @@
+Active development moved under[Project BlueBird](https://github.com/project-bluebird).
 
 # Twitcher
 Front-end for [Bluebird](https://github.com/alan-turing-institute/bluebird) for monitoring the simulation.
